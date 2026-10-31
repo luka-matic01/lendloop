@@ -8,7 +8,7 @@ import {
   createConvexTest,
   provisionUser,
   useAdminBootstrapEnv,
-} from "./testHelpers";
+} from "../convex-test/helpers";
 
 describe("tools", () => {
   useAdminBootstrapEnv();

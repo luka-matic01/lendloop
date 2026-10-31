@@ -10,7 +10,7 @@ import {
   errorCode,
   provisionUser,
   useAdminBootstrapEnv,
-} from "./testHelpers";
+} from "../convex-test/helpers";
 
 describe("loanRequests", () => {
   useAdminBootstrapEnv();

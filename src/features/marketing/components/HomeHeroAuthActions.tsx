@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { LogIn, UserPlus, Wrench } from "lucide-react";
+import { ArrowLeftRight, LogIn, UserPlus, Wrench } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -49,7 +49,17 @@ async function HomeHeroAuthActionsContent() {
           )}
         >
           <Wrench className={iconClass} aria-hidden />
-          Open tools board
+          Tools
+        </Link>
+        <Link
+          href={ROUTES.loans}
+          className={cn(
+            buttonClassName({ variant: "board-secondary" }),
+            "focus-visible:ring-offset-board",
+          )}
+        >
+          <ArrowLeftRight className={iconClass} aria-hidden />
+          Loans
         </Link>
       </div>
     );

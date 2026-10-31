@@ -1,11 +1,11 @@
 import { auth } from "@clerk/nextjs/server";
 
-import { ToolBoardPage } from "@/features/tool-board";
+import { ToolsPage } from "@/features/tools";
 
 export const instant = false;
 
-export default async function ToolsPage() {
+export default async function ToolsRoutePage() {
   await auth.protect();
 
-  return <ToolBoardPage />;
+  return <ToolsPage />;
 }

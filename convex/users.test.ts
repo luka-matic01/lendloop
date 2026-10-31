@@ -9,7 +9,7 @@ import {
   createConvexTest,
   errorCode,
   useAdminBootstrapEnv,
-} from "./testHelpers";
+} from "../convex-test/helpers";
 
 describe("users RBAC", () => {
   useAdminBootstrapEnv();

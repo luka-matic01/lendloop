@@ -1,0 +1,2 @@
+export const TOOL_NAME_MAX_LENGTH = 80;
+export const TOOL_DESCRIPTION_MAX_LENGTH = 280;

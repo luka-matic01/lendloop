@@ -9,7 +9,11 @@
  */
 
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_borrowDates from "../lib/borrowDates.js";
 import type * as lib_errors from "../lib/errors.js";
+import type * as lib_limits from "../lib/limits.js";
+import type * as lib_loanViews from "../lib/loanViews.js";
+import type * as lib_loans from "../lib/loans.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as loanRequests from "../loanRequests.js";
 import type * as tools from "../tools.js";
@@ -23,7 +27,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "lib/auth": typeof lib_auth;
+  "lib/borrowDates": typeof lib_borrowDates;
   "lib/errors": typeof lib_errors;
+  "lib/limits": typeof lib_limits;
+  "lib/loanViews": typeof lib_loanViews;
+  "lib/loans": typeof lib_loans;
   "lib/validators": typeof lib_validators;
   loanRequests: typeof loanRequests;
   tools: typeof tools;

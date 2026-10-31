@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 
 import { ConvexClerkProviders } from "@/components/providers/ConvexClerkProviders";
-import { AppShell } from "@/components/ui";
+import { AppShell, MastheadNav } from "@/components/ui";
 import { Masthead } from "@/components/ui/Masthead";
 
 export const instant = false;
@@ -15,7 +15,7 @@ export default async function AppLayout({
 
   return (
     <AppShell>
-      <Masthead />
+      <Masthead nav={<MastheadNav />} />
       <main className="w-full flex-1">
         <ConvexClerkProviders>{children}</ConvexClerkProviders>
       </main>

@@ -8,10 +8,11 @@ import { MastheadAccount } from "./MastheadAccount";
 
 type MastheadProps = {
   children?: ReactNode;
+  nav?: ReactNode;
   className?: string;
 };
 
-export function Masthead({ children, className }: MastheadProps) {
+export function Masthead({ children, nav, className }: MastheadProps) {
   return (
     <header className={cn("w-full bg-board text-on-board", className)}>
       <Container className="flex flex-nowrap items-center justify-between gap-3 py-3 sm:gap-4 sm:py-4">
@@ -21,7 +22,8 @@ export function Masthead({ children, className }: MastheadProps) {
         >
           {APP_NAME}
         </Link>
-        <div className="flex shrink-0 flex-nowrap items-center justify-end">
+        <div className="flex min-w-0 flex-1 flex-nowrap items-center justify-end gap-2 sm:gap-4">
+          {nav}
           <MastheadAccount />
         </div>
       </Container>

@@ -1,5 +1,5 @@
-import { ToolBoardSkeletonPage } from "@/features/tool-board";
+import { ToolsPageSkeleton } from "@/features/tools";
 
 export default function ToolsLoading() {
-  return <ToolBoardSkeletonPage />;
+  return <ToolsPageSkeleton />;
 }
