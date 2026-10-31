@@ -6,6 +6,17 @@ type DbCtx = QueryCtx | MutationCtx;
 
 export type ActiveBorrowStatus = "pending" | "approved";
 
+export type LoanRequestStatus =
+  | ActiveBorrowStatus
+  | "declined"
+  | "returned";
+
+export function isOpenLoanRequestStatus(
+  status: LoanRequestStatus,
+): status is ActiveBorrowStatus {
+  return status === "pending" || status === "approved";
+}
+
 /** At most one approved loan per tool in a valid board state. */
 export async function toolHasApprovedLoan(
   ctx: DbCtx,

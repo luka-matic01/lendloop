@@ -8,7 +8,10 @@ import { api } from "convex/_generated/api";
 import { LOANS_COPY } from "../constants/copy";
 import { useLoanActions } from "../hooks/useLoanActions";
 import { formatIncomingPartyLine } from "../utils/formatLoan";
-import { sortLoansForList } from "../utils/sortLoans";
+import {
+  filterOpenLoansForSection,
+  sortLoansForList,
+} from "../utils/sortLoans";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanRow } from "./LoanRow";
 import { LoanSection } from "./LoanSection";
@@ -25,7 +28,7 @@ export function IncomingRequestsSection({ isReady }: IncomingRequestsSectionProp
   const { pendingId, approve, decline, markReturned } = useLoanActions();
 
   const isLoading = !isReady || loans === undefined;
-  const sortedLoans = sortLoansForList(loans ?? []);
+  const sortedLoans = sortLoansForList(filterOpenLoansForSection(loans ?? []));
   const itemCount = sortedLoans.length;
 
   return (

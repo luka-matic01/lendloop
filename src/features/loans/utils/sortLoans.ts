@@ -21,3 +21,8 @@ export function sortLoansForList(loans: LoanView[]): LoanView[] {
 export function isClosedLoanStatus(status: LoanView["status"]): boolean {
   return status === "returned" || status === "declined";
 }
+
+/** Actionable loans for Incoming / My requests (matches Convex list scoping). */
+export function filterOpenLoansForSection(loans: LoanView[]): LoanView[] {
+  return loans.filter((loan) => !isClosedLoanStatus(loan.status));
+}

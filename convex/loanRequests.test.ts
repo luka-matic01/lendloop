@@ -125,6 +125,7 @@ describe("loanRequests", () => {
       "borrower-b@test.com",
     );
     const { session: stranger } = await provisionUser(t, "stranger@test.com");
+    const { session: admin } = await provisionUser(t, ADMIN_EMAIL);
 
     const toolId = await lender.mutation(api.tools.create, {
       name: "Stand mixer",
@@ -167,7 +168,10 @@ describe("loanRequests", () => {
     );
     const byId = new Map(incoming.map((r) => [r._id, r]));
     expect(byId.get(requestA)?.status).toBe("approved");
-    expect(byId.get(requestB)?.status).toBe("declined");
+    expect(byId.has(requestB)).toBe(false);
+
+    const allLoans = await admin.query(api.loanRequests.listAllForAdmin, {});
+    expect(allLoans.find((r) => r._id === requestB)?.status).toBe("declined");
 
     const lenderTools = await lender.query(api.tools.listMine, {});
     expect(lenderTools[0]?.isAvailable).toBe(false);
@@ -244,7 +248,11 @@ describe("loanRequests", () => {
       api.loanRequests.listMyRequests,
       {},
     );
-    expect(myRequests[0]?.status).toBe("returned");
+    expect(myRequests).toHaveLength(0);
+
+    const { session: admin } = await provisionUser(t, ADMIN_EMAIL);
+    const allLoans = await admin.query(api.loanRequests.listAllForAdmin, {});
+    expect(allLoans.find((r) => r._id === requestId)?.status).toBe("returned");
 
     const lenderTools = await lender.query(api.tools.listMine, {});
     expect(lenderTools[0]?.isAvailable).toBe(true);
