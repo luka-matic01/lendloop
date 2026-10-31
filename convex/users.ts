@@ -3,6 +3,11 @@ import { v } from "convex/values";
 import { env, mutation, query } from "./_generated/server";
 import { requireAdmin, requireUser } from "./lib/auth";
 import { AuthErrorCode, authError } from "./lib/errors";
+import {
+  clerkDisplayName,
+  resolveAccountEmail,
+  userDisplayName,
+} from "./lib/userDisplayName";
 import { userRoleValidator } from "./lib/validators";
 
 function resolveRole(
@@ -19,17 +24,16 @@ function resolveRole(
 }
 
 export const ensureCurrentUser = mutation({
-  args: {},
+  args: {
+    /** When the Convex JWT omits email, pass Clerk's primary address from the client. */
+    primaryEmail: v.optional(v.string()),
+  },
   returns: v.id("users"),
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       authError(AuthErrorCode.UNAUTHENTICATED);
     }
-
-    const email = identity.email?.trim().toLowerCase() ?? "";
-    const name = identity.name?.trim() || email || "Neighbor";
-    const emailVerified = identity.emailVerified === true;
 
     const existing = await ctx.db
       .query("users")
@@ -38,6 +42,19 @@ export const ensureCurrentUser = mutation({
       )
       .unique();
 
+    const email = resolveAccountEmail({
+      jwtEmail: identity.email,
+      clientEmail: args.primaryEmail,
+      storedEmail: existing?.email,
+    });
+    let name =
+      clerkDisplayName(identity.name) ||
+      clerkDisplayName(existing?.name) ||
+      "";
+    if (name && email && name.toLowerCase() === email) {
+      name = "";
+    }
+    const emailVerified = identity.emailVerified === true;
     const role = resolveRole(email, emailVerified, existing?.role);
 
     if (existing) {
@@ -73,7 +90,7 @@ export const me = query({
     const user = await requireUser(ctx);
     return {
       _id: user._id,
-      name: user.name,
+      name: userDisplayName(user),
       role: user.role,
       isTrustedLender: user.isTrustedLender,
     };

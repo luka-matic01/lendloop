@@ -200,4 +200,35 @@ describe("tools", () => {
     );
     expect(boardAfterPause).toHaveLength(0);
   });
+
+  it("listBoard surfaces pending and approved borrows for the viewer", async () => {
+    const t = createConvexTest();
+    const { session: lenderSession } = await provisionUser(
+      t,
+      "lender@test.com",
+    );
+    const { session: neighborSession } = await provisionUser(
+      t,
+      "neighbor@test.com",
+    );
+
+    const toolId = await lenderSession.mutation(api.tools.create, {
+      name: "Ladder",
+      category: "other",
+      condition: "good",
+      description: "8 ft",
+    });
+
+    await neighborSession.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-01",
+      endDate: "2026-11-07",
+    });
+
+    const boardPending = await neighborSession.query(api.tools.listBoard, {});
+    expect(boardPending[0]?.viewerBorrowStatus).toBe("pending");
+
+    const lenderListings = await lenderSession.query(api.tools.listMine, {});
+    expect(lenderListings[0]?.pendingRequestCount).toBe(1);
+  });
 });

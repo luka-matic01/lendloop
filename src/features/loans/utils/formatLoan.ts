@@ -1,5 +1,13 @@
 import type { LoanView } from "../types/loans";
 
+export function formatIncomingPartyLine(loan: LoanView): string {
+  return `Requested by ${loan.borrowerName}`;
+}
+
+export function formatMyRequestPartyLine(loan: LoanView): string {
+  return `To ${loan.lenderName}${loan.lenderIsTrusted ? " · Trusted lender" : ""}`;
+}
+
 export function formatLoanDateRange(startDate: string, endDate: string) {
   return `${startDate} → ${endDate}`;
 }

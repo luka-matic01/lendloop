@@ -39,11 +39,32 @@ describe("users RBAC", () => {
 
     expect(firstId).toEqual(secondId);
 
+    const stored = await t.run(async (ctx) => ctx.db.get(firstId));
+    expect(stored?.email).toBe("neighbor@test.com");
+    expect(stored?.name).toBe("");
+
     const rowCount = await t.run(async (ctx) => {
       const rows = await ctx.db.query("users").collect();
       return rows.length;
     });
     expect(rowCount).toBe(1);
+  });
+
+  it("accepts Clerk primary email when the JWT omits email", async () => {
+    const t = createConvexTest();
+    const session = t.withIdentity({
+      name: "Neighbor",
+    });
+
+    const userId = await session.mutation(api.users.ensureCurrentUser, {
+      primaryEmail: "borrower@example.com",
+    });
+
+    const stored = await t.run(async (ctx) => ctx.db.get(userId));
+    expect(stored).toMatchObject({
+      email: "borrower@example.com",
+      name: "",
+    });
   });
 
   it("promotes to admin only when bootstrap email is verified", async () => {

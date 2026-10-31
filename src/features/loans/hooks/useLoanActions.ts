@@ -4,6 +4,7 @@ import { useMutation } from "convex/react";
 import { useCallback, useState } from "react";
 
 import { useToast } from "@/components/ui";
+import { convexErrorMessage } from "@/lib/convex-error-message";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 
@@ -25,10 +26,7 @@ export function useLoanActions() {
         await approveMut({ requestId });
         toast(LOANS_COPY.toastApproved(toolName));
       } catch (error) {
-        toast(
-          error instanceof Error ? error.message : "Could not approve",
-          "error",
-        );
+        toast(convexErrorMessage(error, "Could not approve"), "error");
       } finally {
         setPendingId(null);
       }
@@ -43,10 +41,7 @@ export function useLoanActions() {
         await declineMut({ requestId });
         toast(LOANS_COPY.toastDeclined(toolName));
       } catch (error) {
-        toast(
-          error instanceof Error ? error.message : "Could not decline",
-          "error",
-        );
+        toast(convexErrorMessage(error, "Could not decline"), "error");
       } finally {
         setPendingId(null);
       }
@@ -61,10 +56,7 @@ export function useLoanActions() {
         await markReturnedMut({ requestId });
         toast(LOANS_COPY.toastReturned(toolName));
       } catch (error) {
-        toast(
-          error instanceof Error ? error.message : "Could not mark returned",
-          "error",
-        );
+        toast(convexErrorMessage(error, "Could not mark returned"), "error");
       } finally {
         setPendingId(null);
       }
@@ -82,10 +74,7 @@ export function useLoanActions() {
         await setTrustedMut({ userId, isTrustedLender });
         toast(LOANS_COPY.toastTrustedUpdated(name, isTrustedLender));
       } catch (error) {
-        toast(
-          error instanceof Error ? error.message : "Could not update lender",
-          "error",
-        );
+        toast(convexErrorMessage(error, "Could not update lender"), "error");
       }
     },
     [setTrustedMut, toast],

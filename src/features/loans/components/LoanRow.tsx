@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 import { formatLoanAutomationDetail, formatLoanDateRange } from "../utils/formatLoan";
+import { isClosedLoanStatus } from "../utils/sortLoans";
 import type { LoanView } from "../types/loans";
 import { LOAN_ROW_TITLE_CLASS } from "../constants/visual";
 import { LoanStatusBadge } from "./LoanStatusBadge";
@@ -22,17 +23,26 @@ export function LoanRow({
   className,
 }: LoanRowProps) {
   const automationDetail = formatLoanAutomationDetail(loan);
+  const isClosed = isClosedLoanStatus(loan.status);
 
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:gap-4 sm:py-4",
+        "flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-4 sm:py-3.5",
         actions && "sm:justify-between",
+        isClosed && "opacity-55",
         className,
       )}
     >
       <div className="min-w-0 flex-1">
-        <p className={LOAN_ROW_TITLE_CLASS}>{loan.toolName}</p>
+        <p
+          className={cn(
+            LOAN_ROW_TITLE_CLASS,
+            isClosed && "text-ink-muted",
+          )}
+        >
+          {loan.toolName}
+        </p>
         <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
           <p className="min-w-0 text-xs font-semibold text-ink-muted">
             {partyLine}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useUser } from "@clerk/nextjs";
 import { useEffect, useRef, useState } from "react";
 import { useConvexAuth, useMutation } from "convex/react";
 
@@ -20,35 +21,48 @@ export function useEnsureCurrentUser(): {
   errorMessage: string | null;
 } {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+  const { user, isLoaded: userLoaded } = useUser();
   const ensureCurrentUser = useMutation(api.users.ensureCurrentUser);
   const [syncPhase, setSyncPhase] = useState<SyncPhase>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const provisionStarted = useRef(false);
+  const lastSyncedEmail = useRef<string | null>(null);
 
   useEffect(() => {
-    if (authLoading || !isAuthenticated) {
-      provisionStarted.current = false;
+    if (authLoading || !isAuthenticated || !userLoaded) {
+      if (!isAuthenticated) {
+        lastSyncedEmail.current = null;
+        setSyncPhase("idle");
+      }
       return;
     }
 
-    if (provisionStarted.current) {
+    const primaryEmail = user?.primaryEmailAddress?.emailAddress ?? null;
+    if (lastSyncedEmail.current === primaryEmail) {
       return;
     }
 
-    provisionStarted.current = true;
+    lastSyncedEmail.current = primaryEmail;
 
-    void ensureCurrentUser()
+    void ensureCurrentUser(
+      primaryEmail ? { primaryEmail } : {},
+    )
       .then(() => setSyncPhase("ready"))
       .catch((err: unknown) => {
-        provisionStarted.current = false;
+        lastSyncedEmail.current = null;
         setSyncPhase("error");
         setErrorMessage(
           err instanceof Error
             ? err.message
-            : ACCOUNT_MESSAGES.syncFailedFallback
+            : ACCOUNT_MESSAGES.syncFailedFallback,
         );
       });
-  }, [authLoading, isAuthenticated, ensureCurrentUser]);
+  }, [
+    authLoading,
+    isAuthenticated,
+    userLoaded,
+    user?.primaryEmailAddress?.emailAddress,
+    ensureCurrentUser,
+  ]);
 
   if (authLoading) {
     return { phase: "auth-loading", errorMessage: null };

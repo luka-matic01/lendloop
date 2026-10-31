@@ -12,6 +12,10 @@ import { api } from "convex/_generated/api";
 import { LOANS_COPY } from "../constants/copy";
 import { HOME_LOANS_PREVIEW_LIMIT } from "../constants/limits";
 import { useLoanActions } from "../hooks/useLoanActions";
+import {
+  formatIncomingPartyLine,
+  formatMyRequestPartyLine,
+} from "../utils/formatLoan";
 import { HomeLoansFrame } from "./HomeLoansFrame";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanListSkeleton } from "./LoanRowSkeleton";
@@ -77,7 +81,7 @@ export function HomeLoansPreview() {
                       <li key={loan._id}>
                         <LoanRow
                           loan={loan}
-                          partyLine={loan.borrowerName}
+                          partyLine={formatIncomingPartyLine(loan)}
                           actions={
                             <>
                               <Button
@@ -120,9 +124,7 @@ export function HomeLoansPreview() {
                       <li key={loan._id}>
                         <LoanRow
                           loan={loan}
-                          partyLine={`From ${loan.lenderName}${
-                            loan.lenderIsTrusted ? " · Trusted" : ""
-                          }`}
+                          partyLine={formatMyRequestPartyLine(loan)}
                         />
                       </li>
                     ))}

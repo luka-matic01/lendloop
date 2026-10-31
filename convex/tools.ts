@@ -1,14 +1,21 @@
 import { v } from "convex/values";
 
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import { requireToolAccess, requireUser } from "./lib/auth";
 import { AuthErrorCode, authError } from "./lib/errors";
 import { LIST_PAGE_SIZE } from "./lib/limits";
-import { toolHasApprovedLoan } from "./lib/loans";
+import {
+  activeBorrowStatusByToolForBorrower,
+  pendingRequestCountByToolForLender,
+  toolHasApprovedLoan,
+} from "./lib/loans";
 import {
   toolCategoryValidator,
   toolConditionValidator,
 } from "./lib/validators";
+import { userDisplayName } from "./lib/userDisplayName";
 
 const TOOL_NAME_MAX_LENGTH = 80;
 const TOOL_DESCRIPTION_MAX_LENGTH = 280;
@@ -34,6 +41,18 @@ function normalizeToolFields(args: { name: string; description: string }) {
   }
 
   return { name, description };
+}
+
+const ACTIVE_LOAN_LISTING_MESSAGE =
+  "Cannot modify listing while tool has an active loan";
+
+async function rejectIfToolOnActiveLoan(
+  ctx: MutationCtx,
+  toolId: Id<"tools">,
+) {
+  if (await toolHasApprovedLoan(ctx, toolId)) {
+    authError(AuthErrorCode.VALIDATION_ERROR, ACTIVE_LOAN_LISTING_MESSAGE);
+  }
 }
 
 /** Homepage teaser — name and category only, newest six available listings. */
@@ -67,26 +86,35 @@ export const listMine = query({
       condition: toolConditionValidator,
       description: v.string(),
       isAvailable: v.boolean(),
+      hasActiveLoan: v.boolean(),
+      pendingRequestCount: v.number(),
     }),
   ),
   handler: async (ctx) => {
     const user = await requireUser(ctx);
 
-    const tools = await ctx.db
-      .query("tools")
-      .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
-      .order("desc")
-      .take(LIST_PAGE_SIZE);
+    const [tools, pendingByTool] = await Promise.all([
+      ctx.db
+        .query("tools")
+        .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
+        .order("desc")
+        .take(LIST_PAGE_SIZE),
+      pendingRequestCountByToolForLender(ctx, user._id),
+    ]);
 
-    return tools.map(
-      ({ _id, name, category, condition, description, isAvailable }) => ({
-        _id,
-        name,
-        category,
-        condition,
-        description,
-        isAvailable,
-      }),
+    return Promise.all(
+      tools.map(
+        async ({ _id, name, category, condition, description, isAvailable }) => ({
+          _id,
+          name,
+          category,
+          condition,
+          description,
+          isAvailable,
+          hasActiveLoan: await toolHasApprovedLoan(ctx, _id),
+          pendingRequestCount: pendingByTool.get(_id) ?? 0,
+        }),
+      ),
     );
   },
 });
@@ -108,11 +136,15 @@ export const listBoard = query({
       ownerIsTrustedLender: v.boolean(),
       isOwner: v.boolean(),
       canRemove: v.boolean(),
+      viewerBorrowStatus: v.optional(
+        v.union(v.literal("pending"), v.literal("approved")),
+      ),
     }),
   ),
   handler: async (ctx, args) => {
-    const [viewer, rows] = await Promise.all([
-      requireUser(ctx),
+    const viewer = await requireUser(ctx);
+
+    const [rows, activeBorrowsByTool] = await Promise.all([
       ctx.db
         .query("tools")
         .withIndex("by_available_category", (q) =>
@@ -122,6 +154,7 @@ export const listBoard = query({
         )
         .order("desc")
         .take(LIST_PAGE_SIZE),
+      activeBorrowStatusByToolForBorrower(ctx, viewer._id),
     ]);
 
     const uniqueOwnerIds = [...new Set(rows.map((t) => t.ownerId))];
@@ -144,10 +177,11 @@ export const listBoard = query({
         description: tool.description,
         isAvailable: tool.isAvailable,
         ownerId: tool.ownerId,
-        ownerName: owner?.name ?? "Neighbor",
+        ownerName: userDisplayName(owner),
         ownerIsTrustedLender: owner?.isTrustedLender ?? false,
         isOwner,
         canRemove: viewer.role === "admin" || isOwner,
+        viewerBorrowStatus: activeBorrowsByTool.get(tool._id),
       };
     });
   },
@@ -187,6 +221,7 @@ export const update = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireToolAccess(ctx, args.toolId);
+    await rejectIfToolOnActiveLoan(ctx, args.toolId);
     const { name, description } = normalizeToolFields(args);
 
     await ctx.db.patch(args.toolId, {
@@ -206,6 +241,7 @@ export const remove = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireToolAccess(ctx, args.toolId);
+    await rejectIfToolOnActiveLoan(ctx, args.toolId);
     await ctx.db.delete(args.toolId);
     return null;
   },

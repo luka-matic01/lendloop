@@ -7,6 +7,7 @@ import { api } from "convex/_generated/api";
 
 import { LOANS_COPY } from "../constants/copy";
 import { useLoanActions } from "../hooks/useLoanActions";
+import { sortLoansForList } from "../utils/sortLoans";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanRow } from "./LoanRow";
 import { LoanSection } from "./LoanSection";
@@ -28,7 +29,8 @@ export function AllLoansSection({ isReady, isAdmin }: AllLoansSectionProps) {
   }
 
   const isLoading = !isReady || loans === undefined;
-  const itemCount = loans?.length ?? 0;
+  const sortedLoans = sortLoansForList(loans ?? []);
+  const itemCount = sortedLoans.length;
 
   return (
     <LoanSection
@@ -42,7 +44,7 @@ export function AllLoansSection({ isReady, isAdmin }: AllLoansSectionProps) {
       skeletonRowCount={3}
     >
       <LoanListPanel>
-        {(loans ?? []).map((loan) => (
+        {sortedLoans.map((loan) => (
           <li key={loan._id}>
             <LoanRow
               loan={loan}

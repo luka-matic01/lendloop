@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useCallback, useMemo, useState } from "react";
 
 import { useToast } from "@/components/ui";
+import { convexErrorMessage } from "@/lib/convex-error-message";
 import { useEnsureCurrentUser } from "@/features/account";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
@@ -79,10 +80,17 @@ export function useToolsPage() {
     setListModalOpen(true);
   }, []);
 
-  const openEditModal = useCallback((tool: MyTool) => {
-    setListModalOpen(false);
-    setEditingTool(tool);
-  }, []);
+  const openEditModal = useCallback(
+    (tool: MyTool) => {
+      if (tool.hasActiveLoan) {
+        toast(TOOLS_COPY.listingLockedActiveLoan, "error");
+        return;
+      }
+      setListModalOpen(false);
+      setEditingTool(tool);
+    },
+    [toast],
+  );
 
   const closeToolFormModal = useCallback(() => {
     setListModalOpen(false);
@@ -90,19 +98,30 @@ export function useToolsPage() {
   }, []);
 
   const requestRemoveListing = useCallback(
-    (tool: { _id: Id<"tools">; name: string }) => {
+    (tool: { _id: Id<"tools">; name: string; hasActiveLoan?: boolean }) => {
+      if (tool.hasActiveLoan) {
+        toast(TOOLS_COPY.listingLockedActiveLoan, "error");
+        return;
+      }
       setListingConfirm({
         type: "remove",
         toolId: tool._id,
         name: tool.name,
       });
     },
-    [],
+    [toast],
   );
 
-  const requestToggleListingAvailability = useCallback((tool: MyTool) => {
-    setListingConfirm({ type: "availability", tool });
-  }, []);
+  const requestToggleListingAvailability = useCallback(
+    (tool: MyTool) => {
+      if (!tool.isAvailable && tool.hasActiveLoan) {
+        toast(TOOLS_COPY.putOnBoardBlockedActiveLoan, "error");
+        return;
+      }
+      setListingConfirm({ type: "availability", tool });
+    },
+    [toast],
+  );
 
   const cancelListingConfirm = useCallback(() => {
     if (confirmSubmitting) {
@@ -138,10 +157,7 @@ export function useToolsPage() {
         listingConfirm.type === "remove"
           ? "Could not remove tool"
           : "Could not update availability";
-      toast(
-        error instanceof Error ? error.message : fallback,
-        "error",
-      );
+      toast(convexErrorMessage(error, fallback), "error");
     } finally {
       setConfirmSubmitting(false);
     }

@@ -13,12 +13,23 @@ import { MyListingRow } from "./MyListingRow";
 import { MyListingsSkeletonList } from "./ToolSkeletons";
 
 /** Live listings first; relative order unchanged within each group. */
+function listingSortRank(tool: MyTool) {
+  if (tool.isAvailable) {
+    return 0;
+  }
+  if (tool.hasActiveLoan) {
+    return 1;
+  }
+  return 2;
+}
+
 function sortListings(tools: MyTool[]) {
   return [...tools].sort((a, b) => {
-    if (a.isAvailable === b.isAvailable) {
-      return 0;
+    const rankDiff = listingSortRank(a) - listingSortRank(b);
+    if (rankDiff !== 0) {
+      return rankDiff;
     }
-    return a.isAvailable ? -1 : 1;
+    return 0;
   });
 }
 
@@ -40,7 +51,10 @@ export function MyListingsSection({
   const sortedTools = useMemo(() => sortListings(tools), [tools]);
 
   const liveCount = tools.filter((tool) => tool.isAvailable).length;
-  const pausedCount = tools.length - liveCount;
+  const onLoanCount = tools.filter((tool) => tool.hasActiveLoan).length;
+  const pausedCount = tools.filter(
+    (tool) => !tool.isAvailable && !tool.hasActiveLoan,
+  ).length;
 
   return (
     <section
@@ -59,7 +73,7 @@ export function MyListingsSection({
           <Skeleton className="h-4 w-48 max-w-full" />
         ) : tools.length > 0 ? (
           <p className="text-sm text-ink-muted">
-            {TOOLS_COPY.listingsSummary(liveCount, pausedCount)}
+            {TOOLS_COPY.listingsSummary(liveCount, pausedCount, onLoanCount)}
           </p>
         ) : null}
       </div>
@@ -79,6 +93,7 @@ export function MyListingsSection({
                 className={cn(
                   !tool.isAvailable &&
                     "bg-canvas/70 -mx-3 px-3 sm:-mx-4 sm:px-4",
+                  tool.hasActiveLoan && "bg-warning-soft/40",
                 )}
               >
                 <MyListingRow

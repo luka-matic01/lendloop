@@ -7,6 +7,8 @@ import { api } from "convex/_generated/api";
 
 import { LOANS_COPY } from "../constants/copy";
 import { useLoanActions } from "../hooks/useLoanActions";
+import { formatMyRequestPartyLine } from "../utils/formatLoan";
+import { sortLoansForList } from "../utils/sortLoans";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanRow } from "./LoanRow";
 import { LoanSection } from "./LoanSection";
@@ -23,7 +25,8 @@ export function MyRequestsSection({ isReady }: MyRequestsSectionProps) {
   const { pendingId, markReturned } = useLoanActions();
 
   const isLoading = !isReady || loans === undefined;
-  const itemCount = loans?.length ?? 0;
+  const sortedLoans = sortLoansForList(loans ?? []);
+  const itemCount = sortedLoans.length;
 
   return (
     <LoanSection
@@ -36,13 +39,11 @@ export function MyRequestsSection({ isReady }: MyRequestsSectionProps) {
       skeletonActionCount={1}
     >
       <LoanListPanel>
-        {(loans ?? []).map((loan) => (
+        {sortedLoans.map((loan) => (
           <li key={loan._id}>
             <LoanRow
               loan={loan}
-              partyLine={`From ${loan.lenderName}${
-                loan.lenderIsTrusted ? " · Trusted" : ""
-              }`}
+              partyLine={formatMyRequestPartyLine(loan)}
               actions={
                 loan.status === "approved" ? (
                   <Button

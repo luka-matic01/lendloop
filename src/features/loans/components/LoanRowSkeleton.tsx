@@ -13,8 +13,8 @@ export function LoanRowSkeleton({ actionCount = 0 }: LoanRowSkeletonProps) {
     <div
       className={
         actionCount > 0
-          ? "flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-4"
-          : "flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:gap-4 sm:py-4"
+          ? "flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-3.5"
+          : "flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:gap-4 sm:py-3.5"
       }
       aria-hidden
     >

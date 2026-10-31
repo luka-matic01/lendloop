@@ -13,24 +13,56 @@ export const TOOLS_COPY = {
   emptyNeighborsBoard:
     "Nothing from neighbors yet. You can still list your gear below.",
   emptyNeighborsCategory: "No neighbors in this category.",
-  listingsSummary(liveCount: number, pausedCount: number) {
-    if (liveCount === 0) {
-      return pausedCount === 1 ? "1 paused" : `${pausedCount} paused`;
+  listingsSummary(
+    liveCount: number,
+    pausedCount: number,
+    onLoanCount = 0,
+  ) {
+    const live =
+      liveCount === 1 ? "1 live" : liveCount === 0 ? "" : `${liveCount} live`;
+    const paused =
+      pausedCount === 1 ? "1 paused" : pausedCount === 0 ? "" : `${pausedCount} paused`;
+    const onLoan =
+      onLoanCount === 1
+        ? "1 out on loan"
+        : onLoanCount === 0
+          ? ""
+          : `${onLoanCount} out on loan`;
+
+    const parts = [live, paused, onLoan].filter(Boolean);
+    if (parts.length === 0) {
+      return "";
     }
-    if (pausedCount === 0) {
+    if (liveCount > 0 && pausedCount === 0 && onLoanCount === 0) {
       return liveCount === 1 ? "1 live on the board" : `${liveCount} live on the board`;
     }
-    const live =
-      liveCount === 1 ? "1 live" : `${liveCount} live`;
-    const paused =
-      pausedCount === 1 ? "1 paused" : `${pausedCount} paused`;
-    return `${live} · ${paused}`;
+    if (liveCount === 0 && pausedCount > 0 && onLoanCount === 0) {
+      return pausedCount === 1 ? "1 paused" : `${pausedCount} paused`;
+    }
+    return parts.join(" · ");
   },
+  listingOutOnLoan: "Out on loan",
+  listingRequestsLink(count: number) {
+    return count === 1 ? "1 request" : `${count} requests`;
+  },
+  listingRequestsLinkAria(count: number, toolName: string) {
+    const noun = count === 1 ? "request" : "requests";
+    return `Review ${count} loan ${noun} for ${toolName} on Loans`;
+  },
+  listingLockedActiveLoan:
+    "This listing is locked while the tool is out on an approved loan. Mark it returned on Loans first.",
+  putOnBoardBlockedActiveLoan:
+    "Cannot put on board while this tool is out on an approved loan. Mark it returned on Loans first.",
   pauseListing: "Pause",
   putOnBoard: "Put on board",
   borrowTool: "Borrow",
+  pendingBorrowRequest: "Pending request",
+  activeBorrowOnLoan: "On loan",
   removeListing: "Remove",
   editListing: "Edit",
+  editListingTitle(toolName: string) {
+    return `Edit ${toolName}`;
+  },
   listingActionsLabel: "Listing actions",
   listingsHeading: "Your listings",
   listTool: "List a tool",
@@ -44,43 +76,43 @@ export const TOOLS_COPY = {
   saveListing: "Save changes",
   savingListing: "Saving…",
   toastListingCreated(toolName: string) {
-    return `“${toolName}” is on the board`;
+    return `${toolName} is on the board`;
   },
   toastListingUpdated(toolName: string) {
-    return `“${toolName}” saved`;
+    return `${toolName} saved`;
   },
   toastListingRemoved(toolName: string) {
-    return `“${toolName}” removed`;
+    return `${toolName} removed`;
   },
   toastListingPaused(toolName: string) {
-    return `“${toolName}” paused`;
+    return `${toolName} paused`;
   },
   toastListingOnBoard(toolName: string) {
-    return `“${toolName}” is on the board`;
+    return `${toolName} is on the board`;
   },
   confirmPauseTitle(toolName: string) {
-    return `Pause “${toolName}”?`;
+    return `Pause ${toolName}?`;
   },
   confirmPauseDescription:
     "Neighbors won't see it on the board until you put it back.",
   confirmPutOnBoardTitle(toolName: string) {
-    return `Put “${toolName}” on the board?`;
+    return `Put ${toolName} on the board?`;
   },
   confirmPutOnBoardDescription:
     "Neighbors will see the name, category, and condition on the board.",
   confirmPauseAction(toolName: string) {
-    return `Pause “${toolName}”`;
+    return `Pause ${toolName}`;
   },
   confirmPutOnBoardAction(toolName: string) {
-    return `Put “${toolName}” on board`;
+    return `Put ${toolName} on board`;
   },
   confirmRemoveTitle(toolName: string) {
-    return `Remove “${toolName}”?`;
+    return `Remove ${toolName}?`;
   },
   confirmRemoveDescription:
     "This permanently deletes the listing. You can add the tool again later if you want.",
   confirmRemoveAction(toolName: string) {
-    return `Remove “${toolName}”`;
+    return `Remove ${toolName}`;
   },
   cancel: "Cancel",
   seeFullBoard: "See the full board",

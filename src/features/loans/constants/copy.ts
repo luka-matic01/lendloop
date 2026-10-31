@@ -36,16 +36,16 @@ export const LOANS_COPY = {
   startDateLabel: "Start date",
   endDateLabel: "Return date",
   toastRequestSent(toolName: string) {
-    return `Request sent for “${toolName}”`;
+    return `Request sent for ${toolName}`;
   },
   toastApproved(toolName: string) {
-    return `Approved loan for “${toolName}”`;
+    return `Approved loan for ${toolName}`;
   },
   toastDeclined(toolName: string) {
-    return `Declined request for “${toolName}”`;
+    return `Declined request for ${toolName}`;
   },
   toastReturned(toolName: string) {
-    return `“${toolName}” marked returned`;
+    return `${toolName} marked returned`;
   },
   toastTrustedUpdated(name: string, trusted: boolean) {
     return trusted ? `${name} marked as trusted lender` : `${name} is no longer trusted`;

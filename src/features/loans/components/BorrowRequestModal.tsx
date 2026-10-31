@@ -12,6 +12,7 @@ import {
   Panel,
   useToast,
 } from "@/components/ui";
+import { convexErrorMessage } from "@/lib/convex-error-message";
 import { MODAL_DIALOG_CLASS, syncModalDialogOpen } from "@/lib/modal-dialog";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
@@ -75,9 +76,7 @@ export function BorrowRequestModal({
       toast(LOANS_COPY.toastRequestSent(toolName));
       onClose();
     } catch (error) {
-      setFormError(
-        error instanceof Error ? error.message : "Could not send request",
-      );
+      setFormError(convexErrorMessage(error, "Could not send request"));
     } finally {
       setSubmitting(false);
     }

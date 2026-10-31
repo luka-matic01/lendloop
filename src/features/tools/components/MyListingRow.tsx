@@ -1,6 +1,8 @@
 import { Pencil, Pause, Radio, Trash2 } from "lucide-react";
+import Link from "next/link";
 
 import { IconButton } from "@/components/ui";
+import { ROUTES } from "@/constants";
 import { cn } from "@/lib/utils";
 
 import { TOOLS_COPY } from "../constants/copy";
@@ -28,7 +30,15 @@ export function MyListingRow({
   className,
 }: MyListingRowProps) {
   const isLive = tool.isAvailable;
-  const listingState = isLive ? "on_board" : "paused";
+  const isOnLoan = tool.hasActiveLoan;
+  const listingState = isLive
+    ? "on_board"
+    : isOnLoan
+      ? "on_loan"
+      : "paused";
+  const canToggleAvailability = isLive || !isOnLoan;
+  const listingLocked = isOnLoan;
+  const lockedTooltip = TOOLS_COPY.listingLockedActiveLoan;
 
   return (
     <div
@@ -58,6 +68,18 @@ export function MyListingRow({
             {TOOL_CONDITION_LABELS[tool.condition]}
           </p>
           <ToolListingStateBadge state={listingState} />
+          {tool.pendingRequestCount > 0 ? (
+            <Link
+              href={ROUTES.loans}
+              className="text-xs font-semibold text-positive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
+              aria-label={TOOLS_COPY.listingRequestsLinkAria(
+                tool.pendingRequestCount,
+                tool.name,
+              )}
+            >
+              {TOOLS_COPY.listingRequestsLink(tool.pendingRequestCount)}
+            </Link>
+          ) : null}
         </div>
       </div>
 
@@ -70,8 +92,10 @@ export function MyListingRow({
             type="button"
             variant="ghost"
             aria-label={TOOLS_COPY.editListing}
+            tooltip={listingLocked ? lockedTooltip : undefined}
+            disabled={listingLocked}
             onClick={onEdit}
-            className="hover:bg-canvas"
+            className="hover:bg-canvas disabled:pointer-events-none disabled:opacity-40"
           >
             <Pencil className={TOOLS_ICON_CLASS} aria-hidden />
           </IconButton>
@@ -83,8 +107,14 @@ export function MyListingRow({
                 ? TOOLS_COPY.pauseListing
                 : TOOLS_COPY.putOnBoard
             }
+            tooltip={
+              !canToggleAvailability
+                ? TOOLS_COPY.putOnBoardBlockedActiveLoan
+                : undefined
+            }
+            disabled={!canToggleAvailability}
             onClick={onToggleAvailability}
-            className="hover:bg-canvas"
+            className="hover:bg-canvas disabled:pointer-events-none disabled:opacity-40"
           >
             {isLive ? (
               <Pause className={TOOLS_ICON_CLASS} aria-hidden />
@@ -96,8 +126,10 @@ export function MyListingRow({
             type="button"
             variant="ghost"
             aria-label={TOOLS_COPY.removeListing}
+            tooltip={listingLocked ? lockedTooltip : undefined}
+            disabled={listingLocked}
             onClick={onRemove}
-            className="text-ink-muted hover:bg-canvas hover:text-negative"
+            className="text-ink-muted hover:bg-canvas hover:text-negative disabled:pointer-events-none disabled:opacity-40"
           >
             <Trash2 className={TOOLS_ICON_CLASS} aria-hidden />
           </IconButton>

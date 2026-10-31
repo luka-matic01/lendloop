@@ -6,6 +6,7 @@ import {
   loanRequestStatusValidator,
   toolCategoryValidator,
 } from "./validators";
+import { userDisplayName } from "./userDisplayName";
 
 const latestAutomationValidator = v.optional(
   v.object({
@@ -81,9 +82,9 @@ export async function hydrateLoanRequests(
       toolName: tool?.name ?? "Removed tool",
       toolCategory: tool?.category ?? "other",
       borrowerId: req.borrowerId,
-      borrowerName: borrower?.name ?? "Neighbor",
+      borrowerName: userDisplayName(borrower),
       lenderId: req.lenderId,
-      lenderName: lender?.name ?? "Neighbor",
+      lenderName: userDisplayName(lender),
       lenderIsTrusted: lender?.isTrustedLender ?? false,
       startDate: req.startDate,
       endDate: req.endDate,

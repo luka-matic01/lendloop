@@ -15,7 +15,15 @@ type ToolCardProps = {
 
 export function ToolCard({ tool, onRemove, onBorrow }: ToolCardProps) {
   const showRemove = onRemove !== undefined && tool.canRemove && !tool.isOwner;
-  const showBorrow = onBorrow !== undefined && !tool.isOwner;
+  const borrowBlocked = tool.viewerBorrowStatus !== undefined;
+  const showBorrow =
+    onBorrow !== undefined && !tool.isOwner && !borrowBlocked;
+  const borrowStatusLabel =
+    tool.viewerBorrowStatus === "approved"
+      ? TOOLS_COPY.activeBorrowOnLoan
+      : tool.viewerBorrowStatus === "pending"
+        ? TOOLS_COPY.pendingBorrowRequest
+        : null;
   const description = toolCardDescription(tool.name, tool.description);
 
   return (
@@ -49,6 +57,16 @@ export function ToolCard({ tool, onRemove, onBorrow }: ToolCardProps) {
                   onClick={onBorrow}
                 >
                   {TOOLS_COPY.borrowTool}
+                </Button>
+              ) : borrowStatusLabel ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled
+                  aria-label={`${borrowStatusLabel} for ${tool.name}`}
+                >
+                  {borrowStatusLabel}
                 </Button>
               ) : null}
               {showRemove ? (

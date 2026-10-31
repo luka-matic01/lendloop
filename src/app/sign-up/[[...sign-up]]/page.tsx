@@ -3,7 +3,6 @@ import { Suspense } from "react";
 
 import { AppShell, Container } from "@/components/ui";
 import { Masthead } from "@/components/ui/Masthead";
-
 export default function SignUpPage() {
   return (
     <AppShell>

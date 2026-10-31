@@ -171,6 +171,7 @@ describe("loanRequests", () => {
 
     const lenderTools = await lender.query(api.tools.listMine, {});
     expect(lenderTools[0]?.isAvailable).toBe(false);
+    expect(lenderTools[0]?.hasActiveLoan).toBe(true);
 
     // Cannot manually re-enable availability while an approved loan is active
     await expect(
@@ -178,6 +179,24 @@ describe("loanRequests", () => {
         toolId,
         isAvailable: true,
       }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
+    );
+
+    await expect(
+      lender.mutation(api.tools.update, {
+        toolId,
+        name: "Renamed",
+        category: "garden",
+        condition: "good",
+        description: "",
+      }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
+    );
+
+    await expect(
+      lender.mutation(api.tools.remove, { toolId }),
     ).rejects.toSatisfy(
       (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
     );

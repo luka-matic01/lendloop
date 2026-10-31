@@ -13,6 +13,7 @@ import {
   Select,
   useToast,
 } from "@/components/ui";
+import { convexErrorMessage } from "@/lib/convex-error-message";
 import { MODAL_DIALOG_CLASS, syncModalDialogOpen } from "@/lib/modal-dialog";
 import { api } from "convex/_generated/api";
 
@@ -138,11 +139,10 @@ export function ToolFormModal({ open, onClose, tool = null }: ToolFormModalProps
       onClose();
     } catch (error) {
       setFormError(
-        error instanceof Error
-          ? error.message
-          : isEditing
-            ? "Could not save listing"
-            : "Could not add tool",
+        convexErrorMessage(
+          error,
+          isEditing ? "Could not save listing" : "Could not add tool",
+        ),
       );
     } finally {
       setSubmitting(false);
@@ -172,13 +172,8 @@ export function ToolFormModal({ open, onClose, tool = null }: ToolFormModalProps
             className="min-w-0 font-display leading-none tracking-tight text-ink"
           >
             {isEditing ? (
-              <span className="flex min-w-0 flex-col gap-1.5">
-                <span className="text-base font-semibold text-ink-muted">
-                  {TOOLS_COPY.editListing}
-                </span>
-                <span className="truncate text-3xl font-extrabold">
-                  {tool.name}
-                </span>
+              <span className="truncate text-3xl font-extrabold">
+                {TOOLS_COPY.editListingTitle(tool.name)}
               </span>
             ) : (
               <span className="text-3xl font-extrabold">

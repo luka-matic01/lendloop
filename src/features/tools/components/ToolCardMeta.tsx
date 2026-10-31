@@ -1,4 +1,4 @@
-import { Pause, Radio } from "lucide-react";
+import { Handshake, Pause, Radio } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -14,10 +14,11 @@ import {
   type ToolCategoryKey,
   type ToolConditionKey,
 } from "../constants/labels";
+import { TOOLS_COPY } from "../constants/copy";
 import { TOOLS_ICON_CLASS } from "../constants/visual";
 import { ToolCategoryIcon } from "./ToolCategoryIcon";
 
-export type ToolListingState = "on_board" | "paused";
+export type ToolListingState = "on_board" | "paused" | "on_loan";
 
 type ToolCardCategoryBadgeProps = {
   category: ToolCategoryKey;
@@ -86,6 +87,24 @@ export function ToolListingStateBadge({
           <span className="sr-only">On board</span>
         ) : (
           "On board"
+        )}
+      </span>
+    );
+  }
+
+  if (state === "on_loan") {
+    return (
+      <span
+        className={cn(
+          "inline-flex shrink-0 items-center leading-none text-warning",
+          !iconOnly && "gap-1 text-xs font-semibold",
+        )}
+      >
+        <Handshake className={cn(TOOLS_ICON_CLASS, "size-3.5")} aria-hidden />
+        {iconOnly ? (
+          <span className="sr-only">{TOOLS_COPY.listingOutOnLoan}</span>
+        ) : (
+          TOOLS_COPY.listingOutOnLoan
         )}
       </span>
     );
