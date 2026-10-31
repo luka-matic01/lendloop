@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
-import { assertOwner, requireUser } from "./lib/auth";
+import { requireToolAccess, requireUser } from "./lib/auth";
+import { AuthErrorCode, authError } from "./lib/errors";
 import {
   toolCategoryValidator,
   toolConditionValidator,
@@ -15,15 +16,17 @@ function normalizeToolFields(args: { name: string; description: string }) {
   const description = args.description.trim();
 
   if (!name) {
-    throw new Error("Tool name is required");
+    authError(AuthErrorCode.VALIDATION_ERROR, "Tool name is required");
   }
   if (name.length > TOOL_NAME_MAX_LENGTH) {
-    throw new Error(
+    authError(
+      AuthErrorCode.VALIDATION_ERROR,
       `Tool name must be at most ${TOOL_NAME_MAX_LENGTH} characters`,
     );
   }
   if (description.length > TOOL_DESCRIPTION_MAX_LENGTH) {
-    throw new Error(
+    authError(
+      AuthErrorCode.VALIDATION_ERROR,
       `Notes must be at most ${TOOL_DESCRIPTION_MAX_LENGTH} characters`,
     );
   }
@@ -34,6 +37,13 @@ function normalizeToolFields(args: { name: string; description: string }) {
 /** Homepage teaser — name and category only, newest six available listings. */
 export const listPublic = query({
   args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("tools"),
+      name: v.string(),
+      category: toolCategoryValidator,
+    }),
+  ),
   handler: async (ctx) => {
     const rows = await ctx.db
       .query("tools")
@@ -41,16 +51,22 @@ export const listPublic = query({
       .order("desc")
       .take(6);
 
-    return rows.map((tool) => ({
-      _id: tool._id,
-      name: tool.name,
-      category: tool.category,
-    }));
+    return rows.map(({ _id, name, category }) => ({ _id, name, category }));
   },
 });
 
 export const listMine = query({
   args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("tools"),
+      name: v.string(),
+      category: toolCategoryValidator,
+      condition: toolConditionValidator,
+      description: v.string(),
+      isAvailable: v.boolean(),
+    }),
+  ),
   handler: async (ctx) => {
     const user = await requireUser(ctx);
 
@@ -60,14 +76,16 @@ export const listMine = query({
       .order("desc")
       .take(100);
 
-    return tools.map((tool) => ({
-      _id: tool._id,
-      name: tool.name,
-      category: tool.category,
-      condition: tool.condition,
-      description: tool.description,
-      isAvailable: tool.isAvailable,
-    }));
+    return tools.map(
+      ({ _id, name, category, condition, description, isAvailable }) => ({
+        _id,
+        name,
+        category,
+        condition,
+        description,
+        isAvailable,
+      }),
+    );
   },
 });
 
@@ -75,40 +93,46 @@ export const listBoard = query({
   args: {
     category: v.optional(toolCategoryValidator),
   },
+  returns: v.array(
+    v.object({
+      _id: v.id("tools"),
+      name: v.string(),
+      category: toolCategoryValidator,
+      condition: toolConditionValidator,
+      description: v.string(),
+      isAvailable: v.boolean(),
+      ownerId: v.id("users"),
+      ownerName: v.string(),
+      ownerIsTrustedLender: v.boolean(),
+      isOwner: v.boolean(),
+      canRemove: v.boolean(),
+    }),
+  ),
   handler: async (ctx, args) => {
-    const viewer = await requireUser(ctx);
+    const [viewer, rows] = await Promise.all([
+      requireUser(ctx),
+      ctx.db
+        .query("tools")
+        .withIndex("by_available_category", (q) =>
+          args.category
+            ? q.eq("isAvailable", true).eq("category", args.category)
+            : q.eq("isAvailable", true),
+        )
+        .order("desc")
+        .take(100),
+    ]);
 
-    const rows = await ctx.db
-      .query("tools")
-      .withIndex("by_available_category", (q) =>
-        args.category
-          ? q.eq("isAvailable", true).eq("category", args.category)
-          : q.eq("isAvailable", true),
-      )
-      .order("desc")
-      .take(100);
-
-    const ownersById = new Map<
-      string,
-      { name: string; isTrustedLender: boolean }
-    >();
-
-    for (const tool of rows) {
-      const key = String(tool.ownerId);
-      if (!ownersById.has(key)) {
-        const owner = await ctx.db.get(tool.ownerId);
-        ownersById.set(key, {
-          name: owner?.name ?? "Neighbor",
-          isTrustedLender: owner?.isTrustedLender ?? false,
-        });
-      }
-    }
+    const uniqueOwnerIds = [...new Set(rows.map((t) => t.ownerId))];
+    const owners = await Promise.all(
+      uniqueOwnerIds.map((id) => ctx.db.get(id)),
+    );
+    const ownersById = new Map(
+      uniqueOwnerIds.map((id, i) => [id, owners[i]]),
+    );
 
     return rows.map((tool) => {
-      const owner = ownersById.get(String(tool.ownerId)) ?? {
-        name: "Neighbor",
-        isTrustedLender: false,
-      };
+      const owner = ownersById.get(tool.ownerId);
+      const isOwner = tool.ownerId === viewer._id;
 
       return {
         _id: tool._id,
@@ -118,10 +142,10 @@ export const listBoard = query({
         description: tool.description,
         isAvailable: tool.isAvailable,
         ownerId: tool.ownerId,
-        ownerName: owner.name,
-        ownerIsTrustedLender: owner.isTrustedLender,
-        isOwner: tool.ownerId === viewer._id,
-        canRemove: viewer.role === "admin" || tool.ownerId === viewer._id,
+        ownerName: owner?.name ?? "Neighbor",
+        ownerIsTrustedLender: owner?.isTrustedLender ?? false,
+        isOwner,
+        canRemove: viewer.role === "admin" || isOwner,
       };
     });
   },
@@ -134,6 +158,7 @@ export const create = mutation({
     condition: toolConditionValidator,
     description: v.string(),
   },
+  returns: v.id("tools"),
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
     const { name, description } = normalizeToolFields(args);
@@ -157,18 +182,9 @@ export const update = mutation({
     condition: toolConditionValidator,
     description: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
-    const tool = await ctx.db.get(args.toolId);
-
-    if (!tool) {
-      throw new Error("Tool not found");
-    }
-
-    if (user.role !== "admin") {
-      assertOwner(user, tool.ownerId);
-    }
-
+    await requireToolAccess(ctx, args.toolId);
     const { name, description } = normalizeToolFields(args);
 
     await ctx.db.patch(args.toolId, {
@@ -177,6 +193,7 @@ export const update = mutation({
       condition: args.condition,
       description,
     });
+    return null;
   },
 });
 
@@ -184,19 +201,11 @@ export const remove = mutation({
   args: {
     toolId: v.id("tools"),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
-    const tool = await ctx.db.get(args.toolId);
-
-    if (!tool) {
-      throw new Error("Tool not found");
-    }
-
-    if (user.role !== "admin") {
-      assertOwner(user, tool.ownerId);
-    }
-
+    await requireToolAccess(ctx, args.toolId);
     await ctx.db.delete(args.toolId);
+    return null;
   },
 });
 
@@ -205,18 +214,10 @@ export const setAvailability = mutation({
     toolId: v.id("tools"),
     isAvailable: v.boolean(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
-    const user = await requireUser(ctx);
-    const tool = await ctx.db.get(args.toolId);
-
-    if (!tool) {
-      throw new Error("Tool not found");
-    }
-
-    if (user.role !== "admin") {
-      assertOwner(user, tool.ownerId);
-    }
-
+    await requireToolAccess(ctx, args.toolId);
     await ctx.db.patch(args.toolId, { isAvailable: args.isAvailable });
+    return null;
   },
 });

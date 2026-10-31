@@ -1,68 +1,58 @@
 import { v } from "convex/values";
 
-import { mutation, query } from "./_generated/server";
-import { AuthErrorCode, authError } from "./lib/errors";
+import { env, mutation, query } from "./_generated/server";
 import { requireAdmin, requireUser } from "./lib/auth";
+import { AuthErrorCode, authError } from "./lib/errors";
+import { userRoleValidator } from "./lib/validators";
 
-function normalizeEmail(email: string | undefined): string {
-  return email?.trim().toLowerCase() ?? "";
-}
-
-function isEmailVerified(identity: {
-  emailVerified?: boolean | string | null;
-}): boolean {
-  const verified = identity.emailVerified;
-  return verified === true || verified === "true";
-}
-
-function shouldPromoteToAdmin(
+function resolveRole(
   email: string,
   emailVerified: boolean,
-  existingRole: "admin" | "user" | undefined
+  existingRole?: "admin" | "user",
 ): "admin" | "user" {
-  if (existingRole === "admin") {
+  if (existingRole === "admin") return "admin";
+  const bootstrapEmail = env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase();
+  if (bootstrapEmail && emailVerified && email === bootstrapEmail) {
     return "admin";
   }
-
-  const bootstrapEmail = process.env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase();
-  if (!bootstrapEmail || !emailVerified || email !== bootstrapEmail) {
-    return existingRole ?? "user";
-  }
-
-  return "admin";
+  return existingRole ?? "user";
 }
 
 export const ensureCurrentUser = mutation({
   args: {},
+  returns: v.id("users"),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       authError(AuthErrorCode.UNAUTHENTICATED);
     }
 
-    const tokenIdentifier = identity.tokenIdentifier;
-    const email = normalizeEmail(identity.email);
+    const email = identity.email?.trim().toLowerCase() ?? "";
     const name = identity.name?.trim() || email || "Neighbor";
-    const emailVerified = isEmailVerified(identity);
+    const emailVerified = identity.emailVerified === true;
 
     const existing = await ctx.db
       .query("users")
-      .withIndex("by_token", (q) => q.eq("tokenIdentifier", tokenIdentifier))
+      .withIndex("by_token", (q) =>
+        q.eq("tokenIdentifier", identity.tokenIdentifier),
+      )
       .unique();
 
-    const role = shouldPromoteToAdmin(email, emailVerified, existing?.role);
+    const role = resolveRole(email, emailVerified, existing?.role);
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
-        email,
-        name,
-        role,
-      });
+      if (
+        existing.email !== email ||
+        existing.name !== name ||
+        existing.role !== role
+      ) {
+        await ctx.db.patch(existing._id, { email, name, role });
+      }
       return existing._id;
     }
 
     return await ctx.db.insert("users", {
-      tokenIdentifier,
+      tokenIdentifier: identity.tokenIdentifier,
       email,
       name,
       role,
@@ -73,6 +63,12 @@ export const ensureCurrentUser = mutation({
 
 export const me = query({
   args: {},
+  returns: v.object({
+    _id: v.id("users"),
+    name: v.string(),
+    role: userRoleValidator,
+    isTrustedLender: v.boolean(),
+  }),
   handler: async (ctx) => {
     const user = await requireUser(ctx);
     return {
@@ -89,14 +85,18 @@ export const setTrustedLender = mutation({
     userId: v.id("users"),
     isTrustedLender: v.boolean(),
   },
+  returns: v.null(),
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    const [, target] = await Promise.all([
+      requireAdmin(ctx),
+      ctx.db.get(args.userId),
+    ]);
 
-    const target = await ctx.db.get(args.userId);
     if (!target) {
-      throw new Error("User not found");
+      authError(AuthErrorCode.NOT_FOUND, "User not found");
     }
 
     await ctx.db.patch(args.userId, { isTrustedLender: args.isTrustedLender });
+    return null;
   },
 });

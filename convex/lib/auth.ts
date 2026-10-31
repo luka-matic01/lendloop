@@ -5,20 +5,6 @@ import { AuthErrorCode, authError } from "./errors";
 
 type AuthCtx = QueryCtx | MutationCtx;
 
-export async function getCurrentUser(
-  ctx: AuthCtx
-): Promise<Doc<"users"> | null> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    return null;
-  }
-
-  return await ctx.db
-    .query("users")
-    .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
-    .unique();
-}
-
 export async function requireUser(ctx: AuthCtx): Promise<Doc<"users">> {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -45,11 +31,28 @@ export async function requireAdmin(ctx: AuthCtx): Promise<Doc<"users">> {
   return user;
 }
 
-export function assertOwner(
-  user: Doc<"users">,
-  ownerId: Id<"users">
-): void {
+export function assertOwner(user: Doc<"users">, ownerId: Id<"users">): void {
   if (user._id !== ownerId) {
     authError(AuthErrorCode.FORBIDDEN, "Resource owner required");
   }
+}
+
+export async function requireToolAccess(
+  ctx: AuthCtx,
+  toolId: Id<"tools">,
+): Promise<{ user: Doc<"users">; tool: Doc<"tools"> }> {
+  const [user, tool] = await Promise.all([
+    requireUser(ctx),
+    ctx.db.get(toolId),
+  ]);
+
+  if (!tool) {
+    authError(AuthErrorCode.NOT_FOUND, "Tool not found");
+  }
+
+  if (user.role !== "admin") {
+    assertOwner(user, tool.ownerId);
+  }
+
+  return { user, tool };
 }

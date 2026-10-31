@@ -1,33 +1,20 @@
 /// <reference types="vite/client" />
 
-import { convexTest } from "convex-test";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
-import schema from "./schema";
-
-const modules = import.meta.glob(["./**/*.ts", "!./**/*.test.ts"]);
-
-async function provisionUser(
-  t: ReturnType<typeof convexTest>,
-  email: string
-) {
-  const session = t.withIdentity({ email, emailVerified: true, name: email });
-  const userId = await session.mutation(api.users.ensureCurrentUser, {});
-  return { session, userId };
-}
+import {
+  ADMIN_EMAIL,
+  createConvexTest,
+  provisionUser,
+  useAdminBootstrapEnv,
+} from "./testHelpers";
 
 describe("tools", () => {
-  beforeEach(() => {
-    vi.stubEnv("INITIAL_ADMIN_EMAIL", "admin@lendloop.test");
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
+  useAdminBootstrapEnv();
 
   it("listPublic returns only name and category for available tools", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTest();
     const { session, userId } = await provisionUser(t, "lender@test.com");
 
     await session.mutation(api.tools.create, {
@@ -61,7 +48,7 @@ describe("tools", () => {
   });
 
   it("listPublic returns at most six newest available tools", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTest();
     const { session } = await provisionUser(t, "lender@test.com");
 
     for (let i = 0; i < 7; i += 1) {
@@ -86,7 +73,7 @@ describe("tools", () => {
   });
 
   it("create and listMine require authentication", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTest();
 
     await expect(t.query(api.tools.listMine, {})).rejects.toThrow();
     await expect(
@@ -95,21 +82,18 @@ describe("tools", () => {
         category: "other",
         condition: "excellent",
         description: "",
-      })
+      }),
     ).rejects.toThrow();
   });
 
   it("remove allows owner and admin only", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTest();
     const { session: ownerSession } = await provisionUser(t, "owner@test.com");
     const { session: strangerSession } = await provisionUser(
       t,
-      "stranger@test.com"
+      "stranger@test.com",
     );
-    const { session: adminSession } = await provisionUser(
-      t,
-      "admin@lendloop.test"
-    );
+    const { session: adminSession } = await provisionUser(t, ADMIN_EMAIL);
 
     const toolId = await ownerSession.mutation(api.tools.create, {
       name: "Ladder",
@@ -119,7 +103,7 @@ describe("tools", () => {
     });
 
     await expect(
-      strangerSession.mutation(api.tools.remove, { toolId })
+      strangerSession.mutation(api.tools.remove, { toolId }),
     ).rejects.toThrow();
 
     await adminSession.mutation(api.tools.remove, { toolId });
@@ -129,7 +113,7 @@ describe("tools", () => {
   });
 
   it("update allows owner to change listing details", async () => {
-    const t = convexTest(schema, modules);
+    const t = createConvexTest();
     const { session: ownerSession } = await provisionUser(t, "owner@test.com");
     const { session: strangerSession } = await provisionUser(
       t,
@@ -173,11 +157,14 @@ describe("tools", () => {
   });
 
   it("listBoard returns neighborhood details and setAvailability toggles board visibility", async () => {
-    const t = convexTest(schema, modules);
-    const { session: lenderSession } = await provisionUser(t, "lender@test.com");
+    const t = createConvexTest();
+    const { session: lenderSession } = await provisionUser(
+      t,
+      "lender@test.com",
+    );
     const { session: neighborSession } = await provisionUser(
       t,
-      "neighbor@test.com"
+      "neighbor@test.com",
     );
 
     const toolId = await lenderSession.mutation(api.tools.create, {
@@ -189,7 +176,7 @@ describe("tools", () => {
 
     const boardForNeighbor = await neighborSession.query(
       api.tools.listBoard,
-      {}
+      {},
     );
     expect(boardForNeighbor).toHaveLength(1);
     expect(boardForNeighbor[0]).toMatchObject({
@@ -209,7 +196,7 @@ describe("tools", () => {
 
     const boardAfterPause = await neighborSession.query(
       api.tools.listBoard,
-      {}
+      {},
     );
     expect(boardAfterPause).toHaveLength(0);
   });
