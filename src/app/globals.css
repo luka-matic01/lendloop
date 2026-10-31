@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+/*
+ * LendLoop design tokens — single source of truth.
+ * A tool-crib board: pine structure, cadmium marks, cool mineral ground.
+ * Components use semantic utilities (bg-canvas, text-ink, bg-board, …).
+ */
+:root {
+  --ll-canvas: #e3e8e2;
+  --ll-ink: #121814;
+  --ll-ink-muted: #3a4941;
+  --ll-ink-faint: #5e6e65;
+  --ll-surface: #f7f8f5;
+  --ll-line: #b7c2ba;
+  --ll-line-strong: #121814;
+
+  --ll-board: #143d32;
+  --ll-on-board: #f4f7f2;
+  --ll-on-board-muted: #b7c9be;
+
+  --ll-accent: #f5c400;
+  --ll-accent-hover: #ffd84d;
+  --ll-accent-soft: #f4e7a3;
+
+  --ll-negative: #9d1c1c;
+  --ll-negative-soft: #f6e4df;
+  --ll-positive: #146b3a;
+  --ll-positive-soft: #d9eee2;
+
+  --ll-radius-control: 2px;
+  --ll-radius-panel: 2px;
+
+  --ll-space-page-x: 1.5rem;
+  --ll-space-section-y: 4.5rem;
+  --ll-space-panel: 1.5rem;
+  --ll-width-content: 100rem; /* 1440px centered page column */
+  --ll-leading-display: 0.86;
+}
+
+@theme inline {
+  --color-canvas: var(--ll-canvas);
+  --color-ink: var(--ll-ink);
+  --color-ink-muted: var(--ll-ink-muted);
+  --color-ink-faint: var(--ll-ink-faint);
+  --color-surface: var(--ll-surface);
+  --color-line: var(--ll-line);
+  --color-line-strong: var(--ll-line-strong);
+  --color-board: var(--ll-board);
+  --color-on-board: var(--ll-on-board);
+  --color-on-board-muted: var(--ll-on-board-muted);
+  --color-accent: var(--ll-accent);
+  --color-accent-hover: var(--ll-accent-hover);
+  --color-accent-soft: var(--ll-accent-soft);
+  --color-negative: var(--ll-negative);
+  --color-negative-soft: var(--ll-negative-soft);
+  --color-positive: var(--ll-positive);
+  --color-positive-soft: var(--ll-positive-soft);
+
+  --radius-control: var(--ll-radius-control);
+  --radius-panel: var(--ll-radius-panel);
+
+  --spacing-page-x: var(--ll-space-page-x);
+  --spacing-section-y: var(--ll-space-section-y);
+  --spacing-panel: var(--ll-space-panel);
+
+  --width-content: var(--ll-width-content);
+  --max-width-content: var(--ll-width-content);
+  --leading-display: var(--ll-leading-display);
+
+  --font-display: var(--font-darker-grotesque), "Arial Narrow", ui-sans-serif,
+    sans-serif;
+  --font-sans: var(--font-public-sans), system-ui, sans-serif;
+}
+
+html,
+body {
+  width: 100%;
+}
+
+body {
+  background: var(--ll-canvas);
+  color: var(--ll-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--ll-accent);
+  color: var(--ll-ink);
+}
