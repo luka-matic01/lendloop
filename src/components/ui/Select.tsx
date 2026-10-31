@@ -18,18 +18,22 @@ export type SelectOption<T extends string = string> = {
 };
 
 type SelectProps<T extends string> = {
-  value: T;
   options: SelectOption<T>[];
-  onChange: (value: T) => void;
+  value?: T;
+  defaultValue?: T;
+  onChange?: (value: T) => void;
+  name?: string;
   id?: string;
   className?: string;
   "aria-labelledby"?: string;
 };
 
 export function Select<T extends string>({
-  value,
+  value: valueProp,
+  defaultValue,
   options,
   onChange,
+  name,
   id: idProp,
   className,
   "aria-labelledby": ariaLabelledBy,
@@ -37,6 +41,11 @@ export function Select<T extends string>({
   const generatedId = useId();
   const id = idProp ?? generatedId;
   const listboxId = `${id}-listbox`;
+  const isControlled = valueProp !== undefined;
+  const [uncontrolledValue, setUncontrolledValue] = useState<T>(
+    () => valueProp ?? defaultValue ?? options[0].value,
+  );
+  const value = isControlled ? valueProp : uncontrolledValue;
 
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -51,17 +60,27 @@ export function Select<T extends string>({
 
   const close = useCallback(() => setOpen(false), []);
 
+  const commit = useCallback(
+    (next: T) => {
+      if (!isControlled) {
+        setUncontrolledValue(next);
+      }
+      onChange?.(next);
+    },
+    [isControlled, onChange],
+  );
+
   const selectIndex = useCallback(
     (index: number) => {
       const option = options[index];
       if (!option) {
         return;
       }
-      onChange(option.value);
+      commit(option.value);
       setHighlightIndex(index);
       close();
     },
-    [close, onChange, options],
+    [close, commit, options],
   );
 
   useEffect(() => {
@@ -139,6 +158,7 @@ export function Select<T extends string>({
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
+      {name ? <input type="hidden" name={name} value={value} /> : null}
       <button
         id={id}
         type="button"

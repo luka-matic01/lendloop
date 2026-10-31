@@ -15,7 +15,7 @@ type AvailableToolsSectionProps = {
   myLiveOnBoardCount: number;
   categoryFilter: ToolCategoryKey | "all";
   onCategoryChange: (value: ToolCategoryKey | "all") => void;
-  onRemoveTool: (toolId: BoardTool["_id"]) => void;
+  onRemoveTool: (tool: BoardTool) => void;
   isLoading?: boolean;
 };
 
@@ -93,7 +93,7 @@ export function AvailableToolsSection({
             <li key={tool._id} className="min-h-0">
               <BoardToolCard
                 tool={tool}
-                onRemove={() => onRemoveTool(tool._id)}
+                onRemove={() => onRemoveTool(tool)}
               />
             </li>
           ))}

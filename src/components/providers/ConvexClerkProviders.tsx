@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/nextjs";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ReactNode, useCallback } from "react";
 
+import { ToastProvider } from "@/components/ui";
 import { getConvexReactClient } from "@/lib/convex-client";
 
 function useClerkAuthWithFallback() {
@@ -38,7 +39,7 @@ export function ConvexClerkProviders({ children }: { children: ReactNode }) {
       client={getConvexReactClient()}
       useAuth={useClerkAuthWithFallback}
     >
-      {children}
+      <ToastProvider>{children}</ToastProvider>
     </ConvexProviderWithClerk>
   );
 }

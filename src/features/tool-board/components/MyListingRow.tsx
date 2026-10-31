@@ -1,14 +1,20 @@
-import { Button } from "@/components/ui";
+import { Pencil, Pause, Radio, Trash2 } from "lucide-react";
+
+import { IconButton } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 import { TOOL_BOARD_COPY } from "../constants/copy";
 import { TOOL_CATEGORY_LABELS, TOOL_CONDITION_LABELS } from "../constants/labels";
-import { TOOL_LISTING_ROW_TITLE_CLASS } from "../constants/visual";
+import {
+  TOOL_BOARD_ICON_CLASS,
+  TOOL_LISTING_ROW_TITLE_CLASS,
+} from "../constants/visual";
 import type { MyTool } from "../types/tools";
 import { ToolListingStateBadge } from "./ToolCardMeta";
 
 type MyListingRowProps = {
   tool: MyTool;
+  onEdit: () => void;
   onToggleAvailability: () => void;
   onRemove: () => void;
   className?: string;
@@ -16,6 +22,7 @@ type MyListingRowProps = {
 
 export function MyListingRow({
   tool,
+  onEdit,
   onToggleAvailability,
   onRemove,
   className,
@@ -26,11 +33,16 @@ export function MyListingRow({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-3.5",
+        "flex items-start gap-3 py-3 sm:items-center sm:gap-4 sm:py-3.5",
         className,
       )}
     >
-      <div className="min-w-0 flex-1">
+      <div
+        className={cn(
+          "min-w-0 flex-1 transition-opacity",
+          !isLive && "opacity-45",
+        )}
+      >
         <p
           className={cn(
             TOOL_LISTING_ROW_TITLE_CLASS,
@@ -45,30 +57,50 @@ export function MyListingRow({
             <span aria-hidden> · </span>
             {TOOL_CONDITION_LABELS[tool.condition]}
           </p>
-          <ToolListingStateBadge state={listingState} iconOnly />
+          <ToolListingStateBadge state={listingState} />
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={onToggleAvailability}
-        >
-          {isLive
-            ? TOOL_BOARD_COPY.pauseListing
-            : TOOL_BOARD_COPY.putOnBoard}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          className="text-ink-muted hover:text-negative"
-        >
-          {TOOL_BOARD_COPY.removeListing}
-        </Button>
+      <div
+        role="group"
+        aria-label={TOOL_BOARD_COPY.listingActionsLabel}
+        className="flex shrink-0 items-center gap-1"
+      >
+          <IconButton
+            type="button"
+            variant="ghost"
+            aria-label={TOOL_BOARD_COPY.editListing}
+            onClick={onEdit}
+            className="hover:bg-canvas"
+          >
+            <Pencil className={TOOL_BOARD_ICON_CLASS} aria-hidden />
+          </IconButton>
+          <IconButton
+            type="button"
+            variant="ghost"
+            aria-label={
+              isLive
+                ? TOOL_BOARD_COPY.pauseListing
+                : TOOL_BOARD_COPY.putOnBoard
+            }
+            onClick={onToggleAvailability}
+            className="hover:bg-canvas"
+          >
+            {isLive ? (
+              <Pause className={TOOL_BOARD_ICON_CLASS} aria-hidden />
+            ) : (
+              <Radio className={TOOL_BOARD_ICON_CLASS} aria-hidden />
+            )}
+          </IconButton>
+          <IconButton
+            type="button"
+            variant="ghost"
+            aria-label={TOOL_BOARD_COPY.removeListing}
+            onClick={onRemove}
+            className="text-ink-muted hover:bg-canvas hover:text-negative"
+          >
+            <Trash2 className={TOOL_BOARD_ICON_CLASS} aria-hidden />
+          </IconButton>
       </div>
     </div>
   );

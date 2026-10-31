@@ -1,5 +1,5 @@
 /** Max listings on the marketing homepage board teaser */
-export const HOME_BOARD_PREVIEW_LIMIT = 5;
+export const HOME_BOARD_PREVIEW_LIMIT = 6;
 
 export const TOOL_BOARD_COPY = {
   homeBoardTitle: "On the board",
@@ -22,6 +22,8 @@ export const TOOL_BOARD_COPY = {
   pauseListing: "Pause",
   putOnBoard: "Put on board",
   removeListing: "Remove",
+  editListing: "Edit",
+  listingActionsLabel: "Listing actions",
   listingsHeading: "Your listings",
   listTool: "List a tool",
   loadErrorTitle: "Could not open tool board",
@@ -31,4 +33,46 @@ export const TOOL_BOARD_COPY = {
   addToBoard: "Add to board",
   adding: "Adding…",
   modalTitle: "List a tool",
+  saveListing: "Save changes",
+  savingListing: "Saving…",
+  toastListingCreated(toolName: string) {
+    return `“${toolName}” is on the board`;
+  },
+  toastListingUpdated(toolName: string) {
+    return `“${toolName}” saved`;
+  },
+  toastListingRemoved(toolName: string) {
+    return `“${toolName}” removed`;
+  },
+  toastListingPaused(toolName: string) {
+    return `“${toolName}” paused`;
+  },
+  toastListingOnBoard(toolName: string) {
+    return `“${toolName}” is on the board`;
+  },
+  confirmPauseTitle(toolName: string) {
+    return `Pause “${toolName}”?`;
+  },
+  confirmPauseDescription:
+    "Neighbors won't see it on the board until you put it back.",
+  confirmPutOnBoardTitle(toolName: string) {
+    return `Put “${toolName}” on the board?`;
+  },
+  confirmPutOnBoardDescription:
+    "Neighbors will see the name, category, and condition on the board.",
+  confirmPauseAction(toolName: string) {
+    return `Pause “${toolName}”`;
+  },
+  confirmPutOnBoardAction(toolName: string) {
+    return `Put “${toolName}” on board`;
+  },
+  confirmRemoveTitle(toolName: string) {
+    return `Remove “${toolName}”?`;
+  },
+  confirmRemoveDescription:
+    "This permanently deletes the listing. You can add the tool again later if you want.",
+  confirmRemoveAction(toolName: string) {
+    return `Remove “${toolName}”`;
+  },
+  cancel: "Cancel",
 } as const;

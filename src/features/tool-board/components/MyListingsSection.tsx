@@ -4,7 +4,10 @@ import { Panel, Skeleton } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 import { TOOL_BOARD_COPY } from "../constants/copy";
-import { MY_LISTINGS_PANEL_CLASS } from "../constants/visual";
+import {
+  MY_LISTINGS_PANEL_CLASS,
+  TOOL_CARD_OWN_LISTING_PANEL,
+} from "../constants/visual";
 import type { MyTool } from "../types/tools";
 import { MyListingRow } from "./MyListingRow";
 import { MyListingsSkeletonList } from "./ToolBoardSkeletons";
@@ -21,13 +24,15 @@ function sortListings(tools: MyTool[]) {
 
 type MyListingsSectionProps = {
   tools: MyTool[];
+  onEdit: (tool: MyTool) => void;
   onToggleAvailability: (tool: MyTool) => void;
-  onRemove: (toolId: MyTool["_id"]) => void;
+  onRemove: (tool: MyTool) => void;
   isLoading?: boolean;
 };
 
 export function MyListingsSection({
   tools,
+  onEdit,
   onToggleAvailability,
   onRemove,
   isLoading = false,
@@ -57,7 +62,7 @@ export function MyListingsSection({
       {isLoading ? (
         <MyListingsSkeletonList label="Loading your listings" />
       ) : tools.length === 0 ? (
-        <Panel tone="default" className="border-board bg-board-soft">
+        <Panel tone="default" className={TOOL_CARD_OWN_LISTING_PANEL}>
           <p className="text-sm text-ink-muted">{TOOL_BOARD_COPY.emptyListings}</p>
         </Panel>
       ) : (
@@ -68,13 +73,14 @@ export function MyListingsSection({
                 key={tool._id}
                 className={cn(
                   !tool.isAvailable &&
-                    "bg-canvas/50 -mx-3 px-3 sm:-mx-4 sm:px-4",
+                    "bg-canvas/70 -mx-3 px-3 sm:-mx-4 sm:px-4",
                 )}
               >
                 <MyListingRow
                   tool={tool}
+                  onEdit={() => onEdit(tool)}
                   onToggleAvailability={() => onToggleAvailability(tool)}
-                  onRemove={() => onRemove(tool._id)}
+                  onRemove={() => onRemove(tool)}
                 />
               </li>
             ))}

@@ -18,16 +18,20 @@ export type ToolListingState = "on_board" | "paused";
 type ToolCardCategoryBadgeProps = {
   category: ToolCategoryKey;
   iconWellClassName?: string;
+  /** List rows — icon well only; label stays for screen readers */
+  iconOnly?: boolean;
   className?: string;
 };
 
 export function ToolCardCategoryBadge({
   category,
   iconWellClassName,
+  iconOnly = false,
   className,
 }: ToolCardCategoryBadgeProps) {
   const iconWell =
     iconWellClassName ?? TOOL_CATEGORY_ACCENT[category].iconWell;
+  const label = TOOL_CATEGORY_LABELS[category];
 
   return (
     <div
@@ -44,9 +48,13 @@ export function ToolCardCategoryBadge({
       >
         <ToolCategoryIcon category={category} />
       </span>
-      <span className="text-xs font-semibold leading-none text-ink-muted">
-        {TOOL_CATEGORY_LABELS[category]}
-      </span>
+      {iconOnly ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <span className="text-xs font-semibold leading-none text-ink-muted">
+          {label}
+        </span>
+      )}
     </div>
   );
 }
@@ -94,12 +102,15 @@ export function ToolListingStateBadge({
 
 type ToolCardConditionMarkProps = {
   condition: ToolConditionKey;
+  /** List rows — icon well only; label stays for screen readers */
+  iconOnly?: boolean;
   className?: string;
 };
 
 /** Pairs with category badge — icon well + label, anchored on the meta row. */
 export function ToolCardConditionMark({
   condition,
+  iconOnly = false,
   className,
 }: ToolCardConditionMarkProps) {
   const { Icon } = TOOL_CONDITION_VISUAL[condition];
@@ -120,9 +131,13 @@ export function ToolCardConditionMark({
       >
         <Icon className="size-3.5 shrink-0" aria-hidden />
       </span>
-      <span className="text-xs font-semibold leading-none text-ink">
-        {label}
-      </span>
+      {iconOnly ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <span className="text-xs font-semibold leading-none text-ink">
+          {label}
+        </span>
+      )}
     </div>
   );
 }

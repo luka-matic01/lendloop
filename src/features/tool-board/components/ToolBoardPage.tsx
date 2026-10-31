@@ -1,14 +1,39 @@
 "use client";
 
-import { Container, Panel } from "@/components/ui";
+import { ConfirmModal, Container, Panel } from "@/components/ui";
 
 import { TOOL_BOARD_COPY } from "../constants/copy";
 import { TOOL_BOARD_PAGE_CLASS } from "../constants/visual";
-import { useToolBoard } from "../hooks/useToolBoard";
+import { type ListingConfirm, useToolBoard } from "../hooks/useToolBoard";
 import { AvailableToolsSection } from "./AvailableToolsSection";
 import { ListToolModal } from "./ListToolModal";
 import { MyListingsSection } from "./MyListingsSection";
 import { ToolBoardHeader } from "./ToolBoardHeader";
+
+function listingConfirmModalCopy(listingConfirm: ListingConfirm) {
+  if (listingConfirm.type === "remove") {
+    const { name } = listingConfirm;
+    return {
+      title: TOOL_BOARD_COPY.confirmRemoveTitle(name),
+      description: TOOL_BOARD_COPY.confirmRemoveDescription,
+      confirmLabel: TOOL_BOARD_COPY.confirmRemoveAction(name),
+    };
+  }
+
+  const { name } = listingConfirm.tool;
+  const pausing = listingConfirm.tool.isAvailable;
+  return {
+    title: pausing
+      ? TOOL_BOARD_COPY.confirmPauseTitle(name)
+      : TOOL_BOARD_COPY.confirmPutOnBoardTitle(name),
+    description: pausing
+      ? TOOL_BOARD_COPY.confirmPauseDescription
+      : TOOL_BOARD_COPY.confirmPutOnBoardDescription,
+    confirmLabel: pausing
+      ? TOOL_BOARD_COPY.confirmPauseAction(name)
+      : TOOL_BOARD_COPY.confirmPutOnBoardAction(name),
+  };
+}
 
 export function ToolBoardPage() {
   const {
@@ -17,18 +42,27 @@ export function ToolBoardPage() {
     isLoading,
     categoryFilter,
     setCategoryFilter,
-    listModalOpen,
+    editingTool,
+    toolFormModalOpen,
     openListModal,
-    closeListModal,
+    openEditModal,
+    closeToolFormModal,
     boardTools,
     myTools,
     neighborBoardTools,
     neighborTotalOnBoard,
     myLiveOnBoardCount,
-    actionError,
-    removeBoardTool,
-    toggleListingAvailability,
+    listingConfirm,
+    confirmSubmitting,
+    requestRemoveListing,
+    requestToggleListingAvailability,
+    cancelListingConfirm,
+    confirmListingAction,
   } = useToolBoard();
+
+  const confirmCopy = listingConfirm
+    ? listingConfirmModalCopy(listingConfirm)
+    : null;
 
   if (phase === "error") {
     return (
@@ -47,13 +81,22 @@ export function ToolBoardPage() {
     <Container className={TOOL_BOARD_PAGE_CLASS}>
       <ToolBoardHeader onListTool={openListModal} listDisabled={isLoading} />
 
-      <ListToolModal open={listModalOpen} onClose={closeListModal} />
+      <ListToolModal
+        open={toolFormModalOpen}
+        tool={editingTool}
+        onClose={closeToolFormModal}
+      />
 
-      {actionError ? (
-        <Panel tone="notice" role="alert">
-          <p className="text-sm text-negative">{actionError}</p>
-        </Panel>
-      ) : null}
+      <ConfirmModal
+        open={listingConfirm !== null}
+        title={confirmCopy?.title ?? ""}
+        description={confirmCopy?.description ?? ""}
+        confirmLabel={confirmCopy?.confirmLabel ?? ""}
+        cancelLabel={TOOL_BOARD_COPY.cancel}
+        confirming={confirmSubmitting}
+        onConfirm={confirmListingAction}
+        onCancel={cancelListingConfirm}
+      />
 
       <AvailableToolsSection
         isLoading={isLoading}
@@ -63,14 +106,15 @@ export function ToolBoardPage() {
         myLiveOnBoardCount={myLiveOnBoardCount}
         categoryFilter={categoryFilter}
         onCategoryChange={setCategoryFilter}
-        onRemoveTool={removeBoardTool}
+        onRemoveTool={requestRemoveListing}
       />
 
       <MyListingsSection
         isLoading={isLoading}
         tools={myTools}
-        onToggleAvailability={toggleListingAvailability}
-        onRemove={removeBoardTool}
+        onEdit={openEditModal}
+        onToggleAvailability={requestToggleListingAvailability}
+        onRemove={requestRemoveListing}
       />
     </Container>
   );

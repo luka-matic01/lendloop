@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "board-secondary";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "board-secondary";
 type ButtonSize = "sm" | "md";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -35,7 +35,7 @@ export function buttonClassName({
   className?: string;
 } = {}) {
   return cn(
-    "inline-flex items-center justify-center gap-2 rounded-control font-semibold transition-colors",
+    "inline-flex cursor-pointer items-center justify-center gap-2 rounded-control font-semibold transition-colors",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-ink",
     "disabled:pointer-events-none disabled:opacity-50",
     variantClasses[variant],

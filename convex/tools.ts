@@ -10,7 +10,28 @@ import {
 const TOOL_NAME_MAX_LENGTH = 80;
 const TOOL_DESCRIPTION_MAX_LENGTH = 280;
 
-/** Homepage teaser — name and category only, newest five available listings. */
+function normalizeToolFields(args: { name: string; description: string }) {
+  const name = args.name.trim();
+  const description = args.description.trim();
+
+  if (!name) {
+    throw new Error("Tool name is required");
+  }
+  if (name.length > TOOL_NAME_MAX_LENGTH) {
+    throw new Error(
+      `Tool name must be at most ${TOOL_NAME_MAX_LENGTH} characters`,
+    );
+  }
+  if (description.length > TOOL_DESCRIPTION_MAX_LENGTH) {
+    throw new Error(
+      `Notes must be at most ${TOOL_DESCRIPTION_MAX_LENGTH} characters`,
+    );
+  }
+
+  return { name, description };
+}
+
+/** Homepage teaser — name and category only, newest six available listings. */
 export const listPublic = query({
   args: {},
   handler: async (ctx) => {
@@ -18,7 +39,7 @@ export const listPublic = query({
       .query("tools")
       .withIndex("by_available_category", (q) => q.eq("isAvailable", true))
       .order("desc")
-      .take(5);
+      .take(6);
 
     return rows.map((tool) => ({
       _id: tool._id,
@@ -115,20 +136,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    const name = args.name.trim();
-    const description = args.description.trim();
-
-    if (!name) {
-      throw new Error("Tool name is required");
-    }
-    if (name.length > TOOL_NAME_MAX_LENGTH) {
-      throw new Error(`Tool name must be at most ${TOOL_NAME_MAX_LENGTH} characters`);
-    }
-    if (description.length > TOOL_DESCRIPTION_MAX_LENGTH) {
-      throw new Error(
-        `Notes must be at most ${TOOL_DESCRIPTION_MAX_LENGTH} characters`,
-      );
-    }
+    const { name, description } = normalizeToolFields(args);
 
     return await ctx.db.insert("tools", {
       ownerId: user._id,
@@ -137,6 +145,37 @@ export const create = mutation({
       condition: args.condition,
       description,
       isAvailable: true,
+    });
+  },
+});
+
+export const update = mutation({
+  args: {
+    toolId: v.id("tools"),
+    name: v.string(),
+    category: toolCategoryValidator,
+    condition: toolConditionValidator,
+    description: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const tool = await ctx.db.get(args.toolId);
+
+    if (!tool) {
+      throw new Error("Tool not found");
+    }
+
+    if (user.role !== "admin") {
+      assertOwner(user, tool.ownerId);
+    }
+
+    const { name, description } = normalizeToolFields(args);
+
+    await ctx.db.patch(args.toolId, {
+      name,
+      category: args.category,
+      condition: args.condition,
+      description,
     });
   },
 });

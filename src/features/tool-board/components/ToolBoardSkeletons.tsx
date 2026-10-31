@@ -120,17 +120,14 @@ export function MyListingsSkeletonList({
         {Array.from({ length: count }, (_, index) => (
           <li
             key={index}
-            className="flex flex-col gap-3 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-3.5"
+            className="flex items-start gap-3 px-3 py-3 sm:items-center sm:px-4 sm:py-3.5"
             style={skeletonDelay(index)}
           >
             <div className="min-w-0 flex-1 space-y-2">
               <Skeleton className="h-5 w-2/5 sm:h-6" />
-              <Skeleton className="h-3 w-48" />
+              <Skeleton className="h-3 w-56 max-w-full" />
             </div>
-            <div className="flex gap-2">
-              <Skeleton className="h-8 w-16" />
-              <Skeleton className="h-8 w-20" />
-            </div>
+            <Skeleton className="h-8 w-[6.75rem] shrink-0" />
           </li>
         ))}
       </ul>

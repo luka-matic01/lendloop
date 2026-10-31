@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { useCallback, useMemo, useState } from "react";
 
-import { Panel } from "@/components/ui";
+import { ConfirmModal, Panel, useToast } from "@/components/ui";
 import { useEnsureCurrentUser } from "@/features/account";
 import type { PublicToolListing } from "@/lib/convex-server";
 import { api } from "convex/_generated/api";
@@ -74,12 +74,17 @@ function HomePublicToolList({
 }
 
 function HomeSignedInBoard() {
+  const toast = useToast();
   const { phase } = useEnsureCurrentUser();
   const isReady = phase === "ready";
 
   const boardToolsQuery = useQuery(api.tools.listBoard, isReady ? {} : "skip");
   const removeTool = useMutation(api.tools.remove);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [removeConfirm, setRemoveConfirm] = useState<{
+    toolId: Id<"tools">;
+    name: string;
+  } | null>(null);
+  const [removeSubmitting, setRemoveSubmitting] = useState(false);
 
   const isLoading = !isReady || boardToolsQuery === undefined;
 
@@ -90,19 +95,24 @@ function HomeSignedInBoard() {
     return boardToolsQuery.slice(0, HOME_BOARD_PREVIEW_LIMIT);
   }, [boardToolsQuery]);
 
-  const removeBoardTool = useCallback(
-    async (toolId: Id<"tools">) => {
-      setActionError(null);
-      try {
-        await removeTool({ toolId });
-      } catch (error) {
-        setActionError(
-          error instanceof Error ? error.message : "Could not remove tool",
-        );
-      }
-    },
-    [removeTool],
-  );
+  const confirmRemove = useCallback(async () => {
+    if (!removeConfirm) {
+      return;
+    }
+    setRemoveSubmitting(true);
+    try {
+      await removeTool({ toolId: removeConfirm.toolId });
+      toast(TOOL_BOARD_COPY.toastListingRemoved(removeConfirm.name));
+      setRemoveConfirm(null);
+    } catch (error) {
+      toast(
+        error instanceof Error ? error.message : "Could not remove tool",
+        "error",
+      );
+    } finally {
+      setRemoveSubmitting(false);
+    }
+  }, [removeConfirm, removeTool, toast]);
 
   return (
     <HomeBoardSection
@@ -116,11 +126,28 @@ function HomeSignedInBoard() {
         />
       ) : (
         <div className="mt-6 sm:mt-8">
-          {actionError ? (
-            <Panel tone="notice" role="alert" className="mb-4">
-              <p className="text-sm text-negative">{actionError}</p>
-            </Panel>
-          ) : null}
+          <ConfirmModal
+            open={removeConfirm !== null}
+            title={
+              removeConfirm
+                ? TOOL_BOARD_COPY.confirmRemoveTitle(removeConfirm.name)
+                : ""
+            }
+            description={TOOL_BOARD_COPY.confirmRemoveDescription}
+            confirmLabel={
+              removeConfirm
+                ? TOOL_BOARD_COPY.confirmRemoveAction(removeConfirm.name)
+                : ""
+            }
+            cancelLabel={TOOL_BOARD_COPY.cancel}
+            confirming={removeSubmitting}
+            onConfirm={confirmRemove}
+            onCancel={() => {
+              if (!removeSubmitting) {
+                setRemoveConfirm(null);
+              }
+            }}
+          />
 
           {previewTools.length === 0 ? (
             <Panel>
@@ -134,7 +161,9 @@ function HomeSignedInBoard() {
                 <li key={tool._id} className="min-h-0">
                   <BoardToolCard
                     tool={tool}
-                    onRemove={() => removeBoardTool(tool._id)}
+                    onRemove={() =>
+                      setRemoveConfirm({ toolId: tool._id, name: tool.name })
+                    }
                   />
                 </li>
               ))}

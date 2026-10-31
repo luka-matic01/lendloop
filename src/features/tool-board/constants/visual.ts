@@ -43,4 +43,4 @@ export const TOOL_CARD_OWN_LISTING_RAIL = "border-l-4 border-l-board";
 
 /** Compact “Your listings” stack — pine wash, rows use `divide-y` on the list. */
 export const MY_LISTINGS_PANEL_CLASS =
-  "overflow-hidden !p-0 border-board bg-board-soft";
+  "!p-0 border-board bg-board-soft overflow-visible";

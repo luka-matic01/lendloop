@@ -1,7 +1,7 @@
 import { AppShell, Container, Panel } from "@/components/ui";
 import { Masthead } from "@/components/ui/Masthead";
-import { APP_TAGLINE, PUBLIC_ENV_KEYS, SECTION_Y_CLASS } from "@/constants";
-import { HomeHeroAuthActions } from "@/features/marketing";
+import { PUBLIC_ENV_KEYS, SECTION_Y_CLASS } from "@/constants";
+import { HomeHero } from "@/features/marketing";
 import {
   PublicToolBoardFallback,
   PublicToolBoardSection,
@@ -24,33 +24,14 @@ const BOARD_RULES = [
   },
 ] as const;
 
-const taglineBreak = APP_TAGLINE.indexOf(". ");
-const heroFirstLine =
-  taglineBreak === -1 ? APP_TAGLINE : APP_TAGLINE.slice(0, taglineBreak + 1);
-const heroSecondLine =
-  taglineBreak === -1 ? null : APP_TAGLINE.slice(taglineBreak + 2);
-
 export default function HomePage() {
   const { hasConvex, hasClerk, isReady } = isAppConfigured();
 
   return (
     <AppShell>
       <Masthead>
-        <Container className="pb-8 pt-2 sm:pb-16 sm:pt-6">
-          <h1 className="font-display text-4xl font-extrabold leading-display tracking-tight text-on-board sm:text-6xl lg:text-8xl">
-            <span className="block">{heroFirstLine}</span>
-            {heroSecondLine ? (
-              <span className="block">{heroSecondLine}</span>
-            ) : null}
-          </h1>
-          <div className="mt-6 flex max-w-xl flex-col items-start gap-4 sm:mt-10 sm:gap-6">
-            <p className="text-sm leading-relaxed text-on-board-muted sm:text-lg">
-              Share power tools, garden gear, kitchen appliances, and camping
-              equipment with trusted neighbors. You approve each borrow, set a
-              return date, and get a nudge if it’s overdue.
-            </p>
-            <HomeHeroAuthActions />
-          </div>
+        <Container>
+          <HomeHero />
         </Container>
       </Masthead>
 

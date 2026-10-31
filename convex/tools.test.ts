@@ -60,11 +60,11 @@ describe("tools", () => {
     expect(afterHide).toHaveLength(0);
   });
 
-  it("listPublic returns at most five newest available tools", async () => {
+  it("listPublic returns at most six newest available tools", async () => {
     const t = convexTest(schema, modules);
     const { session } = await provisionUser(t, "lender@test.com");
 
-    for (let i = 0; i < 6; i += 1) {
+    for (let i = 0; i < 7; i += 1) {
       await session.mutation(api.tools.create, {
         name: `Tool ${i}`,
         category: "other",
@@ -74,8 +74,9 @@ describe("tools", () => {
     }
 
     const publicRows = await t.query(api.tools.listPublic, {});
-    expect(publicRows).toHaveLength(5);
+    expect(publicRows).toHaveLength(6);
     expect(publicRows.map((row) => row.name)).toEqual([
+      "Tool 6",
       "Tool 5",
       "Tool 4",
       "Tool 3",
@@ -125,6 +126,50 @@ describe("tools", () => {
 
     const remaining = await t.query(api.tools.listPublic, {});
     expect(remaining).toHaveLength(0);
+  });
+
+  it("update allows owner to change listing details", async () => {
+    const t = convexTest(schema, modules);
+    const { session: ownerSession } = await provisionUser(t, "owner@test.com");
+    const { session: strangerSession } = await provisionUser(
+      t,
+      "stranger@test.com",
+    );
+
+    const toolId = await ownerSession.mutation(api.tools.create, {
+      name: "Leaf blower",
+      category: "garden",
+      condition: "good",
+      description: "Gas powered",
+    });
+
+    await ownerSession.mutation(api.tools.update, {
+      toolId,
+      name: "Electric leaf blower",
+      category: "power_tools",
+      condition: "excellent",
+      description: "Includes battery",
+    });
+
+    const mine = await ownerSession.query(api.tools.listMine, {});
+    expect(mine).toHaveLength(1);
+    expect(mine[0]).toMatchObject({
+      _id: toolId,
+      name: "Electric leaf blower",
+      category: "power_tools",
+      condition: "excellent",
+      description: "Includes battery",
+    });
+
+    await expect(
+      strangerSession.mutation(api.tools.update, {
+        toolId,
+        name: "Stolen",
+        category: "other",
+        condition: "good",
+        description: "",
+      }),
+    ).rejects.toThrow();
   });
 
   it("listBoard returns neighborhood details and setAvailability toggles board visibility", async () => {

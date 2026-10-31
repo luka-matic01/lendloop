@@ -25,6 +25,7 @@ export function ToolBoardSkeletonPage() {
       <MyListingsSection
         isLoading
         tools={[]}
+        onEdit={() => {}}
         onToggleAvailability={() => {}}
         onRemove={() => {}}
       />

@@ -2,7 +2,7 @@
 
 /*
  * LendLoop design tokens — single source of truth.
- * A tool-crib board: pine structure, cadmium marks, cool mineral ground.
+ * A tool-crib board: pine structure, golden hazard marks, cool mineral ground.
  * Components use semantic utilities (bg-canvas, text-ink, bg-board, …).
  */
 :root {
@@ -19,9 +19,9 @@
   --ll-on-board: #f4f7f2;
   --ll-on-board-muted: #b7c9be;
 
-  --ll-accent: #f5c400;
-  --ll-accent-hover: #ffd84d;
-  --ll-accent-soft: #f4e7a3;
+  --ll-accent: #f0c814;
+  --ll-accent-hover: #ffe04a;
+  --ll-accent-soft: #f5eba8;
 
   --ll-negative: #9d1c1c;
   --ll-negative-soft: #f6e4df;
