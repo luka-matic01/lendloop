@@ -3,6 +3,8 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { requireToolAccess, requireUser } from "./lib/auth";
 import { AuthErrorCode, authError } from "./lib/errors";
+import { LIST_PAGE_SIZE } from "./lib/limits";
+import { toolHasApprovedLoan } from "./lib/loans";
 import {
   toolCategoryValidator,
   toolConditionValidator,
@@ -74,7 +76,7 @@ export const listMine = query({
       .query("tools")
       .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
       .order("desc")
-      .take(100);
+      .take(LIST_PAGE_SIZE);
 
     return tools.map(
       ({ _id, name, category, condition, description, isAvailable }) => ({
@@ -119,7 +121,7 @@ export const listBoard = query({
             : q.eq("isAvailable", true),
         )
         .order("desc")
-        .take(100),
+        .take(LIST_PAGE_SIZE),
     ]);
 
     const uniqueOwnerIds = [...new Set(rows.map((t) => t.ownerId))];
@@ -217,6 +219,14 @@ export const setAvailability = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireToolAccess(ctx, args.toolId);
+
+    if (args.isAvailable && (await toolHasApprovedLoan(ctx, args.toolId))) {
+      authError(
+        AuthErrorCode.VALIDATION_ERROR,
+        "Cannot put tool on board while it has an active loan",
+      );
+    }
+
     await ctx.db.patch(args.toolId, { isAvailable: args.isAvailable });
     return null;
   },
