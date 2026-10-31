@@ -1,18 +1,24 @@
 import { AuthConfig } from "convex/server";
 
+const issuerDomain = process.env.CLERK_JWT_ISSUER_DOMAIN!;
+
 /**
  * Convex Auth Configuration for Clerk JWT Validation.
  *
- * Requires `CLERK_JWT_ISSUER_DOMAIN` to be configured in the Convex deployment:
- *   npx convex env set CLERK_JWT_ISSUER_DOMAIN https://your-domain.clerk.accounts.dev
- *
- * And a Clerk JWT Template named `"convex"` in the Clerk Dashboard.
+ * Accepts both the Clerk `"convex"` JWT template and Clerk's default session
+ * JWT so local sign-in works even before a custom JWT template is created.
  */
 export default {
   providers: [
     {
-      domain: process.env.CLERK_JWT_ISSUER_DOMAIN!,
+      domain: issuerDomain,
       applicationID: "convex",
+    },
+    {
+      type: "customJwt",
+      issuer: issuerDomain,
+      jwks: `${issuerDomain.replace(/\/$/, "")}/.well-known/jwks.json`,
+      algorithm: "RS256",
     },
   ],
 } satisfies AuthConfig;

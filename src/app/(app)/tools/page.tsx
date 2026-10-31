@@ -1,15 +1,11 @@
-import {
-  AppPageShell,
-  AuthenticatedAppSection,
-} from "@/features/account";
+import { auth } from "@clerk/nextjs/server";
+
 import { ToolBoardPage } from "@/features/tool-board";
 
-export default function ToolsPage() {
-  return (
-    <AppPageShell>
-      <AuthenticatedAppSection>
-        <ToolBoardPage />
-      </AuthenticatedAppSection>
-    </AppPageShell>
-  );
+export const instant = false;
+
+export default async function ToolsPage() {
+  await auth.protect();
+
+  return <ToolBoardPage />;
 }

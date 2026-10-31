@@ -1,13 +1,46 @@
+import { auth } from "@clerk/nextjs/server";
+
+import { ConvexClerkProviders } from "@/components/providers/ConvexClerkProviders";
 import { fetchPublicToolListings } from "@/lib/convex-server";
 
-import { PublicToolBoard } from "./PublicToolBoard";
+import { TOOL_BOARD_COPY } from "../constants/copy";
+import { HomeBoardSection } from "./HomeBoardSection";
+import { HomeToolBoard } from "./HomeToolBoard";
+import { ToolCardSkeletonGrid } from "./ToolBoardSkeletons";
+
+export function PublicToolBoardFallback() {
+  return (
+    <HomeBoardSection
+      busy
+      description={TOOL_BOARD_COPY.homeBoardPublicDescription}
+    >
+      <ToolCardSkeletonGrid
+        className="mt-6 sm:mt-8"
+        variant="public"
+        label="Loading tools on the board"
+      />
+    </HomeBoardSection>
+  );
+}
 
 export async function PublicToolBoardSection() {
-  const tools = await fetchPublicToolListings();
+  const { isAuthenticated } = await auth();
 
-  if (tools === null) {
-    return <PublicToolBoard tools={[]} loadFailed />;
+  if (isAuthenticated) {
+    return (
+      <ConvexClerkProviders>
+        <HomeToolBoard isAuthenticated />
+      </ConvexClerkProviders>
+    );
   }
 
-  return <PublicToolBoard tools={tools} />;
+  const tools = await fetchPublicToolListings();
+
+  return (
+    <HomeToolBoard
+      isAuthenticated={false}
+      publicTools={tools ?? []}
+      loadFailed={tools === null}
+    />
+  );
 }

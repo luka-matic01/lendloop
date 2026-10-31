@@ -60,6 +60,30 @@ describe("tools", () => {
     expect(afterHide).toHaveLength(0);
   });
 
+  it("listPublic returns at most five newest available tools", async () => {
+    const t = convexTest(schema, modules);
+    const { session } = await provisionUser(t, "lender@test.com");
+
+    for (let i = 0; i < 6; i += 1) {
+      await session.mutation(api.tools.create, {
+        name: `Tool ${i}`,
+        category: "other",
+        condition: "good",
+        description: "",
+      });
+    }
+
+    const publicRows = await t.query(api.tools.listPublic, {});
+    expect(publicRows).toHaveLength(5);
+    expect(publicRows.map((row) => row.name)).toEqual([
+      "Tool 5",
+      "Tool 4",
+      "Tool 3",
+      "Tool 2",
+      "Tool 1",
+    ]);
+  });
+
   it("create and listMine require authentication", async () => {
     const t = convexTest(schema, modules);
 
@@ -101,5 +125,47 @@ describe("tools", () => {
 
     const remaining = await t.query(api.tools.listPublic, {});
     expect(remaining).toHaveLength(0);
+  });
+
+  it("listBoard returns neighborhood details and setAvailability toggles board visibility", async () => {
+    const t = convexTest(schema, modules);
+    const { session: lenderSession } = await provisionUser(t, "lender@test.com");
+    const { session: neighborSession } = await provisionUser(
+      t,
+      "neighbor@test.com"
+    );
+
+    const toolId = await lenderSession.mutation(api.tools.create, {
+      name: "Pressure washer",
+      category: "garden",
+      condition: "excellent",
+      description: "Includes hose and nozzle set",
+    });
+
+    const boardForNeighbor = await neighborSession.query(
+      api.tools.listBoard,
+      {}
+    );
+    expect(boardForNeighbor).toHaveLength(1);
+    expect(boardForNeighbor[0]).toMatchObject({
+      _id: toolId,
+      name: "Pressure washer",
+      category: "garden",
+      condition: "excellent",
+      description: "Includes hose and nozzle set",
+      isOwner: false,
+      canRemove: false,
+    });
+
+    await lenderSession.mutation(api.tools.setAvailability, {
+      toolId,
+      isAvailable: false,
+    });
+
+    const boardAfterPause = await neighborSession.query(
+      api.tools.listBoard,
+      {}
+    );
+    expect(boardAfterPause).toHaveLength(0);
   });
 });

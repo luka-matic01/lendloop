@@ -7,19 +7,18 @@ import {
   toolConditionValidator,
 } from "./lib/validators";
 
+const TOOL_NAME_MAX_LENGTH = 80;
+const TOOL_DESCRIPTION_MAX_LENGTH = 280;
+
+/** Homepage teaser — name and category only, newest five available listings. */
 export const listPublic = query({
-  args: {
-    category: v.optional(toolCategoryValidator),
-  },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
     const rows = await ctx.db
       .query("tools")
-      .withIndex("by_available_category", (q) =>
-        args.category
-          ? q.eq("isAvailable", true).eq("category", args.category)
-          : q.eq("isAvailable", true),
-      )
-      .collect();
+      .withIndex("by_available_category", (q) => q.eq("isAvailable", true))
+      .order("desc")
+      .take(5);
 
     return rows.map((tool) => ({
       _id: tool._id,
@@ -37,7 +36,8 @@ export const listMine = query({
     const tools = await ctx.db
       .query("tools")
       .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
-      .collect();
+      .order("desc")
+      .take(100);
 
     return tools.map((tool) => ({
       _id: tool._id,
@@ -47,6 +47,62 @@ export const listMine = query({
       description: tool.description,
       isAvailable: tool.isAvailable,
     }));
+  },
+});
+
+export const listBoard = query({
+  args: {
+    category: v.optional(toolCategoryValidator),
+  },
+  handler: async (ctx, args) => {
+    const viewer = await requireUser(ctx);
+
+    const rows = await ctx.db
+      .query("tools")
+      .withIndex("by_available_category", (q) =>
+        args.category
+          ? q.eq("isAvailable", true).eq("category", args.category)
+          : q.eq("isAvailable", true),
+      )
+      .order("desc")
+      .take(100);
+
+    const ownersById = new Map<
+      string,
+      { name: string; isTrustedLender: boolean }
+    >();
+
+    for (const tool of rows) {
+      const key = String(tool.ownerId);
+      if (!ownersById.has(key)) {
+        const owner = await ctx.db.get(tool.ownerId);
+        ownersById.set(key, {
+          name: owner?.name ?? "Neighbor",
+          isTrustedLender: owner?.isTrustedLender ?? false,
+        });
+      }
+    }
+
+    return rows.map((tool) => {
+      const owner = ownersById.get(String(tool.ownerId)) ?? {
+        name: "Neighbor",
+        isTrustedLender: false,
+      };
+
+      return {
+        _id: tool._id,
+        name: tool.name,
+        category: tool.category,
+        condition: tool.condition,
+        description: tool.description,
+        isAvailable: tool.isAvailable,
+        ownerId: tool.ownerId,
+        ownerName: owner.name,
+        ownerIsTrustedLender: owner.isTrustedLender,
+        isOwner: tool.ownerId === viewer._id,
+        canRemove: viewer.role === "admin" || tool.ownerId === viewer._id,
+      };
+    });
   },
 });
 
@@ -64,6 +120,14 @@ export const create = mutation({
 
     if (!name) {
       throw new Error("Tool name is required");
+    }
+    if (name.length > TOOL_NAME_MAX_LENGTH) {
+      throw new Error(`Tool name must be at most ${TOOL_NAME_MAX_LENGTH} characters`);
+    }
+    if (description.length > TOOL_DESCRIPTION_MAX_LENGTH) {
+      throw new Error(
+        `Notes must be at most ${TOOL_DESCRIPTION_MAX_LENGTH} characters`,
+      );
     }
 
     return await ctx.db.insert("tools", {
@@ -94,5 +158,26 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(args.toolId);
+  },
+});
+
+export const setAvailability = mutation({
+  args: {
+    toolId: v.id("tools"),
+    isAvailable: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const tool = await ctx.db.get(args.toolId);
+
+    if (!tool) {
+      throw new Error("Tool not found");
+    }
+
+    if (user.role !== "admin") {
+      assertOwner(user, tool.ownerId);
+    }
+
+    await ctx.db.patch(args.toolId, { isAvailable: args.isAvailable });
   },
 });

@@ -15,6 +15,7 @@
   --ll-line-strong: #121814;
 
   --ll-board: #143d32;
+  --ll-board-soft: #e6efe9;
   --ll-on-board: #f4f7f2;
   --ll-on-board-muted: #b7c9be;
 
@@ -24,8 +25,25 @@
 
   --ll-negative: #9d1c1c;
   --ll-negative-soft: #f6e4df;
+  --ll-warning: #c45a08;
+  --ll-warning-soft: #f8ead8;
   --ll-positive: #146b3a;
   --ll-positive-soft: #d9eee2;
+
+  /* Placeholder fill for loading skeletons on surface panels */
+  --ll-skeleton: #d0d8d3;
+
+  /* Tool category accents — card stripe + icon well (mineral crib palette) */
+  --ll-cat-power: #9a7a00;
+  --ll-cat-power-soft: #f2ebc8;
+  --ll-cat-garden: #146b3a;
+  --ll-cat-garden-soft: #d9eee2;
+  --ll-cat-kitchen: #6b5344;
+  --ll-cat-kitchen-soft: #efe8e2;
+  --ll-cat-camping: #1f5c4a;
+  --ll-cat-camping-soft: #d6e8e2;
+  --ll-cat-other: #4a5a52;
+  --ll-cat-other-soft: #e4e8e6;
 
   --ll-radius-control: 2px;
   --ll-radius-panel: 2px;
@@ -46,6 +64,7 @@
   --color-line: var(--ll-line);
   --color-line-strong: var(--ll-line-strong);
   --color-board: var(--ll-board);
+  --color-board-soft: var(--ll-board-soft);
   --color-on-board: var(--ll-on-board);
   --color-on-board-muted: var(--ll-on-board-muted);
   --color-accent: var(--ll-accent);
@@ -53,8 +72,21 @@
   --color-accent-soft: var(--ll-accent-soft);
   --color-negative: var(--ll-negative);
   --color-negative-soft: var(--ll-negative-soft);
+  --color-warning: var(--ll-warning);
+  --color-warning-soft: var(--ll-warning-soft);
   --color-positive: var(--ll-positive);
   --color-positive-soft: var(--ll-positive-soft);
+  --color-skeleton: var(--ll-skeleton);
+  --color-cat-power: var(--ll-cat-power);
+  --color-cat-power-soft: var(--ll-cat-power-soft);
+  --color-cat-garden: var(--ll-cat-garden);
+  --color-cat-garden-soft: var(--ll-cat-garden-soft);
+  --color-cat-kitchen: var(--ll-cat-kitchen);
+  --color-cat-kitchen-soft: var(--ll-cat-kitchen-soft);
+  --color-cat-camping: var(--ll-cat-camping);
+  --color-cat-camping-soft: var(--ll-cat-camping-soft);
+  --color-cat-other: var(--ll-cat-other);
+  --color-cat-other-soft: var(--ll-cat-other-soft);
 
   --radius-control: var(--ll-radius-control);
   --radius-panel: var(--ll-radius-panel);
@@ -87,4 +119,28 @@ body {
 ::selection {
   background: var(--ll-accent);
   color: var(--ll-ink);
+}
+
+@keyframes ll-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.ll-skeleton {
+  animation-name: ll-skeleton-pulse;
+  animation-duration: 1.6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-delay: var(--skeleton-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ll-skeleton {
+    animation: none;
+  }
 }

@@ -1,7 +1,6 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Darker_Grotesque, Public_Sans } from "next/font/google";
-import { AppProviders } from "@/components/providers/AppProviders";
 import { APP_NAME, APP_TAGLINE, ROUTES } from "@/constants";
 import "./globals.css";
 
@@ -38,7 +37,7 @@ export default function RootLayout({
       <body className="flex min-h-full w-full flex-col">
         <ClerkProvider afterSignOutUrl={ROUTES.home}>
           <div className="flex w-full flex-1 flex-col">
-            <AppProviders>{children}</AppProviders>
+            {children}
           </div>
         </ClerkProvider>
       </body>
