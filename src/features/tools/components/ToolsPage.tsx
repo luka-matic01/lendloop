@@ -6,6 +6,7 @@ import { ConfirmModal, Container, Panel } from "@/components/ui";
 import {
   BorrowRequestModal,
   MarkReturnedConfirmModal,
+  TrustedLenderConfirmModal,
   useLoanActions,
 } from "@/features/loans";
 
@@ -20,10 +21,12 @@ import { ToolsPageHeader } from "./ToolsPageHeader";
 
 function listingConfirmModalCopy(listingConfirm: ListingConfirm) {
   if (listingConfirm.type === "remove") {
-    const { name } = listingConfirm;
+    const { name, ownerName } = listingConfirm;
     return {
       title: TOOLS_COPY.confirmRemoveTitle(name),
-      description: TOOLS_COPY.confirmRemoveDescription,
+      description: ownerName
+        ? TOOLS_COPY.confirmRemoveNeighborDescription(ownerName)
+        : TOOLS_COPY.confirmRemoveDescription,
       confirmLabel: TOOLS_COPY.confirmRemoveAction(name),
     };
   }
@@ -46,12 +49,19 @@ function listingConfirmModalCopy(listingConfirm: ListingConfirm) {
 export function ToolsPage() {
   const [borrowingTool, setBorrowingTool] = useState<BoardTool | null>(null);
   const loanActions = useLoanActions();
-  const { pendingId: markReturnedPendingId, requestMarkReturned } = loanActions;
+  const {
+    pendingId: markReturnedPendingId,
+    pendingTrustedUserId,
+    requestMarkReturned,
+    requestTrustedLenderChange,
+  } = loanActions;
 
   const {
     phase,
     errorMessage,
-    isLoading,
+    isPageBootstrapping,
+    neighborBoardLoading,
+    neighborBoardRefreshing,
     categoryFilter,
     setCategoryFilter,
     editingTool,
@@ -96,7 +106,10 @@ export function ToolsPage() {
 
   return (
     <Container className={TOOLS_PAGE_CLASS}>
-      <ToolsPageHeader onListTool={openListModal} listDisabled={isLoading} />
+      <ToolsPageHeader
+        onListTool={openListModal}
+        listDisabled={isPageBootstrapping}
+      />
 
       <ToolFormModal
         open={toolFormModalOpen}
@@ -123,7 +136,8 @@ export function ToolsPage() {
       />
 
       <NeighborToolsSection
-        isLoading={isLoading}
+        isLoading={neighborBoardLoading}
+        isRefreshing={neighborBoardRefreshing}
         tools={neighborBoardTools}
         boardIsEmpty={boardIsEmpty}
         neighborTotalOnBoard={neighborTotalOnBoard}
@@ -131,15 +145,24 @@ export function ToolsPage() {
         onCategoryChange={setCategoryFilter}
         onRemoveTool={requestRemoveListing}
         onBorrowTool={setBorrowingTool}
+        onTrustLender={(tool) =>
+          requestTrustedLenderChange(
+            tool.ownerId,
+            tool.ownerName,
+            !tool.ownerIsTrustedLender,
+          )
+        }
+        pendingTrustedUserId={pendingTrustedUserId}
         canLoadMore={boardCanLoadMore}
         loadingMore={boardLoadingMore}
         onLoadMore={loadMoreBoardPage}
       />
 
       <MarkReturnedConfirmModal loanActions={loanActions} />
+      <TrustedLenderConfirmModal loanActions={loanActions} />
 
       <MyListingsSection
-        isLoading={isLoading}
+        isLoading={isPageBootstrapping}
         tools={myTools}
         onEdit={openEditModal}
         onToggleAvailability={requestToggleListingAvailability}

@@ -8,6 +8,7 @@ import {
   resolveAccountEmail,
   userDisplayName,
 } from "./lib/userDisplayName";
+import { resolveAccountEmailVerified } from "./lib/emailVerified";
 import { userRoleValidator } from "./lib/validators";
 
 function resolveRole(
@@ -27,6 +28,8 @@ export const ensureCurrentUser = mutation({
   args: {
     /** When the Convex JWT omits email, pass Clerk's primary address from the client. */
     primaryEmail: v.optional(v.string()),
+    /** Clerk primary email verification when the JWT omits `email_verified`. */
+    primaryEmailVerified: v.optional(v.boolean()),
   },
   returns: v.id("users"),
   handler: async (ctx, args) => {
@@ -54,7 +57,12 @@ export const ensureCurrentUser = mutation({
     if (name && email && name.toLowerCase() === email) {
       name = "";
     }
-    const emailVerified = identity.emailVerified === true;
+    const emailVerified = resolveAccountEmailVerified({
+      identity,
+      resolvedEmail: email,
+      primaryEmail: args.primaryEmail,
+      primaryEmailVerified: args.primaryEmailVerified,
+    });
     const role = resolveRole(email, emailVerified, existing?.role);
 
     if (existing) {

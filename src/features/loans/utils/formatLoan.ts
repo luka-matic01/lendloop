@@ -1,8 +1,7 @@
 import {
   formatBorrowCalendarDate,
-  getBorrowDueUrgency,
 } from "@/lib/format-borrow-due";
-import { cn } from "@/lib/utils";
+import { loanListRowSurfaceClass } from "@/lib/list-row-surface";
 
 import { LOANS_COPY } from "../constants/copy";
 import type { LoanView } from "../types/loans";
@@ -32,26 +31,16 @@ export function formatLoanDateRange(startDate: string, endDate: string) {
   return `${formatBorrowCalendarDate(startDate)} → ${formatBorrowCalendarDate(endDate)}`;
 }
 
-const ROW_BLEED = "-mx-3 px-3 sm:-mx-4 sm:px-4";
-
 export function loanRowSurfaceClass(
   loan: LoanView,
   perspective: LoanPerspective,
 ): string {
-  if (isClosedLoanStatus(loan.status)) {
-    return cn(ROW_BLEED, "bg-canvas/70");
-  }
-  if (loan.status === "pending" && perspective === "incoming") {
-    return cn(ROW_BLEED, "border-l-4 border-l-accent bg-accent-soft/45");
-  }
-  if (loan.status === "approved") {
-    const urgency = getBorrowDueUrgency(loan.endDate);
-    if (urgency === "overdue") {
-      return cn(ROW_BLEED, "border-l-4 border-l-negative bg-negative-soft/50");
-    }
-    return cn(ROW_BLEED, "bg-warning-soft/40");
-  }
-  return "";
+  return loanListRowSurfaceClass({
+    status: loan.status,
+    endDate: loan.endDate,
+    perspective,
+    isClosed: isClosedLoanStatus(loan.status),
+  });
 }
 
 /** Shown under a row only when there is real automation activity. */

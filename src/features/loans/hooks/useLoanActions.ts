@@ -19,6 +19,12 @@ export type MarkReturnedConfirm = {
   perspective: LoanReturnPerspective;
 };
 
+export type TrustedLenderConfirm = {
+  userId: Id<"users">;
+  name: string;
+  grantTrust: boolean;
+};
+
 export function useLoanActions() {
   const toast = useToast();
   const approveMut = useMutation(api.loanRequests.approve);
@@ -27,8 +33,12 @@ export function useLoanActions() {
   const setTrustedMut = useMutation(api.users.setTrustedLender);
 
   const [pendingId, setPendingId] = useState<Id<"loanRequests"> | null>(null);
+  const [pendingTrustedUserId, setPendingTrustedUserId] =
+    useState<Id<"users"> | null>(null);
   const [returnConfirm, setReturnConfirm] =
     useState<MarkReturnedConfirm | null>(null);
+  const [trustedConfirm, setTrustedConfirm] =
+    useState<TrustedLenderConfirm | null>(null);
 
   const approve = useCallback(
     async (requestId: Id<"loanRequests">, toolName: string) => {
@@ -95,30 +105,49 @@ export function useLoanActions() {
     }
   }, [markReturnedMut, returnConfirm, toast]);
 
-  const setTrustedLender = useCallback(
-    async (
-      userId: Id<"users">,
-      name: string,
-      isTrustedLender: boolean,
-    ) => {
-      try {
-        await setTrustedMut({ userId, isTrustedLender });
-        toast(LOANS_COPY.toastTrustedUpdated(name, isTrustedLender));
-      } catch (error) {
-        toast(convexErrorMessage(error, "Could not update lender"), "error");
-      }
+  const requestTrustedLenderChange = useCallback(
+    (userId: Id<"users">, name: string, grantTrust: boolean) => {
+      setTrustedConfirm({ userId, name, grantTrust });
     },
-    [setTrustedMut, toast],
+    [],
   );
+
+  const cancelTrustedLenderChange = useCallback(() => {
+    if (pendingTrustedUserId !== null) {
+      return;
+    }
+    setTrustedConfirm(null);
+  }, [pendingTrustedUserId]);
+
+  const confirmTrustedLenderChange = useCallback(async () => {
+    if (!trustedConfirm) {
+      return;
+    }
+    const { userId, name, grantTrust } = trustedConfirm;
+    setPendingTrustedUserId(userId);
+    try {
+      await setTrustedMut({ userId, isTrustedLender: grantTrust });
+      toast(LOANS_COPY.toastTrustedUpdated(name, grantTrust));
+      setTrustedConfirm(null);
+    } catch (error) {
+      toast(convexErrorMessage(error, "Could not update lender"), "error");
+    } finally {
+      setPendingTrustedUserId(null);
+    }
+  }, [setTrustedMut, trustedConfirm, toast]);
 
   return {
     pendingId,
+    pendingTrustedUserId,
     returnConfirm,
+    trustedConfirm,
     approve,
     decline,
     requestMarkReturned,
     confirmMarkReturned,
     cancelMarkReturned,
-    setTrustedLender,
+    requestTrustedLenderChange,
+    confirmTrustedLenderChange,
+    cancelTrustedLenderChange,
   };
 }

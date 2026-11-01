@@ -1,7 +1,7 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
-import { useEffect, useRef, useState } from "react";
+import { useAuth, useUser } from "@clerk/nextjs";
+import { useEffect, useState } from "react";
 import { useConvexAuth, useMutation } from "convex/react";
 
 import { ACCOUNT_MESSAGES } from "../constants/messages";
@@ -21,34 +21,27 @@ export function useEnsureCurrentUser(): {
   errorMessage: string | null;
 } {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+  const { sessionId } = useAuth();
   const { user, isLoaded: userLoaded } = useUser();
   const ensureCurrentUser = useMutation(api.users.ensureCurrentUser);
   const [syncPhase, setSyncPhase] = useState<SyncPhase>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const lastSyncedEmail = useRef<string | null>(null);
 
   useEffect(() => {
     if (authLoading || !isAuthenticated || !userLoaded) {
-      if (!isAuthenticated) {
-        lastSyncedEmail.current = null;
-        setSyncPhase("idle");
-      }
       return;
     }
 
-    const primaryEmail = user?.primaryEmailAddress?.emailAddress ?? null;
-    if (lastSyncedEmail.current === primaryEmail) {
-      return;
-    }
+    const primaryEmail = user?.primaryEmailAddress?.emailAddress;
+    const primaryEmailVerified =
+      user?.primaryEmailAddress?.verification?.status === "verified";
 
-    lastSyncedEmail.current = primaryEmail;
-
-    void ensureCurrentUser(
-      primaryEmail ? { primaryEmail } : {},
-    )
+    void ensureCurrentUser({
+      ...(primaryEmail ? { primaryEmail } : {}),
+      primaryEmailVerified,
+    })
       .then(() => setSyncPhase("ready"))
       .catch((err: unknown) => {
-        lastSyncedEmail.current = null;
         setSyncPhase("error");
         setErrorMessage(
           err instanceof Error
@@ -60,7 +53,9 @@ export function useEnsureCurrentUser(): {
     authLoading,
     isAuthenticated,
     userLoaded,
+    sessionId,
     user?.primaryEmailAddress?.emailAddress,
+    user?.primaryEmailAddress?.verification?.status,
     ensureCurrentUser,
   ]);
 

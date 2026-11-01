@@ -12,7 +12,5 @@ const userButtonAppearance = {
 } as const;
 
 export function MastheadUserMenu() {
-  return (
-    <UserButton appearance={userButtonAppearance} />
-  );
+  return <UserButton appearance={userButtonAppearance} />;
 }

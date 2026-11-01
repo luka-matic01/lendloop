@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
-import { usePaginatedQuery } from "convex/react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 
-import { buttonClassName, Panel } from "@/components/ui";
+import { ConfirmModal, Panel, buttonClassName, useToast } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import { useEnsureCurrentUser } from "@/features/account";
 import { BorrowRequestModal } from "@/features/loans";
+import { convexErrorMessage } from "@/lib/convex-error-message";
 import type { PublicToolListing } from "@/lib/convex-server";
 import { api } from "convex/_generated/api";
 
@@ -32,14 +33,14 @@ export function HomeToolsPreview({
   publicTools = [],
   loadFailed = false,
 }: HomeToolsPreviewProps) {
-  if (isAuthenticated) {
-    return <HomeSignedInPreview />;
-  }
-
   const preview = useMemo(
     () => pickHomeBoardPreview(publicTools),
     [publicTools],
   );
+
+  if (isAuthenticated) {
+    return <HomeSignedInPreview />;
+  }
 
   return (
     <HomeToolsFrame description={TOOLS_COPY.homeBoardPublicDescription}>
@@ -91,9 +92,13 @@ function HomeBoardToolGrid<T extends { _id: string }>({
 }
 
 function HomeSignedInPreview() {
+  const toast = useToast();
   const [borrowingTool, setBorrowingTool] = useState<BoardTool | null>(null);
+  const [removingTool, setRemovingTool] = useState<BoardTool | null>(null);
+  const [removingSubmitting, setRemovingSubmitting] = useState(false);
   const { phase } = useEnsureCurrentUser();
   const isReady = phase === "ready";
+  const removeTool = useMutation(api.tools.remove);
 
   const { results: boardTools, status: boardStatus } = usePaginatedQuery(
     api.tools.listBoard,
@@ -108,6 +113,22 @@ function HomeSignedInPreview() {
     return pickHomeBoardPreview(neighbors);
   }, [boardTools]);
 
+  const confirmRemove = useCallback(async () => {
+    if (!removingTool) {
+      return;
+    }
+    setRemovingSubmitting(true);
+    try {
+      await removeTool({ toolId: removingTool._id });
+      toast(TOOLS_COPY.toastListingRemoved(removingTool.name));
+      setRemovingTool(null);
+    } catch (error) {
+      toast(convexErrorMessage(error, "Could not remove tool"), "error");
+    } finally {
+      setRemovingSubmitting(false);
+    }
+  }, [removeTool, removingTool, toast]);
+
   return (
     <HomeToolsFrame
       busy={isLoading}
@@ -119,6 +140,26 @@ function HomeSignedInPreview() {
         toolName={borrowingTool?.name ?? ""}
         onClose={() => setBorrowingTool(null)}
       />
+      <ConfirmModal
+        open={removingTool !== null}
+        title={removingTool ? TOOLS_COPY.confirmRemoveTitle(removingTool.name) : ""}
+        description={
+          removingTool
+            ? TOOLS_COPY.confirmRemoveNeighborDescription(removingTool.ownerName)
+            : ""
+        }
+        confirmLabel={
+          removingTool ? TOOLS_COPY.confirmRemoveAction(removingTool.name) : ""
+        }
+        cancelLabel={TOOLS_COPY.cancel}
+        confirming={removingSubmitting}
+        onConfirm={confirmRemove}
+        onCancel={() => {
+          if (!removingSubmitting) {
+            setRemovingTool(null);
+          }
+        }}
+      />
       {isLoading ? (
         <ToolCardSkeletonGrid label="Loading tools on the board" />
       ) : (
@@ -126,7 +167,11 @@ function HomeSignedInPreview() {
           <HomeBoardToolGrid
             tools={preview}
             renderCard={(tool) => (
-              <ToolCard tool={tool} onBorrow={() => setBorrowingTool(tool)} />
+              <ToolCard
+                tool={tool}
+                onBorrow={() => setBorrowingTool(tool)}
+                onRemove={() => setRemovingTool(tool)}
+              />
             )}
           />
           <Link

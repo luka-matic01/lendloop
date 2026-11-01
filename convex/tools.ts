@@ -65,6 +65,7 @@ const boardToolRowValidator = v.object({
   category: toolCategoryValidator,
   condition: toolConditionValidator,
   description: v.string(),
+  ownerId: v.id("users"),
   ownerName: v.string(),
   ownerIsTrustedLender: v.boolean(),
   isOwner: v.boolean(),
@@ -121,6 +122,7 @@ async function hydrateBoardPage(
       category: tool.category,
       condition: tool.condition,
       description: boardListDescription(tool.description),
+      ownerId: tool.ownerId,
       ownerName: userDisplayName(owner),
       ownerIsTrustedLender: owner?.isTrustedLender ?? false,
       isOwner,
@@ -240,6 +242,7 @@ export const listBoard = query({
           ? q.eq("isAvailable", true).eq("category", args.category)
           : q.eq("isAvailable", true),
       )
+      .filter((q) => q.neq(q.field("ownerId"), viewer._id))
       .order("desc")
       .paginate(args.paginationOpts);
 

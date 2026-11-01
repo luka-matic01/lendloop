@@ -64,12 +64,14 @@ export const LOANS_COPY = {
   pageTitle: "Loans",
   pageDescription:
     "Incoming requests on your tools and your borrows.",
+  pageDescriptionAdmin:
+    "Your requests and borrows, plus every active loan on the platform in All loans.",
   incomingHeading: "On your tools",
   myRequestsHeading: "Your borrows",
   allLoansHeading: "All loans",
   emptyIncoming: "No active requests or loans on your tools.",
   emptyMyRequests: "You have no active borrows or requests.",
-  emptyAllLoans: "No loans on the platform yet.",
+  emptyAllLoansOpen: "No active loans on the platform right now.",
   pastLoansSectionTitle: "Past loans",
   showPastLoans(count: number) {
     return count === 1 ? "Show 1 past loan" : `Show ${count} past loans`;
@@ -124,8 +126,8 @@ export const LOANS_COPY = {
     return `Borrowed from ${name}`;
   },
   trustedLenderLabel: "Trusted lender",
-  markTrusted: "Mark trusted lender",
-  removeTrusted: "Remove trusted",
+  markTrusted: "Trust lender",
+  removeTrusted: "Revoke trust",
   borrowModalTitle(toolName: string) {
     return `Borrow ${toolName}`;
   },
@@ -149,6 +151,23 @@ export const LOANS_COPY = {
     return trusted ? `${name} marked as trusted lender` : `${name} is no longer trusted`;
   },
 } as const;
+
+export function trustedLenderConfirmCopy(name: string, grantTrust: boolean) {
+  if (grantTrust) {
+    return {
+      title: `Trust ${name} as a lender?`,
+      description:
+        "Neighbors will see the trusted checkmark next to this lender on the board.",
+      confirmLabel: LOANS_COPY.markTrusted,
+    };
+  }
+  return {
+    title: `Revoke trust for ${name}?`,
+    description:
+      "The trusted checkmark will no longer show on their listings.",
+    confirmLabel: LOANS_COPY.removeTrusted,
+  };
+}
 
 export function markReturnedConfirmCopy(
   toolName: string,

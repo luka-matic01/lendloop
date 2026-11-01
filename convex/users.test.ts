@@ -74,7 +74,10 @@ describe("users RBAC", () => {
       email: ADMIN_EMAIL,
       emailVerified: false,
     });
-    await unverified.mutation(api.users.ensureCurrentUser, {});
+    await unverified.mutation(api.users.ensureCurrentUser, {
+      primaryEmail: ADMIN_EMAIL,
+      primaryEmailVerified: false,
+    });
     const unverifiedProfile = await unverified.query(api.users.me, {});
     expect(unverifiedProfile.role).toBe("user");
 
@@ -85,6 +88,22 @@ describe("users RBAC", () => {
     await verified.mutation(api.users.ensureCurrentUser, {});
     const verifiedProfile = await verified.query(api.users.me, {});
     expect(verifiedProfile.role).toBe("admin");
+  });
+
+  it("promotes via Clerk primary when JWT omits email_verified", async () => {
+    const t = createConvexTest();
+    const session = t.withIdentity({
+      email: ADMIN_EMAIL,
+      emailVerified: false,
+    });
+
+    await session.mutation(api.users.ensureCurrentUser, {
+      primaryEmail: ADMIN_EMAIL,
+      primaryEmailVerified: true,
+    });
+
+    const profile = await session.query(api.users.me, {});
+    expect(profile.role).toBe("admin");
   });
 
   it("forbids non-admin setTrustedLender", async () => {

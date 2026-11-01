@@ -13,6 +13,7 @@ import { AllLoansSection } from "./AllLoansSection";
 import { IncomingRequestsSection } from "./IncomingRequestsSection";
 import { LoansPastSection } from "./LoansPastSection";
 import { MarkReturnedConfirmModal } from "./MarkReturnedConfirmModal";
+import { TrustedLenderConfirmModal } from "./TrustedLenderConfirmModal";
 import { MyRequestsSection } from "./MyRequestsSection";
 
 const LOANS_PAGE_CLASS = `space-y-8 ${SECTION_Y_CLASS} sm:space-y-10`;
@@ -45,15 +46,20 @@ export function LoansPage() {
           {LOANS_COPY.pageTitle}
         </h1>
         <p className="max-w-xl text-sm text-ink-muted sm:text-base">
-          {LOANS_COPY.pageDescription}
+          {isAdmin ? LOANS_COPY.pageDescriptionAdmin : LOANS_COPY.pageDescription}
         </p>
       </header>
 
       <IncomingRequestsSection isReady={isReady} loanActions={loanActions} />
       <MyRequestsSection isReady={isReady} loanActions={loanActions} />
       <LoansPastSection isReady={isReady} />
-      <AllLoansSection isReady={isReady} isAdmin={isAdmin ?? false} />
+      <AllLoansSection
+        isReady={isReady}
+        isAdmin={isAdmin ?? false}
+        loanActions={loanActions}
+      />
       <MarkReturnedConfirmModal loanActions={loanActions} />
+      <TrustedLenderConfirmModal loanActions={loanActions} />
     </Container>
   );
 }

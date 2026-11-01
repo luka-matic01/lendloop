@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, usePaginatedQuery } from "convex/react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { useToast } from "@/components/ui";
 import { convexErrorMessage } from "@/lib/convex-error-message";
@@ -16,11 +16,13 @@ import {
   MY_LISTINGS_PAGE_SIZE,
 } from "../constants/pagination";
 import type { BoardTool, MyTool } from "../types/tools";
+import { useStaleTabResults } from "./useStaleTabResults";
 
 type ListingConfirmRemove = {
   type: "remove";
   toolId: Id<"tools">;
   name: string;
+  ownerName?: string;
 };
 
 type ListingConfirmAvailability = {
@@ -68,27 +70,25 @@ export function useToolsPage() {
     { initialNumItems: MY_LISTINGS_PAGE_SIZE },
   );
 
+  const {
+    displayItems: neighborBoardTools,
+    isInitialLoad: neighborBoardLoading,
+    isRefreshing: neighborBoardRefreshing,
+  } = useStaleTabResults(categoryFilter, boardStatus, boardTools);
+
   const removeTool = useMutation(api.tools.remove);
   const setAvailability = useMutation(api.tools.setAvailability);
-
-  const neighborBoardTools = useMemo(
-    (): BoardTool[] => boardTools.filter((tool) => !tool.isOwner),
-    [boardTools],
-  );
-
-  const neighborTotalOnBoard = neighborBoardTools.length;
 
   const boardIsEmpty =
     boardStatus !== "LoadingFirstPage" &&
     boardTools.length === 0 &&
     boardStatus === "Exhausted";
 
-  const isLoading =
-    !isReady ||
-    boardStatus === "LoadingFirstPage" ||
-    myListingsStatus === "LoadingFirstPage";
+  const isPageBootstrapping =
+    !isReady || myListingsStatus === "LoadingFirstPage";
 
-  const boardCanLoadMore = boardStatus === "CanLoadMore";
+  const boardCanLoadMore =
+    !neighborBoardRefreshing && boardStatus === "CanLoadMore";
   const boardLoadingMore = boardStatus === "LoadingMore";
   const myListingsCanLoadMore = myListingsStatus === "CanLoadMore";
   const myListingsLoadingMore = myListingsStatus === "LoadingMore";
@@ -116,7 +116,13 @@ export function useToolsPage() {
   }, []);
 
   const requestRemoveListing = useCallback(
-    (tool: { _id: Id<"tools">; name: string; hasActiveLoan?: boolean }) => {
+    (tool: {
+      _id: Id<"tools">;
+      name: string;
+      hasActiveLoan?: boolean;
+      isOwner?: boolean;
+      ownerName?: string;
+    }) => {
       if (tool.hasActiveLoan) {
         toast(TOOLS_COPY.listingLockedActiveLoan, "error");
         return;
@@ -125,6 +131,8 @@ export function useToolsPage() {
         type: "remove",
         toolId: tool._id,
         name: tool.name,
+        ownerName:
+          tool.isOwner === false ? tool.ownerName : undefined,
       });
     },
     [toast],
@@ -192,7 +200,9 @@ export function useToolsPage() {
   return {
     phase,
     errorMessage,
-    isLoading,
+    isPageBootstrapping,
+    neighborBoardLoading,
+    neighborBoardRefreshing,
     categoryFilter,
     setCategoryFilter,
     listModalOpen,
@@ -201,11 +211,10 @@ export function useToolsPage() {
     openListModal,
     openEditModal,
     closeToolFormModal,
-    boardTools,
     boardIsEmpty,
     myTools,
     neighborBoardTools,
-    neighborTotalOnBoard,
+    neighborTotalOnBoard: neighborBoardTools.length,
     boardCanLoadMore,
     boardLoadingMore,
     loadMoreBoardPage,

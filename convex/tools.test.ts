@@ -166,9 +166,45 @@ describe("tools", () => {
     ).rejects.toThrow();
   });
 
+  it("listBoard excludes the viewer's listings so neighbor pages stay full", async () => {
+    const t = createConvexTest();
+    const { session: viewerSession } = await provisionUser(
+      t,
+      "viewer@test.com",
+    );
+    const { session: neighborSession } = await provisionUser(
+      t,
+      "neighbor@test.com",
+    );
+
+    await viewerSession.mutation(api.tools.create, {
+      name: "My drill",
+      category: "power_tools",
+      condition: "good",
+      description: "Mine",
+    });
+
+    for (let i = 0; i < 16; i += 1) {
+      await neighborSession.mutation(api.tools.create, {
+        name: `Neighbor tool ${i}`,
+        category: "other",
+        condition: "good",
+        description: "",
+      });
+    }
+
+    const board = await viewerSession.query(
+      api.tools.listBoard,
+      firstBoardPage(),
+    );
+    expect(board.page).toHaveLength(15);
+    expect(board.page.every((row) => !row.isOwner)).toBe(true);
+    expect(board.page.some((row) => row.name === "My drill")).toBe(false);
+  });
+
   it("listBoard returns neighborhood details and setAvailability toggles board visibility", async () => {
     const t = createConvexTest();
-    const { session: lenderSession } = await provisionUser(
+    const { session: lenderSession, userId: lenderId } = await provisionUser(
       t,
       "lender@test.com",
     );
@@ -176,6 +212,7 @@ describe("tools", () => {
       t,
       "neighbor@test.com",
     );
+    const { session: adminSession } = await provisionUser(t, ADMIN_EMAIL);
 
     const toolId = await lenderSession.mutation(api.tools.create, {
       name: "Pressure washer",
@@ -191,12 +228,31 @@ describe("tools", () => {
     expect(boardForNeighbor.page).toHaveLength(1);
     expect(boardForNeighbor.page[0]).toMatchObject({
       _id: toolId,
+      ownerId: lenderId,
       name: "Pressure washer",
       category: "garden",
       condition: "excellent",
       description: "Includes hose and nozzle set",
+      ownerIsTrustedLender: false,
       isOwner: false,
       canRemove: false,
+    });
+
+    await adminSession.mutation(api.users.setTrustedLender, {
+      userId: lenderId,
+      isTrustedLender: true,
+    });
+
+    const boardForAdmin = await adminSession.query(
+      api.tools.listBoard,
+      firstBoardPage(),
+    );
+    expect(boardForAdmin.page[0]).toMatchObject({
+      _id: toolId,
+      ownerId: lenderId,
+      ownerIsTrustedLender: true,
+      isOwner: false,
+      canRemove: true,
     });
 
     await lenderSession.mutation(api.tools.setAvailability, {

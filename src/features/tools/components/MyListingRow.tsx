@@ -1,4 +1,4 @@
-import { Clock, Pause, Pencil, Radio, Trash2 } from "lucide-react";
+import { Pause, Pencil, Radio, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 import { Button, IconButton, buttonClassName } from "@/components/ui";
@@ -102,8 +102,7 @@ export function MyListingRow({
         </div>
 
         {hasRequests ? (
-          <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-bold text-ink">
-            <Clock className="size-3.5 shrink-0 text-warning" aria-hidden />
+          <p className="mt-1.5 text-xs font-semibold text-ink">
             {TOOLS_COPY.listingRequestsNotice(tool.pendingRequestCount)}
           </p>
         ) : null}

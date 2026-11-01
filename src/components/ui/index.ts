@@ -3,7 +3,10 @@ export { AppShell } from "./AppShell";
 export { Button, buttonClassName } from "./Button";
 export { IconButton } from "./IconButton";
 export { Tooltip } from "./Tooltip";
-export { TrustedLenderIndicator } from "./TrustedLenderIndicator";
+export {
+  LenderTrustToggleIconButton,
+  TrustedLenderIndicator,
+} from "./TrustedLenderIndicator";
 export { Container } from "./Container";
 export { Panel } from "./Panel";
 export { Skeleton } from "./Skeleton";

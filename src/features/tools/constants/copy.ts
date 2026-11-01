@@ -86,6 +86,7 @@ export const TOOLS_COPY = {
     return `Edit ${toolName}`;
   },
   listingActionsLabel: "Listing actions",
+  moderationActionsLabel: "Board moderation",
   listingsHeading: "Your listings",
   listTool: "List a tool",
   loadErrorTitle: "Could not open tool board",
@@ -133,6 +134,9 @@ export const TOOLS_COPY = {
   },
   confirmRemoveDescription:
     "This permanently deletes the listing. You can add the tool again later if you want.",
+  confirmRemoveNeighborDescription(ownerName: string) {
+    return `This permanently removes ${ownerName}’s listing from the board.`;
+  },
   confirmRemoveAction(toolName: string) {
     return `Remove ${toolName}`;
   },

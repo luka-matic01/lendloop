@@ -1,4 +1,8 @@
-import { Button, TrustedLenderIndicator } from "@/components/ui";
+import {
+  Button,
+  LenderTrustToggleIconButton,
+  TrustedLenderIndicator,
+} from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 import { LOANS_COPY } from "../constants/copy";
@@ -35,9 +39,16 @@ function renderRowActions(
   if (!loanActions) {
     return null;
   }
-  const { pendingId, approve, decline, requestMarkReturned, setTrustedLender } =
-    loanActions;
+  const {
+    pendingId,
+    pendingTrustedUserId,
+    approve,
+    decline,
+    requestMarkReturned,
+    requestTrustedLenderChange,
+  } = loanActions;
   const isBusy = pendingId === loan._id;
+  const isTrustedBusy = pendingTrustedUserId === loan.lenderId;
 
   if (perspective === "incoming") {
     if (loan.status === "pending") {
@@ -98,23 +109,25 @@ function renderRowActions(
     return null;
   }
 
+  if (isClosedLoanStatus(loan.status)) {
+    return null;
+  }
+
   return (
-    <Button
-      type="button"
-      size="sm"
-      variant="secondary"
+    <LenderTrustToggleIconButton
+      lenderName={loan.lenderName}
+      isTrusted={loan.lenderIsTrusted}
+      disabled={isTrustedBusy}
+      markTrustedLabel={LOANS_COPY.markTrusted}
+      removeTrustedLabel={LOANS_COPY.removeTrusted}
       onClick={() =>
-        setTrustedLender(
+        requestTrustedLenderChange(
           loan.lenderId,
           loan.lenderName,
           !loan.lenderIsTrusted,
         )
       }
-    >
-      {loan.lenderIsTrusted
-        ? LOANS_COPY.removeTrusted
-        : LOANS_COPY.markTrusted}
-    </Button>
+    />
   );
 }
 
@@ -145,8 +158,6 @@ export function LoanRow({
   const automationDetail = formatLoanAutomationDetail(loan);
   const isClosed = isClosedLoanStatus(loan.status);
   const actions = renderRowActions(loan, perspective, loanActions);
-  const showTrustedLender =
-    perspective === "mine" && loan.lenderIsTrusted;
   const reserveActionSlot = loanActions != null;
 
   return (
@@ -185,10 +196,22 @@ export function LoanRow({
         >
           <LoanStatusBadge status={loan.status} perspective={perspective} />
 
-          <p className="flex min-w-0 flex-wrap items-center justify-start gap-x-1 [overflow-wrap:anywhere] leading-snug lg:justify-center lg:px-2 lg:text-center">
-            <span>{partyLine}</span>
-            {showTrustedLender ? <TrustedLenderIndicator /> : null}
-          </p>
+          {perspective === "admin" ? (
+            <p className="flex min-w-0 flex-wrap items-center justify-center gap-x-1.5 gap-y-0.5 [overflow-wrap:anywhere] leading-snug lg:justify-self-center lg:px-2 lg:text-center">
+              <span>
+                {loan.borrowerName} → {loan.lenderName}
+              </span>
+              {loan.lenderIsTrusted ? (
+                <TrustedLenderIndicator
+                  label={LOANS_COPY.trustedLenderLabel}
+                />
+              ) : null}
+            </p>
+          ) : (
+            <p className="min-w-0 [overflow-wrap:anywhere] leading-snug lg:justify-self-center lg:px-2 lg:text-center">
+              {partyLine}
+            </p>
+          )}
 
           <LoanRowDates
             startDate={loan.startDate}
@@ -201,7 +224,9 @@ export function LoanRow({
           <div
             className={cn(
               "flex flex-wrap items-center gap-2",
-              LOAN_ROW_ACTIONS_SLOT_CLASS,
+              perspective === "admin"
+                ? "lg:min-w-0 lg:justify-end"
+                : LOAN_ROW_ACTIONS_SLOT_CLASS,
             )}
           >
             {actions}

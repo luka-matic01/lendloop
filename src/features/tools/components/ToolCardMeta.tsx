@@ -96,7 +96,7 @@ export function ToolListingStateBadge({
     return (
       <span
         className={cn(
-          "inline-flex shrink-0 items-center leading-none text-warning",
+          "inline-flex shrink-0 items-center leading-none text-positive",
           !iconOnly && "gap-1 text-xs font-semibold",
         )}
       >
@@ -113,7 +113,7 @@ export function ToolListingStateBadge({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center leading-none text-ink-muted",
+        "inline-flex shrink-0 items-center leading-none text-ink-faint",
         !iconOnly && "gap-1 text-xs font-semibold",
       )}
     >

@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 
 import { Button, Panel, Skeleton } from "@/components/ui";
-import { cn } from "@/lib/utils";
 import type { Id } from "convex/_generated/dataModel";
+
+import { listingListRowSurfaceClass } from "@/lib/list-row-surface";
 
 import { TOOLS_COPY } from "../constants/copy";
 import {
@@ -110,15 +111,12 @@ export function MyListingsSection({
               {sortedTools.map((tool) => (
                 <li
                   key={tool._id}
-                  className={cn(
-                    "-mx-3 px-3 sm:-mx-4 sm:px-4",
-                    tool.pendingRequestCount > 0 &&
-                      "border-l-4 border-l-accent bg-accent-soft/45",
-                    !tool.isAvailable &&
-                      tool.pendingRequestCount === 0 &&
-                      "bg-canvas/70",
-                    tool.hasActiveLoan && "bg-warning-soft/40",
-                  )}
+                  className={listingListRowSurfaceClass({
+                    pendingRequestCount: tool.pendingRequestCount,
+                    isAvailable: tool.isAvailable,
+                    hasActiveLoan: tool.hasActiveLoan,
+                    activeLoanEndDate: tool.activeLoan?.endDate,
+                  })}
                 >
                   <MyListingRow
                     tool={tool}

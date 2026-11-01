@@ -1,8 +1,12 @@
 import { Button, Panel } from "@/components/ui";
+import type { Id } from "convex/_generated/dataModel";
 
 import { TOOLS_COPY } from "../constants/copy";
 import type { ToolCategoryKey } from "../constants/labels";
-import { TOOL_CARD_GRID_CLASS } from "../constants/visual";
+import {
+  NEIGHBOR_BOARD_SKELETON_COUNT,
+  TOOL_CARD_GRID_CLASS,
+} from "../constants/visual";
 import type { BoardTool } from "../types/tools";
 import { ToolCard } from "./ToolCard";
 import { CategoryFilterBar } from "./CategoryFilterBar";
@@ -16,10 +20,13 @@ type NeighborToolsSectionProps = {
   onCategoryChange: (value: ToolCategoryKey | "all") => void;
   onRemoveTool: (tool: BoardTool) => void;
   onBorrowTool: (tool: BoardTool) => void;
+  onTrustLender?: (tool: BoardTool) => void;
+  pendingTrustedUserId?: Id<"users"> | null;
   canLoadMore?: boolean;
   loadingMore?: boolean;
   onLoadMore?: () => void;
   isLoading?: boolean;
+  isRefreshing?: boolean;
 };
 
 function neighborEmptyMessage(
@@ -47,10 +54,13 @@ export function NeighborToolsSection({
   onCategoryChange,
   onRemoveTool,
   onBorrowTool,
+  onTrustLender,
+  pendingTrustedUserId = null,
   canLoadMore = false,
   loadingMore = false,
   onLoadMore,
   isLoading = false,
+  isRefreshing = false,
 }: NeighborToolsSectionProps) {
   const showNeighborEmpty =
     !isLoading && tools.length === 0 && !canLoadMore;
@@ -63,7 +73,7 @@ export function NeighborToolsSection({
   return (
     <section
       aria-labelledby="browse-neighbors-heading"
-      aria-busy={isLoading || undefined}
+      aria-busy={isLoading || isRefreshing || undefined}
       className="space-y-4"
     >
       <h2
@@ -79,7 +89,10 @@ export function NeighborToolsSection({
       />
 
       {isLoading ? (
-        <ToolCardSkeletonGrid label="Loading tools on the board" />
+        <ToolCardSkeletonGrid
+          count={NEIGHBOR_BOARD_SKELETON_COUNT}
+          label="Loading tools on the board"
+        />
       ) : showNeighborEmpty ? (
         <Panel>
           <p className="text-sm text-ink-muted">{emptyMessage}</p>
@@ -94,6 +107,12 @@ export function NeighborToolsSection({
                     tool={tool}
                     onBorrow={() => onBorrowTool(tool)}
                     onRemove={() => onRemoveTool(tool)}
+                    onTrustLender={
+                      onTrustLender
+                        ? () => onTrustLender(tool)
+                        : undefined
+                    }
+                    trustPending={pendingTrustedUserId === tool.ownerId}
                   />
                 </li>
               ))}

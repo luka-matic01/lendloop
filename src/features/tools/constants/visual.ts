@@ -12,7 +12,7 @@ export const TOOL_CARD_GRID_CLASS =
   "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>li]:min-h-0 [&>li]:min-w-0";
 
 export const TOOL_CARD_PANEL_CLASS =
-  "flex h-full min-w-0 flex-col gap-2 overflow-hidden !p-3 sm:gap-3 sm:!p-4";
+  "relative flex h-full min-w-0 flex-col gap-2 overflow-visible !p-3 sm:gap-3 sm:!p-4";
 
 /** Keeps long unbroken titles/descriptions inside card width (grid + flex safe). */
 export const TOOL_CARD_TEXT_WRAP = "min-w-0 [overflow-wrap:anywhere]";
@@ -23,10 +23,13 @@ export const TOOL_CARD_DESCRIPTION_CLASS = `${TOOL_CARD_TEXT_WRAP} line-clamp-3 
 
 export const TOOL_LISTING_ROW_TITLE_CLASS = `${TOOL_CARD_TEXT_WRAP} font-display text-lg font-bold leading-tight text-ink line-clamp-2 sm:text-xl`;
 
-export const TOOL_CARD_FOOTER_TEXT_CLASS = `${TOOL_CARD_TEXT_WRAP} min-w-0 text-sm font-semibold text-ink line-clamp-2`;
+export const TOOL_CARD_FOOTER_TEXT_CLASS = `${TOOL_CARD_TEXT_WRAP} min-w-0 text-sm font-semibold text-ink`;
 
-/** Placeholder cards while a full board grid loads. Two rows at the lg breakpoint. */
+/** Default placeholder cards (e.g. marketing home teaser). */
 export const TOOL_CARD_SKELETON_COUNT = 6;
+
+/** “From neighbors” grid on the tool board — three rows at lg. */
+export const NEIGHBOR_BOARD_SKELETON_COUNT = 9;
 
 /** One row of placeholders under “Your listings”. */
 export const TOOL_CARD_SKELETON_ROW_COUNT = 3;

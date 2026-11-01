@@ -37,6 +37,9 @@ yarn-error.log*
 # n8n local persistence
 /n8n-data/
 
+# Cursor MCP (may contain n8n OAuth / API tokens)
+.cursor/mcp.json
+
 # vercel
 .vercel
 
