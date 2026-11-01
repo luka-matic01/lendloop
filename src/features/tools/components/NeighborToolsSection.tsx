@@ -1,4 +1,4 @@
-import { Panel } from "@/components/ui";
+import { Button, Panel } from "@/components/ui";
 
 import { TOOLS_COPY } from "../constants/copy";
 import type { ToolCategoryKey } from "../constants/labels";
@@ -10,21 +10,24 @@ import { ToolCardSkeletonGrid } from "./ToolSkeletons";
 
 type NeighborToolsSectionProps = {
   tools: BoardTool[];
-  totalOnBoard: number;
+  boardIsEmpty: boolean;
   neighborTotalOnBoard: number;
   categoryFilter: ToolCategoryKey | "all";
   onCategoryChange: (value: ToolCategoryKey | "all") => void;
   onRemoveTool: (tool: BoardTool) => void;
   onBorrowTool: (tool: BoardTool) => void;
+  canLoadMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
   isLoading?: boolean;
 };
 
 function neighborEmptyMessage(
-  totalOnBoard: number,
+  boardIsEmpty: boolean,
   neighborTotalOnBoard: number,
   categoryFilter: ToolCategoryKey | "all",
 ): string {
-  if (totalOnBoard === 0) {
+  if (boardIsEmpty) {
     return TOOLS_COPY.emptyBoard;
   }
   if (categoryFilter !== "all") {
@@ -38,16 +41,21 @@ function neighborEmptyMessage(
 
 export function NeighborToolsSection({
   tools,
-  totalOnBoard,
+  boardIsEmpty,
   neighborTotalOnBoard,
   categoryFilter,
   onCategoryChange,
   onRemoveTool,
   onBorrowTool,
+  canLoadMore = false,
+  loadingMore = false,
+  onLoadMore,
   isLoading = false,
 }: NeighborToolsSectionProps) {
+  const showNeighborEmpty =
+    !isLoading && tools.length === 0 && !canLoadMore;
   const emptyMessage = neighborEmptyMessage(
-    totalOnBoard,
+    boardIsEmpty,
     neighborTotalOnBoard,
     categoryFilter,
   );
@@ -72,22 +80,41 @@ export function NeighborToolsSection({
 
       {isLoading ? (
         <ToolCardSkeletonGrid label="Loading tools on the board" />
-      ) : tools.length === 0 ? (
+      ) : showNeighborEmpty ? (
         <Panel>
           <p className="text-sm text-ink-muted">{emptyMessage}</p>
         </Panel>
       ) : (
-        <ul className={TOOL_CARD_GRID_CLASS}>
-          {tools.map((tool) => (
-            <li key={tool._id} className="min-h-0">
-              <ToolCard
-                tool={tool}
-                onBorrow={() => onBorrowTool(tool)}
-                onRemove={() => onRemoveTool(tool)}
-              />
-            </li>
-          ))}
-        </ul>
+        <>
+          {tools.length > 0 ? (
+            <ul className={TOOL_CARD_GRID_CLASS}>
+              {tools.map((tool) => (
+                <li key={tool._id} className="min-h-0">
+                  <ToolCard
+                    tool={tool}
+                    onBorrow={() => onBorrowTool(tool)}
+                    onRemove={() => onRemoveTool(tool)}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {canLoadMore && onLoadMore ? (
+            <div className="flex justify-center pt-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={loadingMore}
+                onClick={onLoadMore}
+              >
+                {loadingMore
+                  ? TOOLS_COPY.loadingMore
+                  : TOOLS_COPY.loadMoreBoard}
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   );

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { Panel, Skeleton } from "@/components/ui";
+import { Button, Panel, Skeleton } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import type { Id } from "convex/_generated/dataModel";
 
@@ -40,6 +40,9 @@ type MyListingsSectionProps = {
   onRemove: (tool: MyTool) => void;
   markReturnedPendingId?: Id<"loanRequests"> | null;
   onMarkReturned?: (requestId: Id<"loanRequests">, toolName: string) => void;
+  canLoadMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
   isLoading?: boolean;
 };
 
@@ -50,6 +53,9 @@ export function MyListingsSection({
   onRemove,
   markReturnedPendingId = null,
   onMarkReturned,
+  canLoadMore = false,
+  loadingMore = false,
+  onLoadMore,
   isLoading = false,
 }: MyListingsSectionProps) {
   const sortedTools = useMemo(() => sortListings(tools), [tools]);
@@ -98,33 +104,50 @@ export function MyListingsSection({
           <p className="text-sm text-ink-muted">{TOOLS_COPY.emptyListings}</p>
         </Panel>
       ) : (
-        <Panel className={MY_LISTINGS_PANEL_CLASS}>
-          <ul className="divide-y divide-board/25 px-3 sm:px-4">
-            {sortedTools.map((tool) => (
-              <li
-                key={tool._id}
-                className={cn(
-                  "-mx-3 px-3 sm:-mx-4 sm:px-4",
-                  tool.pendingRequestCount > 0 &&
-                    "border-l-4 border-l-accent bg-accent-soft/45",
-                  !tool.isAvailable &&
-                    tool.pendingRequestCount === 0 &&
-                    "bg-canvas/70",
-                  tool.hasActiveLoan && "bg-warning-soft/40",
-                )}
+        <div className="space-y-4">
+          <Panel className={MY_LISTINGS_PANEL_CLASS}>
+            <ul className="divide-y divide-board/25 px-3 sm:px-4">
+              {sortedTools.map((tool) => (
+                <li
+                  key={tool._id}
+                  className={cn(
+                    "-mx-3 px-3 sm:-mx-4 sm:px-4",
+                    tool.pendingRequestCount > 0 &&
+                      "border-l-4 border-l-accent bg-accent-soft/45",
+                    !tool.isAvailable &&
+                      tool.pendingRequestCount === 0 &&
+                      "bg-canvas/70",
+                    tool.hasActiveLoan && "bg-warning-soft/40",
+                  )}
+                >
+                  <MyListingRow
+                    tool={tool}
+                    onEdit={() => onEdit(tool)}
+                    onToggleAvailability={() => onToggleAvailability(tool)}
+                    onRemove={() => onRemove(tool)}
+                    markReturnedPendingId={markReturnedPendingId}
+                    onMarkReturned={onMarkReturned}
+                  />
+                </li>
+              ))}
+            </ul>
+          </Panel>
+          {canLoadMore && onLoadMore ? (
+            <div className="flex justify-center">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={loadingMore}
+                onClick={onLoadMore}
               >
-                <MyListingRow
-                  tool={tool}
-                  onEdit={() => onEdit(tool)}
-                  onToggleAvailability={() => onToggleAvailability(tool)}
-                  onRemove={() => onRemove(tool)}
-                  markReturnedPendingId={markReturnedPendingId}
-                  onMarkReturned={onMarkReturned}
-                />
-              </li>
-            ))}
-          </ul>
-        </Panel>
+                {loadingMore
+                  ? TOOLS_COPY.loadingMore
+                  : TOOLS_COPY.loadMoreListings}
+              </Button>
+            </div>
+          ) : null}
+        </div>
       )}
     </section>
   );

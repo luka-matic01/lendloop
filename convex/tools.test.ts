@@ -4,6 +4,10 @@ import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
 import {
+  firstBoardPage,
+  firstMyListingsPage,
+} from "../convex-test/pagination";
+import {
   ADMIN_EMAIL,
   createConvexTest,
   provisionUser,
@@ -75,7 +79,9 @@ describe("tools", () => {
   it("create and listMine require authentication", async () => {
     const t = createConvexTest();
 
-    await expect(t.query(api.tools.listMine, {})).rejects.toThrow();
+    await expect(
+      t.query(api.tools.listMine, firstMyListingsPage()),
+    ).rejects.toThrow();
     await expect(
       t.mutation(api.tools.create, {
         name: "Hammer",
@@ -135,9 +141,12 @@ describe("tools", () => {
       description: "Includes battery",
     });
 
-    const mine = await ownerSession.query(api.tools.listMine, {});
-    expect(mine).toHaveLength(1);
-    expect(mine[0]).toMatchObject({
+    const mine = await ownerSession.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    expect(mine.page).toHaveLength(1);
+    expect(mine.page[0]).toMatchObject({
       _id: toolId,
       name: "Electric leaf blower",
       category: "power_tools",
@@ -176,10 +185,10 @@ describe("tools", () => {
 
     const boardForNeighbor = await neighborSession.query(
       api.tools.listBoard,
-      {},
+      firstBoardPage(),
     );
-    expect(boardForNeighbor).toHaveLength(1);
-    expect(boardForNeighbor[0]).toMatchObject({
+    expect(boardForNeighbor.page).toHaveLength(1);
+    expect(boardForNeighbor.page[0]).toMatchObject({
       _id: toolId,
       name: "Pressure washer",
       category: "garden",
@@ -196,9 +205,9 @@ describe("tools", () => {
 
     const boardAfterPause = await neighborSession.query(
       api.tools.listBoard,
-      {},
+      firstBoardPage(),
     );
-    expect(boardAfterPause).toHaveLength(0);
+    expect(boardAfterPause.page).toHaveLength(0);
   });
 
   it("listBoard surfaces pending and approved borrows for the viewer", async () => {
@@ -225,10 +234,16 @@ describe("tools", () => {
       endDate: "2026-11-07",
     });
 
-    const boardPending = await neighborSession.query(api.tools.listBoard, {});
-    expect(boardPending[0]?.viewerBorrowStatus).toBe("pending");
+    const boardPending = await neighborSession.query(
+      api.tools.listBoard,
+      firstBoardPage(),
+    );
+    expect(boardPending.page[0]?.viewerBorrowStatus).toBe("pending");
 
-    const lenderListings = await lenderSession.query(api.tools.listMine, {});
-    expect(lenderListings[0]?.pendingRequestCount).toBe(1);
+    const lenderListings = await lenderSession.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    expect(lenderListings.page[0]?.pendingRequestCount).toBe(1);
   });
 });

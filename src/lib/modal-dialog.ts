@@ -2,6 +2,12 @@
 export const MODAL_DIALOG_CLASS =
   "fixed inset-0 z-50 m-0 h-full max-h-none w-full max-w-none border-0 bg-transparent p-0 backdrop:bg-ink/40 open:flex open:items-center open:justify-center open:p-page-x outline-none focus:outline-none focus-visible:outline-none";
 
+/** Panel width inside modals — `min-w-0` so truncated titles/buttons can shrink. */
+export const MODAL_PANEL_CLASS = "w-full min-w-0";
+
+/** Long confirm/action labels inside modal buttons. */
+export const MODAL_BUTTON_LABEL_TRUNCATE_CLASS = "min-w-0 truncate";
+
 type SyncModalDialogOptions = {
   /** Where focus should land after open. Defaults to the dialog element (avoids a focus ring on the first button). */
   initialFocus?: HTMLElement | null;

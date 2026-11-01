@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
 import { AuthErrorCode } from "./lib/errors";
+import { firstMyListingsPage } from "../convex-test/pagination";
 import {
   ADMIN_EMAIL,
   createConvexTest,
@@ -173,9 +174,12 @@ describe("loanRequests", () => {
     const allLoans = await admin.query(api.loanRequests.listAllForAdmin, {});
     expect(allLoans.find((r) => r._id === requestB)?.status).toBe("declined");
 
-    const lenderTools = await lender.query(api.tools.listMine, {});
-    expect(lenderTools[0]?.isAvailable).toBe(false);
-    expect(lenderTools[0]?.hasActiveLoan).toBe(true);
+    const lenderTools = await lender.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    expect(lenderTools.page[0]?.isAvailable).toBe(false);
+    expect(lenderTools.page[0]?.hasActiveLoan).toBe(true);
 
     // Cannot manually re-enable availability while an approved loan is active
     await expect(
@@ -234,14 +238,17 @@ describe("loanRequests", () => {
 
     await lender.mutation(api.loanRequests.approve, { requestId });
 
-    const lenderListings = await lender.query(api.tools.listMine, {});
-    expect(lenderListings[0]?.hasActiveLoan).toBe(true);
-    expect(lenderListings[0]?.activeLoan).toMatchObject({
+    const lenderListings = await lender.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    expect(lenderListings.page[0]?.hasActiveLoan).toBe(true);
+    expect(lenderListings.page[0]?.activeLoan).toMatchObject({
       requestId,
       startDate: "2026-11-01",
       endDate: "2026-11-03",
     });
-    expect(lenderListings[0]?.activeLoan?.borrowerName).toBeTruthy();
+    expect(lenderListings.page[0]?.activeLoan?.borrowerName).toBeTruthy();
 
     // Stranger cannot mark returned
     await expect(
@@ -264,8 +271,11 @@ describe("loanRequests", () => {
     const allLoans = await admin.query(api.loanRequests.listAllForAdmin, {});
     expect(allLoans.find((r) => r._id === requestId)?.status).toBe("returned");
 
-    const lenderTools = await lender.query(api.tools.listMine, {});
-    expect(lenderTools[0]?.isAvailable).toBe(true);
+    const lenderTools = await lender.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    expect(lenderTools.page[0]?.isAvailable).toBe(true);
   });
 
   it("restricts listAllForAdmin to admin and hydrates latestAutomation", async () => {

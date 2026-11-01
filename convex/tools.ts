@@ -1,11 +1,15 @@
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { v } from "convex/values";
 
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import type { MutationCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { requireToolAccess, requireUser } from "./lib/auth";
 import { AuthErrorCode, authError } from "./lib/errors";
-import { LIST_PAGE_SIZE } from "./lib/limits";
+import { BOARD_LIST_DESCRIPTION_MAX } from "./lib/limits";
 import {
   activeBorrowStatusByToolForBorrower,
   approvedLoansByToolForLender,
@@ -44,6 +48,85 @@ function normalizeToolFields(args: { name: string; description: string }) {
   return { name, description };
 }
 
+function boardListDescription(description: string): string {
+  const trimmed = description.trim();
+  if (trimmed.length <= BOARD_LIST_DESCRIPTION_MAX) {
+    return trimmed;
+  }
+  return `${trimmed.slice(0, BOARD_LIST_DESCRIPTION_MAX - 1)}…`;
+}
+
+const boardToolRowValidator = v.object({
+  _id: v.id("tools"),
+  name: v.string(),
+  category: toolCategoryValidator,
+  condition: toolConditionValidator,
+  description: v.string(),
+  ownerName: v.string(),
+  ownerIsTrustedLender: v.boolean(),
+  isOwner: v.boolean(),
+  canRemove: v.boolean(),
+  viewerBorrowStatus: v.optional(
+    v.union(v.literal("pending"), v.literal("approved")),
+  ),
+});
+
+const myToolRowValidator = v.object({
+  _id: v.id("tools"),
+  name: v.string(),
+  category: toolCategoryValidator,
+  condition: toolConditionValidator,
+  description: v.string(),
+  isAvailable: v.boolean(),
+  hasActiveLoan: v.boolean(),
+  pendingRequestCount: v.number(),
+  activeLoan: v.optional(
+    v.object({
+      requestId: v.id("loanRequests"),
+      borrowerName: v.string(),
+      startDate: v.string(),
+      endDate: v.string(),
+    }),
+  ),
+});
+
+async function hydrateBoardPage(
+  ctx: QueryCtx,
+  viewer: Doc<"users">,
+  tools: Doc<"tools">[],
+) {
+  const activeBorrowsByTool = await activeBorrowStatusByToolForBorrower(
+    ctx,
+    viewer._id,
+  );
+
+  const uniqueOwnerIds = [...new Set(tools.map((t) => t.ownerId))];
+  const owners = await Promise.all(
+    uniqueOwnerIds.map((id) => ctx.db.get(id)),
+  );
+  const ownersById = new Map(
+    uniqueOwnerIds.map((id, i) => [id, owners[i]]),
+  );
+
+  return tools.map((tool) => {
+    const owner = ownersById.get(tool.ownerId);
+    const isOwner = tool.ownerId === viewer._id;
+
+    return {
+      _id: tool._id,
+      name: tool.name,
+      category: tool.category,
+      condition: tool.condition,
+      description: boardListDescription(tool.description),
+      ownerName: userDisplayName(owner),
+      ownerIsTrustedLender: owner?.isTrustedLender ?? false,
+      isOwner,
+      canRemove: viewer.role === "admin" || isOwner,
+      viewerBorrowStatus: activeBorrowsByTool.get(tool._id),
+    };
+  });
+}
+
 const ACTIVE_LOAN_LISTING_MESSAGE =
   "Cannot modify listing while tool has an active loan";
 
@@ -78,36 +161,20 @@ export const listPublic = query({
 });
 
 export const listMine = query({
-  args: {},
-  returns: v.array(
-    v.object({
-      _id: v.id("tools"),
-      name: v.string(),
-      category: toolCategoryValidator,
-      condition: toolConditionValidator,
-      description: v.string(),
-      isAvailable: v.boolean(),
-      hasActiveLoan: v.boolean(),
-      pendingRequestCount: v.number(),
-      activeLoan: v.optional(
-        v.object({
-          requestId: v.id("loanRequests"),
-          borrowerName: v.string(),
-          startDate: v.string(),
-          endDate: v.string(),
-        }),
-      ),
-    }),
-  ),
-  handler: async (ctx) => {
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(myToolRowValidator),
+  handler: async (ctx, args) => {
     const user = await requireUser(ctx);
 
-    const [tools, pendingByTool, approvedByTool] = await Promise.all([
-      ctx.db
-        .query("tools")
-        .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
-        .order("desc")
-        .take(LIST_PAGE_SIZE),
+    const pageResult = await ctx.db
+      .query("tools")
+      .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
+      .order("desc")
+      .paginate(args.paginationOpts);
+
+    const [pendingByTool, approvedByTool] = await Promise.all([
       pendingRequestCountByToolForLender(ctx, user._id),
       approvedLoansByToolForLender(ctx, user._id),
     ]);
@@ -125,7 +192,7 @@ export const listMine = query({
       ]),
     );
 
-    return tools.map(
+    const page = pageResult.page.map(
       ({ _id, name, category, condition, description, isAvailable }) => {
         const approved = approvedByTool.get(_id);
         return {
@@ -140,7 +207,8 @@ export const listMine = query({
           activeLoan: approved
             ? {
                 requestId: approved.requestId,
-                borrowerName: borrowerNameById.get(approved.borrowerId) ?? "Neighbor",
+                borrowerName:
+                  borrowerNameById.get(approved.borrowerId) ?? "Neighbor",
                 startDate: approved.startDate,
                 endDate: approved.endDate,
               }
@@ -148,74 +216,33 @@ export const listMine = query({
         };
       },
     );
+
+    return { ...pageResult, page };
   },
 });
 
 export const listBoard = query({
   args: {
     category: v.optional(toolCategoryValidator),
+    paginationOpts: paginationOptsValidator,
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("tools"),
-      name: v.string(),
-      category: toolCategoryValidator,
-      condition: toolConditionValidator,
-      description: v.string(),
-      isAvailable: v.boolean(),
-      ownerId: v.id("users"),
-      ownerName: v.string(),
-      ownerIsTrustedLender: v.boolean(),
-      isOwner: v.boolean(),
-      canRemove: v.boolean(),
-      viewerBorrowStatus: v.optional(
-        v.union(v.literal("pending"), v.literal("approved")),
-      ),
-    }),
-  ),
+  returns: paginationResultValidator(boardToolRowValidator),
   handler: async (ctx, args) => {
     const viewer = await requireUser(ctx);
 
-    const [rows, activeBorrowsByTool] = await Promise.all([
-      ctx.db
-        .query("tools")
-        .withIndex("by_available_category", (q) =>
-          args.category
-            ? q.eq("isAvailable", true).eq("category", args.category)
-            : q.eq("isAvailable", true),
-        )
-        .order("desc")
-        .take(LIST_PAGE_SIZE),
-      activeBorrowStatusByToolForBorrower(ctx, viewer._id),
-    ]);
+    const pageResult = await ctx.db
+      .query("tools")
+      .withIndex("by_available_category", (q) =>
+        args.category
+          ? q.eq("isAvailable", true).eq("category", args.category)
+          : q.eq("isAvailable", true),
+      )
+      .order("desc")
+      .paginate(args.paginationOpts);
 
-    const uniqueOwnerIds = [...new Set(rows.map((t) => t.ownerId))];
-    const owners = await Promise.all(
-      uniqueOwnerIds.map((id) => ctx.db.get(id)),
-    );
-    const ownersById = new Map(
-      uniqueOwnerIds.map((id, i) => [id, owners[i]]),
-    );
+    const page = await hydrateBoardPage(ctx, viewer, pageResult.page);
 
-    return rows.map((tool) => {
-      const owner = ownersById.get(tool.ownerId);
-      const isOwner = tool.ownerId === viewer._id;
-
-      return {
-        _id: tool._id,
-        name: tool.name,
-        category: tool.category,
-        condition: tool.condition,
-        description: tool.description,
-        isAvailable: tool.isAvailable,
-        ownerId: tool.ownerId,
-        ownerName: userDisplayName(owner),
-        ownerIsTrustedLender: owner?.isTrustedLender ?? false,
-        isOwner,
-        canRemove: viewer.role === "admin" || isOwner,
-        viewerBorrowStatus: activeBorrowsByTool.get(tool._id),
-      };
-    });
+    return { ...pageResult, page };
   },
 });
 

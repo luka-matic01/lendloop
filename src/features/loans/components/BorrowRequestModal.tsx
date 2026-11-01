@@ -13,7 +13,13 @@ import {
   useToast,
 } from "@/components/ui";
 import { convexErrorMessage } from "@/lib/convex-error-message";
-import { MODAL_DIALOG_CLASS, syncModalDialogOpen } from "@/lib/modal-dialog";
+import { ModalTitle } from "@/components/ui/ModalTitle";
+import {
+  MODAL_DIALOG_CLASS,
+  MODAL_PANEL_CLASS,
+  syncModalDialogOpen,
+} from "@/lib/modal-dialog";
+import { cn } from "@/lib/utils";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 
@@ -98,14 +104,14 @@ export function BorrowRequestModal({
         }
       }}
     >
-      <Panel className="w-full max-w-lg">
-        <div className="flex items-start justify-between gap-3">
-          <h2
+      <Panel className={cn(MODAL_PANEL_CLASS, "max-w-lg")}>
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <ModalTitle
             id={titleId}
-            className="min-w-0 pr-2 font-display text-3xl font-extrabold leading-tight text-ink [overflow-wrap:anywhere]"
-          >
-            {LOANS_COPY.borrowModalTitle(toolName)}
-          </h2>
+            size="form"
+            className="flex-1 pr-2"
+            title={LOANS_COPY.borrowModalTitle(toolName)}
+          />
           <IconButton
             type="button"
             variant="ghost"

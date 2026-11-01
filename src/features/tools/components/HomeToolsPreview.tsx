@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 
 import { buttonClassName, Panel } from "@/components/ui";
 import { ROUTES } from "@/constants";
@@ -12,6 +12,7 @@ import type { PublicToolListing } from "@/lib/convex-server";
 import { api } from "convex/_generated/api";
 
 import { HOME_BOARD_PREVIEW_LIMIT, TOOLS_COPY } from "../constants/copy";
+import { HOME_BOARD_PAGE_SIZE } from "../constants/pagination";
 import { TOOL_CARD_GRID_CLASS } from "../constants/visual";
 import type { BoardTool } from "../types/tools";
 import { HomeToolsFrame } from "./HomeToolsFrame";
@@ -77,18 +78,21 @@ function HomeSignedInPreview() {
   const { phase } = useEnsureCurrentUser();
   const isReady = phase === "ready";
 
-  const boardToolsQuery = useQuery(api.tools.listBoard, isReady ? {} : "skip");
+  const { results: boardTools, status: boardStatus } = usePaginatedQuery(
+    api.tools.listBoard,
+    isReady ? {} : "skip",
+    { initialNumItems: HOME_BOARD_PAGE_SIZE },
+  );
 
-  const isLoading = !isReady || boardToolsQuery === undefined;
+  const isLoading = !isReady || boardStatus === "LoadingFirstPage";
 
-  const previewTools = useMemo(() => {
-    if (boardToolsQuery === undefined) {
-      return [];
-    }
-    return boardToolsQuery
-      .filter((tool) => !tool.isOwner)
-      .slice(0, HOME_BOARD_PREVIEW_LIMIT);
-  }, [boardToolsQuery]);
+  const previewTools = useMemo(
+    () =>
+      boardTools
+        .filter((tool) => !tool.isOwner)
+        .slice(0, HOME_BOARD_PREVIEW_LIMIT),
+    [boardTools],
+  );
 
   return (
     <HomeToolsFrame

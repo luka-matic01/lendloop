@@ -138,4 +138,7 @@ export const TOOLS_COPY = {
   },
   cancel: "Cancel",
   seeFullBoard: "See the full board",
+  loadMoreBoard: "Load more on the board",
+  loadMoreListings: "Load more listings",
+  loadingMore: "Loading…",
 } as const;

@@ -59,10 +59,16 @@ export function ToolsPage() {
     openListModal,
     openEditModal,
     closeToolFormModal,
-    boardTools,
+    boardIsEmpty,
     myTools,
     neighborBoardTools,
     neighborTotalOnBoard,
+    boardCanLoadMore,
+    boardLoadingMore,
+    loadMoreBoardPage,
+    myListingsCanLoadMore,
+    myListingsLoadingMore,
+    loadMoreMyListingsPage,
     listingConfirm,
     confirmSubmitting,
     requestRemoveListing,
@@ -119,12 +125,15 @@ export function ToolsPage() {
       <NeighborToolsSection
         isLoading={isLoading}
         tools={neighborBoardTools}
-        totalOnBoard={boardTools.length}
+        boardIsEmpty={boardIsEmpty}
         neighborTotalOnBoard={neighborTotalOnBoard}
         categoryFilter={categoryFilter}
         onCategoryChange={setCategoryFilter}
         onRemoveTool={requestRemoveListing}
         onBorrowTool={setBorrowingTool}
+        canLoadMore={boardCanLoadMore}
+        loadingMore={boardLoadingMore}
+        onLoadMore={loadMoreBoardPage}
       />
 
       <MarkReturnedConfirmModal loanActions={loanActions} />
@@ -139,6 +148,9 @@ export function ToolsPage() {
         onMarkReturned={(requestId, toolName) =>
           requestMarkReturned(requestId, toolName, "incoming")
         }
+        canLoadMore={myListingsCanLoadMore}
+        loadingMore={myListingsLoadingMore}
+        onLoadMore={loadMoreMyListingsPage}
       />
     </Container>
   );

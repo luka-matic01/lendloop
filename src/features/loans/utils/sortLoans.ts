@@ -18,6 +18,11 @@ export function sortLoansForList(loans: LoanView[]): LoanView[] {
   });
 }
 
+/** Past / closed loans: newest request first (recent declines and returns on top). */
+export function sortClosedLoansByDate(loans: LoanView[]): LoanView[] {
+  return [...loans].sort((a, b) => b._creationTime - a._creationTime);
+}
+
 export function isClosedLoanStatus(status: LoanView["status"]): boolean {
   return status === "returned" || status === "declined";
 }
@@ -34,6 +39,6 @@ export function partitionLoansForSection(loans: LoanView[]) {
   }
   return {
     open: sortLoansForList(open),
-    history: sortLoansForList(history),
+    history: sortClosedLoansByDate(history),
   };
 }

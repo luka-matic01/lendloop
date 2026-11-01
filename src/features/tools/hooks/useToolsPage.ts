@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { useCallback, useMemo, useState } from "react";
 
 import { useToast } from "@/components/ui";
@@ -11,6 +11,10 @@ import type { Id } from "convex/_generated/dataModel";
 
 import { TOOLS_COPY } from "../constants/copy";
 import type { ToolCategoryKey } from "../constants/labels";
+import {
+  BOARD_PAGE_SIZE,
+  MY_LISTINGS_PAGE_SIZE,
+} from "../constants/pagination";
 import type { BoardTool, MyTool } from "../types/tools";
 
 type ListingConfirmRemove = {
@@ -41,39 +45,53 @@ export function useToolsPage() {
   );
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
 
-  const boardToolsQuery = useQuery(api.tools.listBoard, isReady ? {} : "skip");
-  const myToolsQuery = useQuery(api.tools.listMine, isReady ? {} : "skip");
+  const boardCategory =
+    categoryFilter === "all" ? undefined : categoryFilter;
+
+  const {
+    results: boardTools,
+    status: boardStatus,
+    loadMore: loadMoreBoard,
+  } = usePaginatedQuery(
+    api.tools.listBoard,
+    isReady ? { category: boardCategory } : "skip",
+    { initialNumItems: BOARD_PAGE_SIZE },
+  );
+
+  const {
+    results: myTools,
+    status: myListingsStatus,
+    loadMore: loadMoreMyListings,
+  } = usePaginatedQuery(
+    api.tools.listMine,
+    isReady ? {} : "skip",
+    { initialNumItems: MY_LISTINGS_PAGE_SIZE },
+  );
 
   const removeTool = useMutation(api.tools.remove);
   const setAvailability = useMutation(api.tools.setAvailability);
 
-  const boardTools = useMemo(() => boardToolsQuery ?? [], [boardToolsQuery]);
-  const myTools = useMemo(() => myToolsQuery ?? [], [myToolsQuery]);
-
-  const filteredBoardTools = useMemo((): BoardTool[] => {
-    if (boardToolsQuery === undefined) {
-      return [];
-    }
-    if (categoryFilter === "all") {
-      return boardToolsQuery;
-    }
-    return boardToolsQuery.filter((tool) => tool.category === categoryFilter);
-  }, [boardToolsQuery, categoryFilter]);
-
   const neighborBoardTools = useMemo(
-    (): BoardTool[] => filteredBoardTools.filter((tool) => !tool.isOwner),
-    [filteredBoardTools],
-  );
-
-  const neighborTotalOnBoard = useMemo(
-    () => boardTools.filter((tool) => !tool.isOwner).length,
+    (): BoardTool[] => boardTools.filter((tool) => !tool.isOwner),
     [boardTools],
   );
 
+  const neighborTotalOnBoard = neighborBoardTools.length;
+
+  const boardIsEmpty =
+    boardStatus !== "LoadingFirstPage" &&
+    boardTools.length === 0 &&
+    boardStatus === "Exhausted";
+
   const isLoading =
     !isReady ||
-    boardToolsQuery === undefined ||
-    myToolsQuery === undefined;
+    boardStatus === "LoadingFirstPage" ||
+    myListingsStatus === "LoadingFirstPage";
+
+  const boardCanLoadMore = boardStatus === "CanLoadMore";
+  const boardLoadingMore = boardStatus === "LoadingMore";
+  const myListingsCanLoadMore = myListingsStatus === "CanLoadMore";
+  const myListingsLoadingMore = myListingsStatus === "LoadingMore";
 
   const openListModal = useCallback(() => {
     setEditingTool(null);
@@ -163,6 +181,14 @@ export function useToolsPage() {
     }
   }, [listingConfirm, removeTool, setAvailability, toast]);
 
+  const loadMoreBoardPage = useCallback(() => {
+    loadMoreBoard(BOARD_PAGE_SIZE);
+  }, [loadMoreBoard]);
+
+  const loadMoreMyListingsPage = useCallback(() => {
+    loadMoreMyListings(MY_LISTINGS_PAGE_SIZE);
+  }, [loadMoreMyListings]);
+
   return {
     phase,
     errorMessage,
@@ -176,10 +202,16 @@ export function useToolsPage() {
     openEditModal,
     closeToolFormModal,
     boardTools,
+    boardIsEmpty,
     myTools,
-    filteredBoardTools,
     neighborBoardTools,
     neighborTotalOnBoard,
+    boardCanLoadMore,
+    boardLoadingMore,
+    loadMoreBoardPage,
+    myListingsCanLoadMore,
+    myListingsLoadingMore,
+    loadMoreMyListingsPage,
     listingConfirm,
     confirmSubmitting,
     requestRemoveListing,

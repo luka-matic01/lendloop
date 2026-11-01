@@ -40,7 +40,7 @@ export function LoansPastSection({ isReady }: LoansPastSectionProps) {
   }
 
   return (
-    <section aria-labelledby="loans-past-heading" className="border-t border-line pt-6">
+    <section aria-labelledby="loans-past-heading">
       <h2 id="loans-past-heading" className="sr-only">
         {LOANS_COPY.pastLoansSectionTitle}
       </h2>

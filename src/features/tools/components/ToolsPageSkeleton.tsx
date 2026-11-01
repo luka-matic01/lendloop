@@ -15,7 +15,7 @@ export function ToolsPageSkeleton() {
       <NeighborToolsSection
         isLoading
         tools={[]}
-        totalOnBoard={0}
+        boardIsEmpty
         neighborTotalOnBoard={0}
         categoryFilter="all"
         onCategoryChange={() => {}}
