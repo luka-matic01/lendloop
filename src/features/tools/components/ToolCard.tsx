@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui";
+import { Button, TrustedLenderIndicator } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 import { TOOLS_COPY } from "../constants/copy";
@@ -39,13 +39,11 @@ export function ToolCard({ tool, onRemove, onBorrow }: ToolCardProps) {
             <p
               className={cn(
                 TOOL_CARD_FOOTER_TEXT_CLASS,
-                "min-w-0 truncate sm:whitespace-normal",
+                "flex min-w-0 items-center gap-x-1 truncate sm:whitespace-normal",
               )}
             >
-              {tool.ownerName}
-              {tool.ownerIsTrustedLender ? (
-                <span className="text-positive"> · Trusted</span>
-              ) : null}
+              <span className="truncate">{tool.ownerName}</span>
+              {tool.ownerIsTrustedLender ? <TrustedLenderIndicator /> : null}
             </p>
             <div className="flex shrink-0 items-center gap-2">
               {showBorrow ? (

@@ -9,7 +9,10 @@ import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { requireToolAccess, requireUser } from "./lib/auth";
 import { AuthErrorCode, authError } from "./lib/errors";
-import { BOARD_LIST_DESCRIPTION_MAX } from "./lib/limits";
+import {
+  BOARD_LIST_DESCRIPTION_MAX,
+  HOME_PUBLIC_POOL_SIZE,
+} from "./lib/limits";
 import {
   activeBorrowStatusByToolForBorrower,
   approvedLoansByToolForLender,
@@ -139,7 +142,7 @@ async function rejectIfToolOnActiveLoan(
   }
 }
 
-/** Homepage teaser — name and category only, newest six available listings. */
+/** Homepage teaser pool — name and category only; client picks six with spread. */
 export const listPublic = query({
   args: {},
   returns: v.array(
@@ -154,7 +157,7 @@ export const listPublic = query({
       .query("tools")
       .withIndex("by_available_category", (q) => q.eq("isAvailable", true))
       .order("desc")
-      .take(6);
+      .take(HOME_PUBLIC_POOL_SIZE);
 
     return rows.map(({ _id, name, category }) => ({ _id, name, category }));
   },

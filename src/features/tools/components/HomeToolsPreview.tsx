@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { usePaginatedQuery } from "convex/react";
 
 import { buttonClassName, Panel } from "@/components/ui";
@@ -11,10 +11,11 @@ import { BorrowRequestModal } from "@/features/loans";
 import type { PublicToolListing } from "@/lib/convex-server";
 import { api } from "convex/_generated/api";
 
-import { HOME_BOARD_PREVIEW_LIMIT, TOOLS_COPY } from "../constants/copy";
+import { TOOLS_COPY } from "../constants/copy";
 import { HOME_BOARD_PAGE_SIZE } from "../constants/pagination";
 import { TOOL_CARD_GRID_CLASS } from "../constants/visual";
 import type { BoardTool } from "../types/tools";
+import { pickHomeBoardPreview } from "../utils/pickHomeBoardPreview";
 import { HomeToolsFrame } from "./HomeToolsFrame";
 import { PublicToolCard } from "./PublicToolCard";
 import { ToolCard } from "./ToolCard";
@@ -35,6 +36,11 @@ export function HomeToolsPreview({
     return <HomeSignedInPreview />;
   }
 
+  const preview = useMemo(
+    () => pickHomeBoardPreview(publicTools),
+    [publicTools],
+  );
+
   return (
     <HomeToolsFrame description={TOOLS_COPY.homeBoardPublicDescription}>
       <div className="space-y-4">
@@ -46,14 +52,25 @@ export function HomeToolsPreview({
             </p>
           </Panel>
         ) : (
-          <HomePublicToolList tools={publicTools} />
+          <HomeBoardToolGrid
+            tools={preview}
+            renderCard={(tool) => (
+              <PublicToolCard tool={tool} className="h-full" />
+            )}
+          />
         )}
       </div>
     </HomeToolsFrame>
   );
 }
 
-function HomePublicToolList({ tools }: { tools: PublicToolListing[] }) {
+function HomeBoardToolGrid<T extends { _id: string }>({
+  tools,
+  renderCard,
+}: {
+  tools: T[];
+  renderCard: (tool: T) => ReactNode;
+}) {
   if (tools.length === 0) {
     return (
       <Panel>
@@ -66,7 +83,7 @@ function HomePublicToolList({ tools }: { tools: PublicToolListing[] }) {
     <ul className={TOOL_CARD_GRID_CLASS}>
       {tools.map((tool) => (
         <li key={tool._id} className="min-h-0">
-          <PublicToolCard tool={tool} className="h-full" />
+          {renderCard(tool)}
         </li>
       ))}
     </ul>
@@ -86,13 +103,10 @@ function HomeSignedInPreview() {
 
   const isLoading = !isReady || boardStatus === "LoadingFirstPage";
 
-  const previewTools = useMemo(
-    () =>
-      boardTools
-        .filter((tool) => !tool.isOwner)
-        .slice(0, HOME_BOARD_PREVIEW_LIMIT),
-    [boardTools],
-  );
+  const preview = useMemo(() => {
+    const neighbors = boardTools.filter((tool) => !tool.isOwner);
+    return pickHomeBoardPreview(neighbors);
+  }, [boardTools]);
 
   return (
     <HomeToolsFrame
@@ -109,24 +123,12 @@ function HomeSignedInPreview() {
         <ToolCardSkeletonGrid label="Loading tools on the board" />
       ) : (
         <div className="space-y-4">
-          {previewTools.length === 0 ? (
-            <Panel>
-              <p className="text-base text-ink-muted">
-                {TOOLS_COPY.emptyBoard}
-              </p>
-            </Panel>
-          ) : (
-            <ul className={TOOL_CARD_GRID_CLASS}>
-              {previewTools.map((tool) => (
-                <li key={tool._id} className="min-h-0">
-                  <ToolCard
-                    tool={tool}
-                    onBorrow={() => setBorrowingTool(tool)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
+          <HomeBoardToolGrid
+            tools={preview}
+            renderCard={(tool) => (
+              <ToolCard tool={tool} onBorrow={() => setBorrowingTool(tool)} />
+            )}
+          />
           <Link
             href={ROUTES.tools}
             className={buttonClassName({ variant: "secondary", size: "sm" })}

@@ -51,7 +51,7 @@ describe("tools", () => {
     expect(afterHide).toHaveLength(0);
   });
 
-  it("listPublic returns at most six newest available tools", async () => {
+  it("listPublic returns a pool of newest available tools for homepage pick", async () => {
     const t = createConvexTest();
     const { session } = await provisionUser(t, "lender@test.com");
 
@@ -65,7 +65,7 @@ describe("tools", () => {
     }
 
     const publicRows = await t.query(api.tools.listPublic, {});
-    expect(publicRows).toHaveLength(6);
+    expect(publicRows).toHaveLength(7);
     expect(publicRows.map((row) => row.name)).toEqual([
       "Tool 6",
       "Tool 5",
@@ -73,6 +73,7 @@ describe("tools", () => {
       "Tool 3",
       "Tool 2",
       "Tool 1",
+      "Tool 0",
     ]);
   });
 

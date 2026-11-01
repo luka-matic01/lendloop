@@ -20,11 +20,10 @@ export function formatLoanPartyLine(
       : LOANS_COPY.requestedBy(loan.borrowerName);
   }
   if (perspective === "mine") {
-    const trusted = loan.lenderIsTrusted ? LOANS_COPY.trustedLenderTag : "";
     if (loan.status === "pending" || loan.status === "declined") {
-      return LOANS_COPY.requestSentTo(loan.lenderName) + trusted;
+      return LOANS_COPY.requestSentTo(loan.lenderName);
     }
-    return LOANS_COPY.borrowedFrom(loan.lenderName) + trusted;
+    return LOANS_COPY.borrowedFrom(loan.lenderName);
   }
   return `${loan.borrowerName} → ${loan.lenderName}`;
 }

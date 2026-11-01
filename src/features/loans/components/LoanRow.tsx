@@ -1,13 +1,11 @@
-import { Button } from "@/components/ui";
-import {
-  BORROW_DUE_TONE_CLASS,
-  formatBorrowDuePhrase,
-  getBorrowDueUrgency,
-} from "@/lib/format-borrow-due";
+import { Button, TrustedLenderIndicator } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 import { LOANS_COPY } from "../constants/copy";
-import { LOAN_ROW_TITLE_CLASS } from "../constants/visual";
+import {
+  LOAN_ROW_ACTIONS_SLOT_CLASS,
+  LOAN_ROW_TITLE_CLASS,
+} from "../constants/visual";
 import type { useLoanActions } from "../hooks/useLoanActions";
 import type { LoanView } from "../types/loans";
 import {
@@ -123,29 +121,15 @@ function renderRowActions(
 function LoanRowDates({
   startDate,
   endDate,
-  duePhrase,
-  dueUrgency,
   className,
 }: {
   startDate: string;
   endDate: string;
-  duePhrase: string | null;
-  dueUrgency: ReturnType<typeof getBorrowDueUrgency> | null;
   className?: string;
 }) {
   return (
-    <span
-      className={cn(
-        "flex flex-wrap items-center gap-x-2 gap-y-0.5",
-        className,
-      )}
-    >
-      <span className="whitespace-nowrap">
-        {formatLoanDateRange(startDate, endDate)}
-      </span>
-      {duePhrase && dueUrgency ? (
-        <span className={BORROW_DUE_TONE_CLASS[dueUrgency]}>{duePhrase}</span>
-      ) : null}
+    <span className={cn("whitespace-nowrap", className)}>
+      {formatLoanDateRange(startDate, endDate)}
     </span>
   );
 }
@@ -160,14 +144,10 @@ export function LoanRow({
   const partyLine = formatLoanPartyLine(loan, perspective);
   const automationDetail = formatLoanAutomationDetail(loan);
   const isClosed = isClosedLoanStatus(loan.status);
-  const isActiveBorrow = loan.status === "approved";
-  const duePhrase = isActiveBorrow
-    ? formatBorrowDuePhrase(loan.endDate)
-    : null;
-  const dueUrgency = isActiveBorrow
-    ? getBorrowDueUrgency(loan.endDate)
-    : null;
   const actions = renderRowActions(loan, perspective, loanActions);
+  const showTrustedLender =
+    perspective === "mine" && loan.lenderIsTrusted;
+  const reserveActionSlot = loanActions != null;
 
   return (
     <div
@@ -177,7 +157,15 @@ export function LoanRow({
         className,
       )}
     >
-      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-5">
+      <div
+        className={cn(
+          "flex flex-col gap-2.5",
+          "lg:grid lg:items-center lg:gap-x-5 xl:gap-x-6",
+          reserveActionSlot
+            ? "lg:grid-cols-[auto_minmax(0,1fr)_auto]"
+            : "lg:grid-cols-[auto_minmax(0,1fr)]",
+        )}
+      >
         <p
           className={cn(
             LOAN_ROW_TITLE_CLASS,
@@ -197,21 +185,25 @@ export function LoanRow({
         >
           <LoanStatusBadge status={loan.status} perspective={perspective} />
 
-          <p className="min-w-0 [overflow-wrap:anywhere] leading-snug lg:px-2 lg:text-center">
-            {partyLine}
+          <p className="flex min-w-0 flex-wrap items-center justify-start gap-x-1 [overflow-wrap:anywhere] leading-snug lg:justify-center lg:px-2 lg:text-center">
+            <span>{partyLine}</span>
+            {showTrustedLender ? <TrustedLenderIndicator /> : null}
           </p>
 
           <LoanRowDates
             startDate={loan.startDate}
             endDate={loan.endDate}
-            duePhrase={duePhrase}
-            dueUrgency={dueUrgency}
             className="lg:justify-self-end lg:text-right"
           />
         </div>
 
-        {actions ? (
-          <div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end">
+        {reserveActionSlot ? (
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-2",
+              LOAN_ROW_ACTIONS_SLOT_CLASS,
+            )}
+          >
             {actions}
           </div>
         ) : null}

@@ -16,6 +16,17 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### Demo neighborhood data
+
+After Clerk and Convex are configured (`npx convex dev`, `.env.local`, and `npx convex env set INITIAL_ADMIN_EMAIL your@email.com`):
+
+1. Sign in once in the app (creates your Convex user row).
+2. Run **`npm run seed`** — inserts seven demo neighbors with 30+ board tools, plus three `[Demo] …` listings on **My listings** for `INITIAL_ADMIN_EMAIL`.
+
+Re-running seed is safe: demo neighbors are replaced, and only `[Demo]` listings on your account are refreshed.
+
+Override the owner email: `npx convex run seed:run '{"ownerEmail":"you@example.com"}'`.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

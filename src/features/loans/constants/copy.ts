@@ -123,7 +123,7 @@ export const LOANS_COPY = {
   borrowedFrom(name: string) {
     return `Borrowed from ${name}`;
   },
-  trustedLenderTag: " · Trusted lender",
+  trustedLenderLabel: "Trusted lender",
   markTrusted: "Mark trusted lender",
   removeTrusted: "Remove trusted",
   borrowModalTitle(toolName: string) {
