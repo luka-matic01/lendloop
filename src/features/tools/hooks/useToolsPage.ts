@@ -74,7 +74,14 @@ export function useToolsPage() {
     displayItems: neighborBoardTools,
     isInitialLoad: neighborBoardLoading,
     isRefreshing: neighborBoardRefreshing,
-  } = useStaleTabResults(categoryFilter, boardStatus, boardTools);
+    isSyncingPagination: neighborBoardSyncingPagination,
+  } = useStaleTabResults(
+    categoryFilter,
+    boardStatus,
+    boardTools,
+    loadMoreBoard,
+    BOARD_PAGE_SIZE,
+  );
 
   const removeTool = useMutation(api.tools.remove);
   const setAvailability = useMutation(api.tools.setAvailability);
@@ -88,7 +95,9 @@ export function useToolsPage() {
     !isReady || myListingsStatus === "LoadingFirstPage";
 
   const boardCanLoadMore =
-    !neighborBoardRefreshing && boardStatus === "CanLoadMore";
+    !neighborBoardRefreshing &&
+    !neighborBoardSyncingPagination &&
+    boardStatus === "CanLoadMore";
   const boardLoadingMore = boardStatus === "LoadingMore";
   const myListingsCanLoadMore = myListingsStatus === "CanLoadMore";
   const myListingsLoadingMore = myListingsStatus === "LoadingMore";
@@ -203,6 +212,7 @@ export function useToolsPage() {
     isPageBootstrapping,
     neighborBoardLoading,
     neighborBoardRefreshing,
+    neighborBoardSyncingPagination,
     categoryFilter,
     setCategoryFilter,
     listModalOpen,

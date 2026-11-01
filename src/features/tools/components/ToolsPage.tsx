@@ -62,6 +62,7 @@ export function ToolsPage() {
     isPageBootstrapping,
     neighborBoardLoading,
     neighborBoardRefreshing,
+    neighborBoardSyncingPagination,
     categoryFilter,
     setCategoryFilter,
     editingTool,
@@ -137,7 +138,9 @@ export function ToolsPage() {
 
       <NeighborToolsSection
         isLoading={neighborBoardLoading}
-        isRefreshing={neighborBoardRefreshing}
+        isRefreshing={
+          neighborBoardRefreshing || neighborBoardSyncingPagination
+        }
         tools={neighborBoardTools}
         boardIsEmpty={boardIsEmpty}
         neighborTotalOnBoard={neighborTotalOnBoard}

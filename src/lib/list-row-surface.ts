@@ -6,7 +6,7 @@ export const LIST_ROW_BLEED_CLASS = "-mx-3 px-3 sm:-mx-4 sm:px-4";
 
 /**
  * Shared row washes for loan + listing lists (on `bg-board-soft` panels).
- * Only active lends and overdue returns get a fill — everything else is panel default.
+ * Active lends and overdue returns get a status wash; pending and default rows use `bg-surface`.
  */
 export type ListRowSurface =
   | "default"
@@ -16,11 +16,13 @@ export type ListRowSurface =
   | "overdue"
   | "inactive";
 
+const NEUTRAL_ROW_CLASS = cn(LIST_ROW_BLEED_CLASS, "bg-surface");
+
 const SURFACE_CLASS: Record<ListRowSurface, string> = {
-  default: LIST_ROW_BLEED_CLASS,
-  /** Pending / requests — badge + actions, no row tint. */
-  needs_action: LIST_ROW_BLEED_CLASS,
-  awaiting: LIST_ROW_BLEED_CLASS,
+  default: NEUTRAL_ROW_CLASS,
+  /** Pending / requests — badge + actions on the default white row. */
+  needs_action: NEUTRAL_ROW_CLASS,
+  awaiting: NEUTRAL_ROW_CLASS,
   /** Approved loan / gear out on loan. */
   out_active: cn(LIST_ROW_BLEED_CLASS, "bg-positive-soft/35"),
   /** Past due return date. */
@@ -29,7 +31,7 @@ const SURFACE_CLASS: Record<ListRowSurface, string> = {
     "border-l-4 border-l-negative bg-negative-soft/40",
   ),
   /** Paused listing / closed loan history. */
-  inactive: LIST_ROW_BLEED_CLASS,
+  inactive: NEUTRAL_ROW_CLASS,
 };
 
 export function listRowSurfaceClass(surface: ListRowSurface): string {
