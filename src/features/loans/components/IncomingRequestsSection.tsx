@@ -5,31 +5,29 @@ import { useQuery } from "convex/react";
 import { api } from "convex/_generated/api";
 
 import { LOANS_COPY } from "../constants/copy";
-import { useLoanActions } from "../hooks/useLoanActions";
-import {
-  filterOpenLoansForSection,
-  sortLoansForList,
-} from "../utils/sortLoans";
+import type { useLoanActions } from "../hooks/useLoanActions";
+import { partitionLoansForSection } from "../utils/sortLoans";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanSection } from "./LoanSection";
 
 type IncomingRequestsSectionProps = {
   isReady: boolean;
+  loanActions: ReturnType<typeof useLoanActions>;
 };
 
 export function IncomingRequestsSection({
   isReady,
+  loanActions,
 }: IncomingRequestsSectionProps) {
   const loans = useQuery(
     api.loanRequests.listIncomingRequests,
     isReady ? {} : "skip",
   );
-  const loanActions = useLoanActions();
 
   const isLoading = !isReady || loans === undefined;
-  const sortedLoans = sortLoansForList(filterOpenLoansForSection(loans ?? []));
-  const pendingCount = sortedLoans.filter((l) => l.status === "pending").length;
-  const outCount = sortedLoans.filter((l) => l.status === "approved").length;
+  const { open } = partitionLoansForSection(loans ?? []);
+  const pendingCount = open.filter((l) => l.status === "pending").length;
+  const outCount = open.filter((l) => l.status === "approved").length;
 
   return (
     <LoanSection
@@ -37,13 +35,13 @@ export function IncomingRequestsSection({
       heading={LOANS_COPY.incomingHeading}
       summary={LOANS_COPY.sectionSummary(pendingCount, outCount)}
       isLoading={isLoading}
-      itemCount={sortedLoans.length}
+      itemCount={open.length}
       emptyMessage={LOANS_COPY.emptyIncoming}
       skeletonLabel="Loading incoming requests"
       skeletonActionCount={2}
     >
       <LoanListPanel
-        loans={sortedLoans}
+        loans={open}
         perspective="incoming"
         loanActions={loanActions}
       />

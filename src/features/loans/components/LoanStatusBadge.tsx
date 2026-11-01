@@ -2,7 +2,10 @@ import { Check, Clock, Handshake, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-import { LOAN_STATUS_LABELS } from "../constants/copy";
+import {
+  type LoanStatusPerspective,
+  loanStatusLabel,
+} from "../constants/copy";
 import type { LoanView } from "../types/loans";
 
 const statusConfig: Record<
@@ -17,10 +20,15 @@ const statusConfig: Record<
 
 type LoanStatusBadgeProps = {
   status: LoanView["status"];
+  perspective: LoanStatusPerspective;
   className?: string;
 };
 
-export function LoanStatusBadge({ status, className }: LoanStatusBadgeProps) {
+export function LoanStatusBadge({
+  status,
+  perspective,
+  className,
+}: LoanStatusBadgeProps) {
   const { tone, Icon } = statusConfig[status];
 
   return (
@@ -32,7 +40,7 @@ export function LoanStatusBadge({ status, className }: LoanStatusBadgeProps) {
       )}
     >
       <Icon className="size-3.5 shrink-0" aria-hidden />
-      {LOAN_STATUS_LABELS[status]}
+      {loanStatusLabel(status, perspective)}
     </span>
   );
 }

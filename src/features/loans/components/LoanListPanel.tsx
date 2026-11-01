@@ -17,23 +17,36 @@ type LoanListPanelProps =
       loans: LoanView[];
       perspective: LoanPerspective;
       loanActions?: LoanRowActions;
+      density?: "default" | "compact";
       children?: never;
     };
 
 export function LoanListPanel(props: LoanListPanelProps) {
+  const density =
+    "loans" in props && props.loans ? (props.density ?? "default") : "default";
+
   return (
-    <Panel className={LOAN_LIST_PANEL_CLASS}>
+    <Panel
+      className={cn(
+        LOAN_LIST_PANEL_CLASS,
+        density === "compact" && "!bg-surface border-line",
+      )}
+    >
       <ul className={LOAN_LIST_UL_CLASS}>
         {"loans" in props && props.loans
           ? props.loans.map((loan) => (
               <li
                 key={loan._id}
-                className={cn(loanRowSurfaceClass(loan, props.perspective))}
+                className={cn(
+                  density === "default" &&
+                    loanRowSurfaceClass(loan, props.perspective),
+                )}
               >
                 <LoanRow
                   loan={loan}
                   perspective={props.perspective}
                   loanActions={props.loanActions}
+                  density={density}
                 />
               </li>
             ))

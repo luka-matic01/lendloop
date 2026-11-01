@@ -12,13 +12,11 @@ import { api } from "convex/_generated/api";
 import { LOANS_COPY } from "../constants/copy";
 import { HOME_LOANS_PREVIEW_LIMIT } from "../constants/limits";
 import { useLoanActions } from "../hooks/useLoanActions";
-import {
-  filterOpenLoansForSection,
-  sortLoansForList,
-} from "../utils/sortLoans";
+import { partitionLoansForSection } from "../utils/sortLoans";
 import { HomeLoansFrame } from "./HomeLoansFrame";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanListSkeleton } from "./LoanRowSkeleton";
+import { MarkReturnedConfirmModal } from "./MarkReturnedConfirmModal";
 
 export function HomeLoansPreview() {
   const { phase } = useEnsureCurrentUser();
@@ -34,11 +32,11 @@ export function HomeLoansPreview() {
   const isLoading = !isReady || incoming === undefined || mine === undefined;
 
   const openIncoming = useMemo(
-    () => sortLoansForList(filterOpenLoansForSection(incoming ?? [])),
+    () => partitionLoansForSection(incoming ?? []).open,
     [incoming],
   );
   const openMine = useMemo(
-    () => sortLoansForList(filterOpenLoansForSection(mine ?? [])),
+    () => partitionLoansForSection(mine ?? []).open,
     [mine],
   );
 
@@ -127,6 +125,7 @@ export function HomeLoansPreview() {
           </Link>
         </div>
       )}
+      <MarkReturnedConfirmModal loanActions={loanActions} />
     </HomeLoansFrame>
   );
 }

@@ -168,7 +168,7 @@ describe("loanRequests", () => {
     );
     const byId = new Map(incoming.map((r) => [r._id, r]));
     expect(byId.get(requestA)?.status).toBe("approved");
-    expect(byId.has(requestB)).toBe(false);
+    expect(byId.get(requestB)?.status).toBe("declined");
 
     const allLoans = await admin.query(api.loanRequests.listAllForAdmin, {});
     expect(allLoans.find((r) => r._id === requestB)?.status).toBe("declined");
@@ -257,7 +257,8 @@ describe("loanRequests", () => {
       api.loanRequests.listMyRequests,
       {},
     );
-    expect(myRequests).toHaveLength(0);
+    expect(myRequests).toHaveLength(1);
+    expect(myRequests[0]?.status).toBe("returned");
 
     const { session: admin } = await provisionUser(t, ADMIN_EMAIL);
     const allLoans = await admin.query(api.loanRequests.listAllForAdmin, {});

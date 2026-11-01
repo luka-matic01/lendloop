@@ -8,8 +8,11 @@ import { useEnsureCurrentUser } from "@/features/account";
 import { api } from "convex/_generated/api";
 
 import { LOANS_COPY } from "../constants/copy";
+import { useLoanActions } from "../hooks/useLoanActions";
 import { AllLoansSection } from "./AllLoansSection";
 import { IncomingRequestsSection } from "./IncomingRequestsSection";
+import { LoansPastSection } from "./LoansPastSection";
+import { MarkReturnedConfirmModal } from "./MarkReturnedConfirmModal";
 import { MyRequestsSection } from "./MyRequestsSection";
 
 const LOANS_PAGE_CLASS = `space-y-8 ${SECTION_Y_CLASS} sm:space-y-10`;
@@ -17,6 +20,7 @@ const LOANS_PAGE_CLASS = `space-y-8 ${SECTION_Y_CLASS} sm:space-y-10`;
 export function LoansPage() {
   const { phase, errorMessage } = useEnsureCurrentUser();
   const isReady = phase === "ready";
+  const loanActions = useLoanActions();
 
   const me = useQuery(api.users.me, isReady ? {} : "skip");
   const isAdmin = me?.role === "admin";
@@ -45,9 +49,11 @@ export function LoansPage() {
         </p>
       </header>
 
-      <IncomingRequestsSection isReady={isReady} />
-      <MyRequestsSection isReady={isReady} />
+      <IncomingRequestsSection isReady={isReady} loanActions={loanActions} />
+      <MyRequestsSection isReady={isReady} loanActions={loanActions} />
+      <LoansPastSection isReady={isReady} />
       <AllLoansSection isReady={isReady} isAdmin={isAdmin ?? false} />
+      <MarkReturnedConfirmModal loanActions={loanActions} />
     </Container>
   );
 }

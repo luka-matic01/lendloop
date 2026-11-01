@@ -15,12 +15,16 @@ export function formatLoanPartyLine(
   perspective: LoanPerspective,
 ): string {
   if (perspective === "incoming") {
-    return loan.status === "approved"
+    return loan.status === "approved" || loan.status === "returned"
       ? LOANS_COPY.borrowedBy(loan.borrowerName)
       : LOANS_COPY.requestedBy(loan.borrowerName);
   }
   if (perspective === "mine") {
-    return `From ${loan.lenderName}${loan.lenderIsTrusted ? " · Trusted lender" : ""}`;
+    const trusted = loan.lenderIsTrusted ? LOANS_COPY.trustedLenderTag : "";
+    if (loan.status === "pending" || loan.status === "declined") {
+      return LOANS_COPY.requestSentTo(loan.lenderName) + trusted;
+    }
+    return LOANS_COPY.borrowedFrom(loan.lenderName) + trusted;
   }
   return `${loan.borrowerName} → ${loan.lenderName}`;
 }

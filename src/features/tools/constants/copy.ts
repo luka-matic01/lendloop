@@ -4,7 +4,7 @@ export const HOME_BOARD_PREVIEW_LIMIT = 6;
 export const TOOLS_COPY = {
   homeBoardTitle: "On the board",
   homeBoardPublicDescription:
-    "Names and categories only — sign in to see condition, lender, and borrow details.",
+    "Sign in to see condition, lender, and borrow details.",
   homeBoardSignedInDescription: "Latest gear neighbors are sharing.",
   pageTitle: "Tool board",
   pageDescription:

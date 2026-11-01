@@ -8,10 +8,12 @@ export function HomeToolsSectionSkeleton() {
       busy
       description={TOOLS_COPY.homeBoardPublicDescription}
     >
-      <ToolCardSkeletonGrid
-        variant="public"
-        label="Loading tools on the board"
-      />
+      <div className="space-y-4">
+        <ToolCardSkeletonGrid
+          variant="public"
+          label="Loading tools on the board"
+        />
+      </div>
     </HomeToolsFrame>
   );
 }

@@ -25,6 +25,7 @@ type LoanRowProps = {
   loan: LoanView;
   perspective: LoanPerspective;
   loanActions?: LoanRowActions;
+  density?: "default" | "compact";
   className?: string;
 };
 
@@ -36,7 +37,7 @@ function renderRowActions(
   if (!loanActions) {
     return null;
   }
-  const { pendingId, approve, decline, markReturned, setTrustedLender } =
+  const { pendingId, approve, decline, requestMarkReturned, setTrustedLender } =
     loanActions;
   const isBusy = pendingId === loan._id;
 
@@ -71,7 +72,9 @@ function renderRowActions(
           size="sm"
           variant="secondary"
           disabled={isBusy}
-          onClick={() => markReturned(loan._id, loan.toolName)}
+          onClick={() =>
+            requestMarkReturned(loan._id, loan.toolName, "incoming")
+          }
         >
           {LOANS_COPY.markReturned}
         </Button>
@@ -88,7 +91,7 @@ function renderRowActions(
           size="sm"
           variant="secondary"
           disabled={isBusy}
-          onClick={() => markReturned(loan._id, loan.toolName)}
+          onClick={() => requestMarkReturned(loan._id, loan.toolName, "mine")}
         >
           {LOANS_COPY.markReturned}
         </Button>
@@ -117,10 +120,41 @@ function renderRowActions(
   );
 }
 
+function LoanRowDates({
+  startDate,
+  endDate,
+  duePhrase,
+  dueUrgency,
+  className,
+}: {
+  startDate: string;
+  endDate: string;
+  duePhrase: string | null;
+  dueUrgency: ReturnType<typeof getBorrowDueUrgency> | null;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "flex flex-wrap items-center gap-x-2 gap-y-0.5",
+        className,
+      )}
+    >
+      <span className="whitespace-nowrap">
+        {formatLoanDateRange(startDate, endDate)}
+      </span>
+      {duePhrase && dueUrgency ? (
+        <span className={BORROW_DUE_TONE_CLASS[dueUrgency]}>{duePhrase}</span>
+      ) : null}
+    </span>
+  );
+}
+
 export function LoanRow({
   loan,
   perspective,
   loanActions,
+  density = "default",
   className,
 }: LoanRowProps) {
   const partyLine = formatLoanPartyLine(loan, perspective);
@@ -138,46 +172,53 @@ export function LoanRow({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-3.5",
-        isClosed && "opacity-55",
+        density === "default" ? "py-3 lg:py-3.5" : "py-2.5",
+        isClosed && "opacity-70",
         className,
       )}
     >
-      <div className="min-w-0 flex-1">
+      <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between lg:gap-5">
         <p
           className={cn(
             LOAN_ROW_TITLE_CLASS,
+            density === "compact" && "text-base sm:text-lg",
             isClosed && "text-ink-muted",
+            "min-w-0 lg:w-40 lg:shrink-0 lg:truncate xl:w-44",
           )}
         >
           {loan.toolName}
         </p>
 
-        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-ink-muted">
-          <LoanStatusBadge status={loan.status} />
-          <span aria-hidden>·</span>
-          <span>{partyLine}</span>
-          <span aria-hidden>·</span>
-          <span>{formatLoanDateRange(loan.startDate, loan.endDate)}</span>
-          {duePhrase && dueUrgency ? (
-            <>
-              <span aria-hidden>·</span>
-              <span className={BORROW_DUE_TONE_CLASS[dueUrgency]}>
-                {duePhrase}
-              </span>
-            </>
-          ) : null}
+        <div
+          className={cn(
+            "flex w-full min-w-0 flex-1 flex-col gap-1.5 text-xs font-semibold text-ink-muted",
+            "lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:items-center lg:gap-x-5 lg:gap-y-0 xl:gap-x-6",
+          )}
+        >
+          <LoanStatusBadge status={loan.status} perspective={perspective} />
+
+          <p className="min-w-0 [overflow-wrap:anywhere] leading-snug lg:px-2 lg:text-center">
+            {partyLine}
+          </p>
+
+          <LoanRowDates
+            startDate={loan.startDate}
+            endDate={loan.endDate}
+            duePhrase={duePhrase}
+            dueUrgency={dueUrgency}
+            className="lg:justify-self-end lg:text-right"
+          />
         </div>
 
-        {automationDetail ? (
-          <p className="mt-1 text-xs text-ink-muted">{automationDetail}</p>
+        {actions ? (
+          <div className="flex flex-wrap items-center gap-2 lg:shrink-0 lg:justify-end">
+            {actions}
+          </div>
         ) : null}
       </div>
 
-      {actions ? (
-        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-          {actions}
-        </div>
+      {automationDetail && density === "default" ? (
+        <p className="mt-2 text-xs text-ink-muted">{automationDetail}</p>
       ) : null}
     </div>
   );

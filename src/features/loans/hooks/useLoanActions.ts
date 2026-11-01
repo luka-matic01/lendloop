@@ -8,7 +8,16 @@ import { convexErrorMessage } from "@/lib/convex-error-message";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 
-import { LOANS_COPY } from "../constants/copy";
+import {
+  LOANS_COPY,
+  type LoanReturnPerspective,
+} from "../constants/copy";
+
+export type MarkReturnedConfirm = {
+  requestId: Id<"loanRequests">;
+  toolName: string;
+  perspective: LoanReturnPerspective;
+};
 
 export function useLoanActions() {
   const toast = useToast();
@@ -18,6 +27,8 @@ export function useLoanActions() {
   const setTrustedMut = useMutation(api.users.setTrustedLender);
 
   const [pendingId, setPendingId] = useState<Id<"loanRequests"> | null>(null);
+  const [returnConfirm, setReturnConfirm] =
+    useState<MarkReturnedConfirm | null>(null);
 
   const approve = useCallback(
     async (requestId: Id<"loanRequests">, toolName: string) => {
@@ -49,20 +60,40 @@ export function useLoanActions() {
     [declineMut, toast],
   );
 
-  const markReturned = useCallback(
-    async (requestId: Id<"loanRequests">, toolName: string) => {
-      setPendingId(requestId);
-      try {
-        await markReturnedMut({ requestId });
-        toast(LOANS_COPY.toastReturned(toolName));
-      } catch (error) {
-        toast(convexErrorMessage(error, "Could not mark returned"), "error");
-      } finally {
-        setPendingId(null);
-      }
+  const requestMarkReturned = useCallback(
+    (
+      requestId: Id<"loanRequests">,
+      toolName: string,
+      perspective: LoanReturnPerspective,
+    ) => {
+      setReturnConfirm({ requestId, toolName, perspective });
     },
-    [markReturnedMut, toast],
+    [],
   );
+
+  const cancelMarkReturned = useCallback(() => {
+    if (pendingId !== null) {
+      return;
+    }
+    setReturnConfirm(null);
+  }, [pendingId]);
+
+  const confirmMarkReturned = useCallback(async () => {
+    if (!returnConfirm) {
+      return;
+    }
+    const { requestId, toolName } = returnConfirm;
+    setPendingId(requestId);
+    try {
+      await markReturnedMut({ requestId });
+      toast(LOANS_COPY.toastReturned(toolName));
+      setReturnConfirm(null);
+    } catch (error) {
+      toast(convexErrorMessage(error, "Could not mark returned"), "error");
+    } finally {
+      setPendingId(null);
+    }
+  }, [markReturnedMut, returnConfirm, toast]);
 
   const setTrustedLender = useCallback(
     async (
@@ -82,9 +113,12 @@ export function useLoanActions() {
 
   return {
     pendingId,
+    returnConfirm,
     approve,
     decline,
-    markReturned,
+    requestMarkReturned,
+    confirmMarkReturned,
+    cancelMarkReturned,
     setTrustedLender,
   };
 }

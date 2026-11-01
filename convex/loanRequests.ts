@@ -7,7 +7,6 @@ import { AuthErrorCode, authError } from "./lib/errors";
 import { LIST_PAGE_SIZE } from "./lib/limits";
 import {
   borrowerHasActiveRequestOnTool,
-  isOpenLoanRequestStatus,
   listPendingRequestsForToolExcept,
 } from "./lib/loans";
 import { hydrateLoanRequests, loanViewValidator } from "./lib/loanViews";
@@ -26,8 +25,7 @@ export const listMyRequests = query({
       .order("desc")
       .take(LIST_PAGE_SIZE);
 
-    const views = await hydrateLoanRequests(ctx, requests);
-    return views.filter((loan) => isOpenLoanRequestStatus(loan.status));
+    return await hydrateLoanRequests(ctx, requests);
   },
 });
 
@@ -43,8 +41,7 @@ export const listIncomingRequests = query({
       .order("desc")
       .take(LIST_PAGE_SIZE);
 
-    const views = await hydrateLoanRequests(ctx, requests);
-    return views.filter((loan) => isOpenLoanRequestStatus(loan.status));
+    return await hydrateLoanRequests(ctx, requests);
   },
 });
 

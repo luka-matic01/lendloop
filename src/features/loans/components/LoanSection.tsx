@@ -43,11 +43,11 @@ export function LoanSection({
           {heading}
           {isLoading ? (
             <Skeleton className="ml-2 inline-block h-5 w-8 align-middle" />
-          ) : (
+          ) : itemCount > 0 ? (
             <span className="ml-2 text-lg font-semibold text-ink-muted">
               ({itemCount})
             </span>
-          )}
+          ) : null}
         </h2>
         {!isLoading && summary ? (
           <p className="text-sm text-ink-muted">{summary}</p>

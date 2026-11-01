@@ -42,13 +42,10 @@ export function ToolCardSkeleton({
       style={skeletonDelay(index)}
     >
       {variant === "public" ? (
-        <>
-          <span className="inline-flex items-center gap-1.5">
-            <Skeleton className="size-7" />
-            <Skeleton className="h-3 w-16" />
-          </span>
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <Skeleton className={cn("h-6 sm:h-7", titleWidth)} />
-        </>
+          <Skeleton className="h-3 w-16" />
+        </div>
       ) : (
         <>
           <div className="flex items-start justify-between gap-2 sm:gap-3">

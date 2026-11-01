@@ -28,10 +28,12 @@ export function PublicToolCard({ tool, className }: PublicToolCardProps) {
         className,
       )}
     >
-      <h3 className={TOOL_CARD_TITLE_CLASS}>{tool.name}</h3>
-      <p className="text-xs font-semibold text-ink-muted">
-        {TOOL_CATEGORY_LABELS[tool.category]}
-      </p>
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <h3 className={TOOL_CARD_TITLE_CLASS}>{tool.name}</h3>
+        <span className="text-xs font-semibold text-ink-muted">
+          {TOOL_CATEGORY_LABELS[tool.category]}
+        </span>
+      </div>
     </Panel>
   );
 }

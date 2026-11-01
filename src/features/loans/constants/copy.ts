@@ -5,6 +5,29 @@ export const LOAN_STATUS_LABELS = {
   returned: "Returned",
 } as const;
 
+export type LoanStatusLabelKey = keyof typeof LOAN_STATUS_LABELS;
+
+/** Who is viewing the row — status copy is phrased for that side of the loan. */
+export type LoanStatusPerspective = "incoming" | "mine" | "admin";
+
+/** Lender vs borrower — used for mark-returned confirm copy. */
+export type LoanReturnPerspective = "incoming" | "mine";
+
+export function loanStatusLabel(
+  status: LoanStatusLabelKey,
+  perspective: LoanStatusPerspective,
+): string {
+  if (perspective === "mine") {
+    if (status === "approved") {
+      return "Borrowing";
+    }
+    if (status === "pending") {
+      return "Awaiting approval";
+    }
+  }
+  return LOAN_STATUS_LABELS[status];
+}
+
 export const LOANS_COPY = {
   homeLoansTitle: "Loans",
   homeLoansSignedInDescription:
@@ -40,13 +63,28 @@ export const LOANS_COPY = {
   seeAllLoans: "Open loans",
   pageTitle: "Loans",
   pageDescription:
-    "Incoming requests on your tools, your borrows, and loan activity.",
+    "Incoming requests on your tools and your borrows.",
   incomingHeading: "On your tools",
   myRequestsHeading: "Your borrows",
   allLoansHeading: "All loans",
   emptyIncoming: "No active requests or loans on your tools.",
   emptyMyRequests: "You have no active borrows or requests.",
   emptyAllLoans: "No loans on the platform yet.",
+  pastLoansSectionTitle: "Past loans",
+  showPastLoans(count: number) {
+    return count === 1 ? "Show 1 past loan" : `Show ${count} past loans`;
+  },
+  hidePastLoans: "Hide past loans",
+  pastLoansOnYourTools(count: number) {
+    return count === 1
+      ? "On your tools · 1 past"
+      : `On your tools · ${count} past`;
+  },
+  pastLoansYourBorrows(count: number) {
+    return count === 1
+      ? "Your borrows · 1 past"
+      : `Your borrows · ${count} past`;
+  },
   sectionSummary(pendingCount: number, outCount: number) {
     const parts: string[] = [];
     if (pendingCount > 0) {
@@ -61,12 +99,31 @@ export const LOANS_COPY = {
   approve: "Approve",
   decline: "Decline",
   markReturned: "Mark returned",
+  cancel: "Cancel",
+  confirmReturnAction: "Yes, mark returned",
+  confirmReturnTitleIncoming(toolName: string) {
+    return `Are you sure you got ${toolName} back?`;
+  },
+  confirmReturnTitleMine(toolName: string) {
+    return `Are you sure you returned ${toolName}?`;
+  },
+  confirmReturnDescriptionIncoming:
+    "This closes the loan and puts the tool back on the board.",
+  confirmReturnDescriptionMine:
+    "This tells the lender the tool is back.",
   requestedBy(name: string) {
     return `Requested by ${name}`;
   },
   borrowedBy(name: string) {
     return `Borrowed by ${name}`;
   },
+  requestSentTo(name: string) {
+    return `Request sent to ${name}`;
+  },
+  borrowedFrom(name: string) {
+    return `Borrowed from ${name}`;
+  },
+  trustedLenderTag: " · Trusted lender",
   markTrusted: "Mark trusted lender",
   removeTrusted: "Remove trusted",
   borrowModalTitle(toolName: string) {
@@ -92,3 +149,21 @@ export const LOANS_COPY = {
     return trusted ? `${name} marked as trusted lender` : `${name} is no longer trusted`;
   },
 } as const;
+
+export function markReturnedConfirmCopy(
+  toolName: string,
+  perspective: LoanReturnPerspective,
+) {
+  if (perspective === "mine") {
+    return {
+      title: LOANS_COPY.confirmReturnTitleMine(toolName),
+      description: LOANS_COPY.confirmReturnDescriptionMine,
+      confirmLabel: LOANS_COPY.confirmReturnAction,
+    };
+  }
+  return {
+    title: LOANS_COPY.confirmReturnTitleIncoming(toolName),
+    description: LOANS_COPY.confirmReturnDescriptionIncoming,
+    confirmLabel: LOANS_COPY.confirmReturnAction,
+  };
+}

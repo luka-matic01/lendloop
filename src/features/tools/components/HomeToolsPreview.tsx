@@ -36,37 +36,33 @@ export function HomeToolsPreview({
 
   return (
     <HomeToolsFrame description={TOOLS_COPY.homeBoardPublicDescription}>
-      {loadFailed ? (
-        <Panel tone="notice" className="mt-6 sm:mt-8">
-          <p className="text-base text-ink-muted">
-            Could not load the board. Check that Convex is running, then
-            refresh.
-          </p>
-        </Panel>
-      ) : (
-        <HomePublicToolList tools={publicTools} className="mt-6 sm:mt-8" />
-      )}
+      <div className="space-y-4">
+        {loadFailed ? (
+          <Panel tone="notice">
+            <p className="text-base text-ink-muted">
+              Could not load the board. Check that Convex is running, then
+              refresh.
+            </p>
+          </Panel>
+        ) : (
+          <HomePublicToolList tools={publicTools} />
+        )}
+      </div>
     </HomeToolsFrame>
   );
 }
 
-function HomePublicToolList({
-  tools,
-  className,
-}: {
-  tools: PublicToolListing[];
-  className?: string;
-}) {
+function HomePublicToolList({ tools }: { tools: PublicToolListing[] }) {
   if (tools.length === 0) {
     return (
-      <Panel className={className}>
+      <Panel>
         <p className="text-base text-ink-muted">{TOOLS_COPY.emptyBoard}</p>
       </Panel>
     );
   }
 
   return (
-    <ul className={`${TOOL_CARD_GRID_CLASS} ${className ?? ""}`}>
+    <ul className={TOOL_CARD_GRID_CLASS}>
       {tools.map((tool) => (
         <li key={tool._id} className="min-h-0">
           <PublicToolCard tool={tool} className="h-full" />
