@@ -7,7 +7,11 @@ import { useMutation, usePaginatedQuery } from "convex/react";
 import { ConfirmModal, Panel, buttonClassName, useToast } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import { useEnsureCurrentUser } from "@/features/account";
-import { BorrowRequestModal } from "@/features/loans";
+import {
+  BorrowRequestModal,
+  TrustedLenderConfirmModal,
+  useLoanActions,
+} from "@/features/loans";
 import { convexErrorMessage } from "@/lib/convex-error-message";
 import type { PublicToolListing } from "@/lib/convex-server";
 import { api } from "convex/_generated/api";
@@ -17,6 +21,7 @@ import { HOME_BOARD_PAGE_SIZE } from "../constants/pagination";
 import { TOOL_CARD_GRID_CLASS } from "../constants/visual";
 import type { BoardTool } from "../types/tools";
 import { pickHomeBoardPreview } from "../utils/pickHomeBoardPreview";
+import { neighborToolTrustCardProps } from "../utils/neighborToolTrust";
 import { HomeToolsFrame } from "./HomeToolsFrame";
 import { PublicToolCard } from "./PublicToolCard";
 import { ToolCard } from "./ToolCard";
@@ -93,6 +98,8 @@ function HomeBoardToolGrid<T extends { _id: string }>({
 
 function HomeSignedInPreview() {
   const toast = useToast();
+  const loanActions = useLoanActions();
+  const { pendingTrustedUserId, requestTrustedLenderChange } = loanActions;
   const [borrowingTool, setBorrowingTool] = useState<BoardTool | null>(null);
   const [removingTool, setRemovingTool] = useState<BoardTool | null>(null);
   const [removingSubmitting, setRemovingSubmitting] = useState(false);
@@ -140,6 +147,7 @@ function HomeSignedInPreview() {
         toolName={borrowingTool?.name ?? ""}
         onClose={() => setBorrowingTool(null)}
       />
+      <TrustedLenderConfirmModal loanActions={loanActions} />
       <ConfirmModal
         open={removingTool !== null}
         title={removingTool ? TOOLS_COPY.confirmRemoveTitle(removingTool.name) : ""}
@@ -171,6 +179,11 @@ function HomeSignedInPreview() {
                 tool={tool}
                 onBorrow={() => setBorrowingTool(tool)}
                 onRemove={() => setRemovingTool(tool)}
+                {...neighborToolTrustCardProps(
+                  tool,
+                  requestTrustedLenderChange,
+                  pendingTrustedUserId,
+                )}
               />
             )}
           />

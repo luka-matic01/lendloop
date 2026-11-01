@@ -145,13 +145,7 @@ export function ToolsPage() {
         onCategoryChange={setCategoryFilter}
         onRemoveTool={requestRemoveListing}
         onBorrowTool={setBorrowingTool}
-        onTrustLender={(tool) =>
-          requestTrustedLenderChange(
-            tool.ownerId,
-            tool.ownerName,
-            !tool.ownerIsTrustedLender,
-          )
-        }
+        requestTrustedLenderChange={requestTrustedLenderChange}
         pendingTrustedUserId={pendingTrustedUserId}
         canLoadMore={boardCanLoadMore}
         loadingMore={boardLoadingMore}

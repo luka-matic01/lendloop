@@ -2,12 +2,14 @@ import { Button, Panel } from "@/components/ui";
 import type { Id } from "convex/_generated/dataModel";
 
 import { TOOLS_COPY } from "../constants/copy";
+import type { RequestTrustedLenderChange } from "../utils/neighborToolTrust";
 import type { ToolCategoryKey } from "../constants/labels";
 import {
   NEIGHBOR_BOARD_SKELETON_COUNT,
   TOOL_CARD_GRID_CLASS,
 } from "../constants/visual";
 import type { BoardTool } from "../types/tools";
+import { neighborToolTrustCardProps } from "../utils/neighborToolTrust";
 import { ToolCard } from "./ToolCard";
 import { CategoryFilterBar } from "./CategoryFilterBar";
 import { ToolCardSkeletonGrid } from "./ToolSkeletons";
@@ -20,7 +22,7 @@ type NeighborToolsSectionProps = {
   onCategoryChange: (value: ToolCategoryKey | "all") => void;
   onRemoveTool: (tool: BoardTool) => void;
   onBorrowTool: (tool: BoardTool) => void;
-  onTrustLender?: (tool: BoardTool) => void;
+  requestTrustedLenderChange?: RequestTrustedLenderChange;
   pendingTrustedUserId?: Id<"users"> | null;
   canLoadMore?: boolean;
   loadingMore?: boolean;
@@ -54,7 +56,7 @@ export function NeighborToolsSection({
   onCategoryChange,
   onRemoveTool,
   onBorrowTool,
-  onTrustLender,
+  requestTrustedLenderChange,
   pendingTrustedUserId = null,
   canLoadMore = false,
   loadingMore = false,
@@ -107,12 +109,13 @@ export function NeighborToolsSection({
                     tool={tool}
                     onBorrow={() => onBorrowTool(tool)}
                     onRemove={() => onRemoveTool(tool)}
-                    onTrustLender={
-                      onTrustLender
-                        ? () => onTrustLender(tool)
-                        : undefined
-                    }
-                    trustPending={pendingTrustedUserId === tool.ownerId}
+                    {...(requestTrustedLenderChange
+                      ? neighborToolTrustCardProps(
+                          tool,
+                          requestTrustedLenderChange,
+                          pendingTrustedUserId,
+                        )
+                      : {})}
                   />
                 </li>
               ))}
