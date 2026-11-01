@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { ConfirmModal, Container, Panel } from "@/components/ui";
 import { BorrowRequestModal } from "@/features/loans";
+import { useLoanActions } from "@/features/loans/hooks/useLoanActions";
 
 import { TOOLS_COPY } from "../constants/copy";
 import type { BoardTool } from "../types/tools";
@@ -41,6 +42,7 @@ function listingConfirmModalCopy(listingConfirm: ListingConfirm) {
 
 export function ToolsPage() {
   const [borrowingTool, setBorrowingTool] = useState<BoardTool | null>(null);
+  const { pendingId: markReturnedPendingId, markReturned } = useLoanActions();
 
   const {
     phase,
@@ -127,6 +129,8 @@ export function ToolsPage() {
         onEdit={openEditModal}
         onToggleAvailability={requestToggleListingAvailability}
         onRemove={requestRemoveListing}
+        markReturnedPendingId={markReturnedPendingId}
+        onMarkReturned={markReturned}
       />
     </Container>
   );

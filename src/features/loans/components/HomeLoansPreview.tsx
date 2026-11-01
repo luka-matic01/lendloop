@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
 
-import { Button, Panel, buttonClassName } from "@/components/ui";
+import { Panel, buttonClassName } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import { useEnsureCurrentUser } from "@/features/account";
 import { api } from "convex/_generated/api";
@@ -13,13 +13,12 @@ import { LOANS_COPY } from "../constants/copy";
 import { HOME_LOANS_PREVIEW_LIMIT } from "../constants/limits";
 import { useLoanActions } from "../hooks/useLoanActions";
 import {
-  formatIncomingPartyLine,
-  formatMyRequestPartyLine,
-} from "../utils/formatLoan";
+  filterOpenLoansForSection,
+  sortLoansForList,
+} from "../utils/sortLoans";
 import { HomeLoansFrame } from "./HomeLoansFrame";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanListSkeleton } from "./LoanRowSkeleton";
-import { LoanRow } from "./LoanRow";
 
 export function HomeLoansPreview() {
   const { phase } = useEnsureCurrentUser();
@@ -30,34 +29,49 @@ export function HomeLoansPreview() {
     isReady ? {} : "skip",
   );
   const mine = useQuery(api.loanRequests.listMyRequests, isReady ? {} : "skip");
-  const { pendingId, approve, decline } = useLoanActions();
+  const loanActions = useLoanActions();
 
   const isLoading = !isReady || incoming === undefined || mine === undefined;
 
-  const pendingIncoming = useMemo(() => {
-    if (!incoming) {
-      return [];
-    }
-    return incoming
-      .filter((loan) => loan.status === "pending")
-      .slice(0, HOME_LOANS_PREVIEW_LIMIT);
-  }, [incoming]);
+  const openIncoming = useMemo(
+    () => sortLoansForList(filterOpenLoansForSection(incoming ?? [])),
+    [incoming],
+  );
+  const openMine = useMemo(
+    () => sortLoansForList(filterOpenLoansForSection(mine ?? [])),
+    [mine],
+  );
 
-  const activeMine = useMemo(() => {
-    if (!mine) {
-      return [];
-    }
-    return mine
-      .filter((loan) => loan.status === "pending" || loan.status === "approved")
-      .slice(0, HOME_LOANS_PREVIEW_LIMIT);
-  }, [mine]);
+  const previewIncoming = useMemo(
+    () => openIncoming.slice(0, HOME_LOANS_PREVIEW_LIMIT),
+    [openIncoming],
+  );
+  const previewMine = useMemo(
+    () => openMine.slice(0, HOME_LOANS_PREVIEW_LIMIT),
+    [openMine],
+  );
 
-  const hasRows = pendingIncoming.length > 0 || activeMine.length > 0;
+  const incomingPendingCount = openIncoming.filter(
+    (loan) => loan.status === "pending",
+  ).length;
+  const incomingOutCount = openIncoming.filter(
+    (loan) => loan.status === "approved",
+  ).length;
+
+  const hasRows = previewIncoming.length > 0 || previewMine.length > 0;
+  const activitySummary = hasRows
+    ? LOANS_COPY.homeLoansSummary(
+        incomingPendingCount,
+        incomingOutCount,
+        openMine.length,
+      )
+    : null;
 
   return (
     <HomeLoansFrame
       busy={isLoading}
       description={LOANS_COPY.homeLoansSignedInDescription}
+      summary={activitySummary}
     >
       {isLoading ? (
         <LoanListSkeleton actionCount={2} label="Loading loan activity" />
@@ -70,68 +84,39 @@ export function HomeLoansPreview() {
               </p>
             </Panel>
           ) : (
-            <>
-              {pendingIncoming.length > 0 ? (
-                <div className="space-y-3">
-                  <h3 className="font-display text-lg font-bold text-ink">
+            <div className="space-y-6">
+              {previewIncoming.length > 0 ? (
+                <div className="space-y-2.5">
+                  <h3 className="font-display text-xl font-bold leading-none text-ink">
                     {LOANS_COPY.homeIncomingPreview}
+                    <span className="ml-2 text-base font-semibold text-ink-muted">
+                      ({openIncoming.length})
+                    </span>
                   </h3>
-                  <LoanListPanel>
-                    {pendingIncoming.map((loan) => (
-                      <li key={loan._id}>
-                        <LoanRow
-                          loan={loan}
-                          partyLine={formatIncomingPartyLine(loan)}
-                          actions={
-                            <>
-                              <Button
-                                type="button"
-                                size="sm"
-                                disabled={pendingId === loan._id}
-                                onClick={() =>
-                                  approve(loan._id, loan.toolName)
-                                }
-                              >
-                                {LOANS_COPY.approve}
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="secondary"
-                                disabled={pendingId === loan._id}
-                                onClick={() =>
-                                  decline(loan._id, loan.toolName)
-                                }
-                              >
-                                {LOANS_COPY.decline}
-                              </Button>
-                            </>
-                          }
-                        />
-                      </li>
-                    ))}
-                  </LoanListPanel>
+                  <LoanListPanel
+                    loans={previewIncoming}
+                    perspective="incoming"
+                    loanActions={loanActions}
+                  />
                 </div>
               ) : null}
 
-              {activeMine.length > 0 ? (
-                <div className="space-y-3">
-                  <h3 className="font-display text-lg font-bold text-ink">
+              {previewMine.length > 0 ? (
+                <div className="space-y-2.5">
+                  <h3 className="font-display text-xl font-bold leading-none text-ink">
                     {LOANS_COPY.homeMyRequestsPreview}
+                    <span className="ml-2 text-base font-semibold text-ink-muted">
+                      ({openMine.length})
+                    </span>
                   </h3>
-                  <LoanListPanel>
-                    {activeMine.map((loan) => (
-                      <li key={loan._id}>
-                        <LoanRow
-                          loan={loan}
-                          partyLine={formatMyRequestPartyLine(loan)}
-                        />
-                      </li>
-                    ))}
-                  </LoanListPanel>
+                  <LoanListPanel
+                    loans={previewMine}
+                    perspective="mine"
+                    loanActions={loanActions}
+                  />
                 </div>
               ) : null}
-            </>
+            </div>
           )}
 
           <Link

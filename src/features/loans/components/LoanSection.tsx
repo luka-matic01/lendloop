@@ -7,6 +7,7 @@ import { LoanListSkeleton } from "./LoanRowSkeleton";
 type LoanSectionProps = {
   headingId: string;
   heading: string;
+  summary?: string;
   isLoading: boolean;
   itemCount: number;
   emptyMessage: string;
@@ -19,6 +20,7 @@ type LoanSectionProps = {
 export function LoanSection({
   headingId,
   heading,
+  summary,
   isLoading,
   itemCount,
   emptyMessage,
@@ -33,19 +35,24 @@ export function LoanSection({
       aria-busy={isLoading || undefined}
       className="space-y-4"
     >
-      <h2
-        id={headingId}
-        className="font-display text-2xl font-bold leading-none text-ink"
-      >
-        {heading}
-        {isLoading ? (
-          <Skeleton className="ml-2 inline-block h-5 w-8 align-middle" />
-        ) : (
-          <span className="ml-2 text-lg font-semibold text-ink-muted">
-            ({itemCount})
-          </span>
-        )}
-      </h2>
+      <div className="space-y-1.5">
+        <h2
+          id={headingId}
+          className="font-display text-2xl font-bold leading-none text-ink"
+        >
+          {heading}
+          {isLoading ? (
+            <Skeleton className="ml-2 inline-block h-5 w-8 align-middle" />
+          ) : (
+            <span className="ml-2 text-lg font-semibold text-ink-muted">
+              ({itemCount})
+            </span>
+          )}
+        </h2>
+        {!isLoading && summary ? (
+          <p className="text-sm text-ink-muted">{summary}</p>
+        ) : null}
+      </div>
 
       {isLoading ? (
         <LoanListSkeleton

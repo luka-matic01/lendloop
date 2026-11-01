@@ -47,8 +47,8 @@ export function useToolsPage() {
   const removeTool = useMutation(api.tools.remove);
   const setAvailability = useMutation(api.tools.setAvailability);
 
-  const boardTools = boardToolsQuery ?? [];
-  const myTools = myToolsQuery ?? [];
+  const boardTools = useMemo(() => boardToolsQuery ?? [], [boardToolsQuery]);
+  const myTools = useMemo(() => myToolsQuery ?? [], [myToolsQuery]);
 
   const filteredBoardTools = useMemo((): BoardTool[] => {
     if (boardToolsQuery === undefined) {

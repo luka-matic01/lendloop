@@ -234,6 +234,15 @@ describe("loanRequests", () => {
 
     await lender.mutation(api.loanRequests.approve, { requestId });
 
+    const lenderListings = await lender.query(api.tools.listMine, {});
+    expect(lenderListings[0]?.hasActiveLoan).toBe(true);
+    expect(lenderListings[0]?.activeLoan).toMatchObject({
+      requestId,
+      startDate: "2026-11-01",
+      endDate: "2026-11-03",
+    });
+    expect(lenderListings[0]?.activeLoan?.borrowerName).toBeTruthy();
+
     // Stranger cannot mark returned
     await expect(
       stranger.mutation(api.loanRequests.markReturned, { requestId }),

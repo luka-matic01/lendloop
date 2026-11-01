@@ -17,7 +17,14 @@ export const TOOLS_COPY = {
     liveCount: number,
     pausedCount: number,
     onLoanCount = 0,
+    pendingRequestCount = 0,
   ) {
+    const requests =
+      pendingRequestCount === 1
+        ? "1 borrow request waiting"
+        : pendingRequestCount === 0
+          ? ""
+          : `${pendingRequestCount} borrow requests waiting`;
     const live =
       liveCount === 1 ? "1 live" : liveCount === 0 ? "" : `${liveCount} live`;
     const paused =
@@ -29,30 +36,45 @@ export const TOOLS_COPY = {
           ? ""
           : `${onLoanCount} out on loan`;
 
-    const parts = [live, paused, onLoan].filter(Boolean);
+    const parts = [requests, live, paused, onLoan].filter(Boolean);
     if (parts.length === 0) {
       return "";
     }
-    if (liveCount > 0 && pausedCount === 0 && onLoanCount === 0) {
+    if (
+      pendingRequestCount === 0 &&
+      liveCount > 0 &&
+      pausedCount === 0 &&
+      onLoanCount === 0
+    ) {
       return liveCount === 1 ? "1 live on the board" : `${liveCount} live on the board`;
     }
-    if (liveCount === 0 && pausedCount > 0 && onLoanCount === 0) {
+    if (
+      pendingRequestCount === 0 &&
+      liveCount === 0 &&
+      pausedCount > 0 &&
+      onLoanCount === 0
+    ) {
       return pausedCount === 1 ? "1 paused" : `${pausedCount} paused`;
     }
     return parts.join(" · ");
   },
   listingOutOnLoan: "Out on loan",
-  listingRequestsLink(count: number) {
-    return count === 1 ? "1 request" : `${count} requests`;
+  listingRequestsNotice(count: number) {
+    return count === 1
+      ? "1 neighbor wants to borrow this · Needs your OK"
+      : `${count} neighbors want to borrow this · Needs your OK`;
+  },
+  listingRequestsCta(count: number) {
+    return count === 1 ? "Review request" : `Review ${count} requests`;
   },
   listingRequestsLinkAria(count: number, toolName: string) {
     const noun = count === 1 ? "request" : "requests";
     return `Review ${count} loan ${noun} for ${toolName} on Loans`;
   },
   listingLockedActiveLoan:
-    "This listing is locked while the tool is out on an approved loan. Mark it returned on Loans first.",
+    "This listing is locked while the tool is out on an approved loan. Mark it returned first.",
   putOnBoardBlockedActiveLoan:
-    "Cannot put on board while this tool is out on an approved loan. Mark it returned on Loans first.",
+    "Cannot put on board while this tool is out on an approved loan. Mark it returned first.",
   pauseListing: "Pause",
   putOnBoard: "Put on board",
   borrowTool: "Borrow",

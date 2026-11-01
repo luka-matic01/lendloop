@@ -8,6 +8,7 @@ import { AuthErrorCode, authError } from "./lib/errors";
 import { LIST_PAGE_SIZE } from "./lib/limits";
 import {
   activeBorrowStatusByToolForBorrower,
+  approvedLoansByToolForLender,
   pendingRequestCountByToolForLender,
   toolHasApprovedLoan,
 } from "./lib/loans";
@@ -88,33 +89,64 @@ export const listMine = query({
       isAvailable: v.boolean(),
       hasActiveLoan: v.boolean(),
       pendingRequestCount: v.number(),
+      activeLoan: v.optional(
+        v.object({
+          requestId: v.id("loanRequests"),
+          borrowerName: v.string(),
+          startDate: v.string(),
+          endDate: v.string(),
+        }),
+      ),
     }),
   ),
   handler: async (ctx) => {
     const user = await requireUser(ctx);
 
-    const [tools, pendingByTool] = await Promise.all([
+    const [tools, pendingByTool, approvedByTool] = await Promise.all([
       ctx.db
         .query("tools")
         .withIndex("by_owner", (q) => q.eq("ownerId", user._id))
         .order("desc")
         .take(LIST_PAGE_SIZE),
       pendingRequestCountByToolForLender(ctx, user._id),
+      approvedLoansByToolForLender(ctx, user._id),
     ]);
 
-    return Promise.all(
-      tools.map(
-        async ({ _id, name, category, condition, description, isAvailable }) => ({
+    const borrowerIds = [
+      ...new Set([...approvedByTool.values()].map((loan) => loan.borrowerId)),
+    ];
+    const borrowers = await Promise.all(
+      borrowerIds.map((id) => ctx.db.get(id)),
+    );
+    const borrowerNameById = new Map(
+      borrowerIds.map((id, index) => [
+        id,
+        userDisplayName(borrowers[index] ?? null),
+      ]),
+    );
+
+    return tools.map(
+      ({ _id, name, category, condition, description, isAvailable }) => {
+        const approved = approvedByTool.get(_id);
+        return {
           _id,
           name,
           category,
           condition,
           description,
           isAvailable,
-          hasActiveLoan: await toolHasApprovedLoan(ctx, _id),
+          hasActiveLoan: approved !== undefined,
           pendingRequestCount: pendingByTool.get(_id) ?? 0,
-        }),
-      ),
+          activeLoan: approved
+            ? {
+                requestId: approved.requestId,
+                borrowerName: borrowerNameById.get(approved.borrowerId) ?? "Neighbor",
+                startDate: approved.startDate,
+                endDate: approved.endDate,
+              }
+            : undefined,
+        };
+      },
     );
   },
 });

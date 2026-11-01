@@ -81,6 +81,39 @@ export async function activeBorrowStatusByToolForBorrower(
   return byTool;
 }
 
+export type ApprovedLoanOnTool = {
+  requestId: Id<"loanRequests">;
+  borrowerId: Id<"users">;
+  startDate: string;
+  endDate: string;
+};
+
+/** Approved loans keyed by tool (one listMine query). */
+export async function approvedLoansByToolForLender(
+  ctx: DbCtx,
+  lenderId: Id<"users">,
+): Promise<Map<Id<"tools">, ApprovedLoanOnTool>> {
+  const requests = await ctx.db
+    .query("loanRequests")
+    .withIndex("by_lender", (q) => q.eq("lenderId", lenderId))
+    .order("desc")
+    .take(LIST_PAGE_SIZE);
+
+  const byTool = new Map<Id<"tools">, ApprovedLoanOnTool>();
+  for (const request of requests) {
+    if (request.status !== "approved") {
+      continue;
+    }
+    byTool.set(request.toolId, {
+      requestId: request._id,
+      borrowerId: request.borrowerId,
+      startDate: request.startDate,
+      endDate: request.endDate,
+    });
+  }
+  return byTool;
+}
+
 /** Pending incoming requests per tool for a lender (one listMine query). */
 export async function pendingRequestCountByToolForLender(
   ctx: DbCtx,

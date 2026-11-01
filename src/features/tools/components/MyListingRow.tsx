@@ -1,9 +1,16 @@
-import { Pencil, Pause, Radio, Trash2 } from "lucide-react";
+import { Clock, Pause, Pencil, Radio, Trash2 } from "lucide-react";
 import Link from "next/link";
 
-import { IconButton } from "@/components/ui";
+import { Button, IconButton, buttonClassName } from "@/components/ui";
 import { ROUTES } from "@/constants";
+import { LOANS_COPY } from "@/features/loans/constants/copy";
+import {
+  BORROW_DUE_TONE_CLASS,
+  formatBorrowDuePhrase,
+  getBorrowDueUrgency,
+} from "@/lib/format-borrow-due";
 import { cn } from "@/lib/utils";
+import type { Id } from "convex/_generated/dataModel";
 
 import { TOOLS_COPY } from "../constants/copy";
 import { TOOL_CATEGORY_LABELS, TOOL_CONDITION_LABELS } from "../constants/labels";
@@ -19,6 +26,8 @@ type MyListingRowProps = {
   onEdit: () => void;
   onToggleAvailability: () => void;
   onRemove: () => void;
+  markReturnedPendingId?: Id<"loanRequests"> | null;
+  onMarkReturned?: (requestId: Id<"loanRequests">, toolName: string) => void;
   className?: string;
 };
 
@@ -27,10 +36,13 @@ export function MyListingRow({
   onEdit,
   onToggleAvailability,
   onRemove,
+  markReturnedPendingId = null,
+  onMarkReturned,
   className,
 }: MyListingRowProps) {
   const isLive = tool.isAvailable;
   const isOnLoan = tool.hasActiveLoan;
+  const hasRequests = tool.pendingRequestCount > 0;
   const listingState = isLive
     ? "on_board"
     : isOnLoan
@@ -39,55 +51,97 @@ export function MyListingRow({
   const canToggleAvailability = isLive || !isOnLoan;
   const listingLocked = isOnLoan;
   const lockedTooltip = TOOLS_COPY.listingLockedActiveLoan;
+  const activeLoan = tool.activeLoan;
+  const duePhrase =
+    activeLoan !== undefined
+      ? formatBorrowDuePhrase(activeLoan.endDate)
+      : null;
+  const dueUrgency =
+    activeLoan !== undefined
+      ? getBorrowDueUrgency(activeLoan.endDate)
+      : null;
 
   return (
     <div
       className={cn(
-        "flex items-start gap-3 py-3 sm:items-center sm:gap-4 sm:py-3.5",
+        "flex flex-col gap-2.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-3.5",
         className,
       )}
     >
       <div
         className={cn(
           "min-w-0 flex-1 transition-opacity",
-          !isLive && "opacity-45",
+          !isLive && !isOnLoan && !hasRequests && "opacity-55",
         )}
       >
         <p
           className={cn(
             TOOL_LISTING_ROW_TITLE_CLASS,
-            !isLive && "text-ink-muted",
+            !isLive && !isOnLoan && !hasRequests && "text-ink-muted",
           )}
         >
           {tool.name}
         </p>
-        <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
-          <p className="min-w-0 text-xs font-semibold text-ink-muted">
-            {TOOL_CATEGORY_LABELS[tool.category]}
-            <span aria-hidden> · </span>
-            {TOOL_CONDITION_LABELS[tool.condition]}
-          </p>
+
+        <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-ink-muted">
           <ToolListingStateBadge state={listingState} />
-          {tool.pendingRequestCount > 0 ? (
-            <Link
-              href={ROUTES.loans}
-              className="text-xs font-semibold text-positive underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas"
-              aria-label={TOOLS_COPY.listingRequestsLinkAria(
-                tool.pendingRequestCount,
-                tool.name,
-              )}
-            >
-              {TOOLS_COPY.listingRequestsLink(tool.pendingRequestCount)}
-            </Link>
+          <span aria-hidden>·</span>
+          <span>
+            {TOOL_CATEGORY_LABELS[tool.category]} · {TOOL_CONDITION_LABELS[tool.condition]}
+          </span>
+          {activeLoan && duePhrase && dueUrgency ? (
+            <>
+              <span aria-hidden>·</span>
+              <span>{LOANS_COPY.borrowedBy(activeLoan.borrowerName)}</span>
+              <span aria-hidden>·</span>
+              <span className={BORROW_DUE_TONE_CLASS[dueUrgency]}>
+                {duePhrase}
+              </span>
+            </>
           ) : null}
         </div>
+
+        {hasRequests ? (
+          <p className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-bold text-ink">
+            <Clock className="size-3.5 shrink-0 text-warning" aria-hidden />
+            {TOOLS_COPY.listingRequestsNotice(tool.pendingRequestCount)}
+          </p>
+        ) : null}
       </div>
 
-      <div
-        role="group"
-        aria-label={TOOLS_COPY.listingActionsLabel}
-        className="flex shrink-0 items-center gap-1"
-      >
+      <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
+        {hasRequests ? (
+          <Link
+            href={ROUTES.loans}
+            className={buttonClassName({ variant: "primary", size: "sm" })}
+            aria-label={TOOLS_COPY.listingRequestsLinkAria(
+              tool.pendingRequestCount,
+              tool.name,
+            )}
+          >
+            {TOOLS_COPY.listingRequestsCta(tool.pendingRequestCount)}
+          </Link>
+        ) : null}
+
+        {activeLoan && onMarkReturned ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={markReturnedPendingId === activeLoan.requestId}
+            onClick={() =>
+              onMarkReturned(activeLoan.requestId, tool.name)
+            }
+          >
+            {LOANS_COPY.markReturned}
+          </Button>
+        ) : null}
+
+        <div
+          role="group"
+          aria-label={TOOLS_COPY.listingActionsLabel}
+          className="flex items-center gap-1"
+        >
           <IconButton
             type="button"
             variant="ghost"
@@ -133,6 +187,7 @@ export function MyListingRow({
           >
             <Trash2 className={TOOLS_ICON_CLASS} aria-hidden />
           </IconButton>
+        </div>
       </div>
     </div>
   );

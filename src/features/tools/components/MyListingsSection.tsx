@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { Panel, Skeleton } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import type { Id } from "convex/_generated/dataModel";
 
 import { TOOLS_COPY } from "../constants/copy";
 import {
@@ -12,25 +13,24 @@ import type { MyTool } from "../types/tools";
 import { MyListingRow } from "./MyListingRow";
 import { MyListingsSkeletonList } from "./ToolSkeletons";
 
-/** Live listings first; relative order unchanged within each group. */
+/** Tools with pending requests first, then live, then out on loan, then paused. */
 function listingSortRank(tool: MyTool) {
-  if (tool.isAvailable) {
+  if (tool.pendingRequestCount > 0) {
     return 0;
   }
-  if (tool.hasActiveLoan) {
+  if (tool.isAvailable) {
     return 1;
   }
-  return 2;
+  if (tool.hasActiveLoan) {
+    return 2;
+  }
+  return 3;
 }
 
 function sortListings(tools: MyTool[]) {
-  return [...tools].sort((a, b) => {
-    const rankDiff = listingSortRank(a) - listingSortRank(b);
-    if (rankDiff !== 0) {
-      return rankDiff;
-    }
-    return 0;
-  });
+  return [...tools].sort(
+    (a, b) => listingSortRank(a) - listingSortRank(b),
+  );
 }
 
 type MyListingsSectionProps = {
@@ -38,6 +38,8 @@ type MyListingsSectionProps = {
   onEdit: (tool: MyTool) => void;
   onToggleAvailability: (tool: MyTool) => void;
   onRemove: (tool: MyTool) => void;
+  markReturnedPendingId?: Id<"loanRequests"> | null;
+  onMarkReturned?: (requestId: Id<"loanRequests">, toolName: string) => void;
   isLoading?: boolean;
 };
 
@@ -46,6 +48,8 @@ export function MyListingsSection({
   onEdit,
   onToggleAvailability,
   onRemove,
+  markReturnedPendingId = null,
+  onMarkReturned,
   isLoading = false,
 }: MyListingsSectionProps) {
   const sortedTools = useMemo(() => sortListings(tools), [tools]);
@@ -55,6 +59,10 @@ export function MyListingsSection({
   const pausedCount = tools.filter(
     (tool) => !tool.isAvailable && !tool.hasActiveLoan,
   ).length;
+  const totalPendingRequests = tools.reduce(
+    (sum, tool) => sum + tool.pendingRequestCount,
+    0,
+  );
 
   return (
     <section
@@ -73,7 +81,12 @@ export function MyListingsSection({
           <Skeleton className="h-4 w-48 max-w-full" />
         ) : tools.length > 0 ? (
           <p className="text-sm text-ink-muted">
-            {TOOLS_COPY.listingsSummary(liveCount, pausedCount, onLoanCount)}
+            {TOOLS_COPY.listingsSummary(
+              liveCount,
+              pausedCount,
+              onLoanCount,
+              totalPendingRequests,
+            )}
           </p>
         ) : null}
       </div>
@@ -91,8 +104,12 @@ export function MyListingsSection({
               <li
                 key={tool._id}
                 className={cn(
+                  "-mx-3 px-3 sm:-mx-4 sm:px-4",
+                  tool.pendingRequestCount > 0 &&
+                    "border-l-4 border-l-accent bg-accent-soft/45",
                   !tool.isAvailable &&
-                    "bg-canvas/70 -mx-3 px-3 sm:-mx-4 sm:px-4",
+                    tool.pendingRequestCount === 0 &&
+                    "bg-canvas/70",
                   tool.hasActiveLoan && "bg-warning-soft/40",
                 )}
               >
@@ -101,6 +118,8 @@ export function MyListingsSection({
                   onEdit={() => onEdit(tool)}
                   onToggleAvailability={() => onToggleAvailability(tool)}
                   onRemove={() => onRemove(tool)}
+                  markReturnedPendingId={markReturnedPendingId}
+                  onMarkReturned={onMarkReturned}
                 />
               </li>
             ))}
