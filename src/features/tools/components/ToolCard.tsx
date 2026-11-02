@@ -121,7 +121,8 @@ export function ToolCard({
                       <IconButton
                         type="button"
                         variant="ghost"
-                        aria-label={`Remove ${tool.name} from the board`}
+                        aria-label={TOOLS_COPY.removeListing}
+                        tooltip={TOOLS_COPY.removeListing}
                         onClick={onRemove}
                         className="text-ink-muted hover:bg-canvas hover:text-negative"
                       >

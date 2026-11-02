@@ -63,9 +63,8 @@ export function LenderTrustToggleIconButton({
   onClick,
   className,
 }: LenderTrustToggleIconButtonProps) {
-  const ariaLabel = isTrusted
-    ? `${removeTrustedLabel} for ${lenderName}`
-    : `${markTrustedLabel} for ${lenderName}`;
+  const actionLabel = isTrusted ? removeTrustedLabel : markTrustedLabel;
+  const ariaLabel = `${actionLabel}, ${lenderName}`;
 
   return (
     <IconButton
@@ -73,6 +72,7 @@ export function LenderTrustToggleIconButton({
       variant="ghost"
       disabled={disabled}
       aria-label={ariaLabel}
+      tooltip={actionLabel}
       onClick={onClick}
       className={cn(
         "hover:bg-canvas disabled:pointer-events-none disabled:opacity-40",

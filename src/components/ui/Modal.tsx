@@ -21,11 +21,11 @@ import { ModalTitle, type ModalTitleSize } from "./ModalTitle";
 import { Panel } from "./Panel";
 
 const dialogClass =
-  "fixed inset-0 z-50 m-0 box-border border-0 bg-transparent p-0 backdrop:bg-ink/40 open:flex open:max-h-[100dvh] open:min-h-0 open:overflow-y-auto open:items-center open:justify-center open:p-page-x outline-none focus:outline-none focus-visible:outline-none";
+  "fixed inset-0 z-50 m-0 box-border border-0 bg-transparent p-0 backdrop:bg-ink/40 open:flex open:max-h-[100dvh] open:min-h-0 outline-none focus:outline-none focus-visible:outline-none max-md:open:items-end max-md:open:justify-center max-md:open:overflow-hidden max-md:open:p-0 md:open:items-center md:open:justify-center md:open:overflow-y-auto md:open:p-page-x";
 
-const panelWidthClass = {
-  confirm: "max-w-md",
-  form: "max-w-lg",
+const panelSizeClass = {
+  confirm: "md:max-w-md",
+  form: "md:max-w-lg",
 } as const;
 
 const ModalTitleIdContext = createContext<string | null>(null);
@@ -43,14 +43,14 @@ type ModalProps = {
   onClose: () => void;
   children: ReactNode;
   /** `confirm` = narrow confirm dialogs; `form` = wider forms. */
-  size?: keyof typeof panelWidthClass;
+  size?: keyof typeof panelSizeClass;
   /** When false, backdrop click and Escape do not call onClose. */
   dismissible?: boolean;
   describedBy?: string;
   initialFocusRef?: RefObject<HTMLElement | null>;
 };
 
-/** Native `<dialog>` shell — open state, backdrop, focus, and panel width in one place. */
+/** Native `<dialog>` — bottom sheet below `md`, centered modal from `md` up. */
 export function Modal({
   open,
   onClose,
@@ -105,7 +105,10 @@ export function Modal({
       }}
     >
       <Panel
-        className={cn("mx-auto w-full min-w-0", panelWidthClass[size])}
+        className={cn(
+          "mx-auto w-full min-w-0 max-md:max-h-[90dvh] max-md:overflow-y-auto max-md:rounded-b-none max-md:border-b-0",
+          panelSizeClass[size],
+        )}
       >
         {children}
       </Panel>

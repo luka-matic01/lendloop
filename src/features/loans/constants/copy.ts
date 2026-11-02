@@ -185,7 +185,7 @@ export const LOANS_COPY = {
   },
   trustedLenderLabel: "Trusted lender",
   markTrusted: "Trust lender",
-  removeTrusted: "Revoke trust",
+  removeTrusted: "Revoke",
   borrowModalTitle(toolName: string) {
     return `Borrow ${toolName}`;
   },

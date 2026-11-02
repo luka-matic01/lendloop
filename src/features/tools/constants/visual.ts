@@ -12,7 +12,7 @@ export const TOOL_CARD_GRID_CLASS =
   "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>li]:min-h-0 [&>li]:min-w-0";
 
 export const TOOL_CARD_PANEL_CLASS =
-  "relative flex h-full min-w-0 flex-col gap-2 overflow-x-clip !p-3 sm:gap-3 sm:!p-4";
+  "relative flex h-full min-w-0 flex-col gap-2 overflow-visible !p-3 sm:gap-3 sm:!p-4";
 
 /** Keeps long unbroken titles/descriptions inside card width (grid + flex safe). */
 export const TOOL_CARD_TEXT_WRAP = "min-w-0 [overflow-wrap:anywhere]";
@@ -44,4 +44,4 @@ export const TOOL_CARD_OWN_LISTING_RAIL = "border-l-4 border-l-board";
 
 /** Compact “Your listings” stack — pine wash, rows use `divide-y` on the list. */
 export const MY_LISTINGS_PANEL_CLASS =
-  "!p-0 border-board bg-board-soft overflow-x-clip";
+  "!p-0 border-board bg-board-soft overflow-visible";
