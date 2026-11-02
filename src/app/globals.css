@@ -116,12 +116,20 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* `showModal()` dialogs default to fit-content width — need a full-viewport flex backdrop. */
+dialog:not([open]) {
+  display: none !important;
+}
+
+/* `showModal()` defaults to fit-content — pin to the viewport, not the page column. */
 dialog:modal {
+  box-sizing: border-box;
+  inset: 0;
   width: 100%;
-  height: 100%;
   max-width: none;
-  max-height: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  overscroll-behavior: contain;
 }
 
 ::selection {

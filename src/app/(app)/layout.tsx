@@ -16,7 +16,7 @@ export default async function AppLayout({
   return (
     <AppShell>
       <Masthead nav={<MastheadNav />} />
-      <main className="w-full min-w-0 flex-1">
+      <main className="w-full min-w-0 flex-1 overflow-x-clip">
         <ConvexClerkProviders>{children}</ConvexClerkProviders>
       </main>
     </AppShell>

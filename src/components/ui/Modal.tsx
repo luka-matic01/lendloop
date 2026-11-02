@@ -7,9 +7,11 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type ReactNode,
   type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 
@@ -19,7 +21,7 @@ import { ModalTitle, type ModalTitleSize } from "./ModalTitle";
 import { Panel } from "./Panel";
 
 const dialogClass =
-  "fixed inset-0 z-50 m-0 box-border h-full max-h-none w-full max-w-none border-0 bg-transparent p-0 backdrop:bg-ink/40 open:flex open:items-center open:justify-center open:p-page-x outline-none focus:outline-none focus-visible:outline-none";
+  "fixed inset-0 z-50 m-0 box-border border-0 bg-transparent p-0 backdrop:bg-ink/40 open:flex open:max-h-[100dvh] open:min-h-0 open:overflow-y-auto open:items-center open:justify-center open:p-page-x outline-none focus:outline-none focus-visible:outline-none";
 
 const panelWidthClass = {
   confirm: "max-w-md",
@@ -60,19 +62,23 @@ export function Modal({
 }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
       return;
     }
-    if (open && !dialog.open) {
-      dialog.showModal();
-      const target = initialFocusRef?.current ?? dialog;
-      target.focus({ preventScroll: true });
-    } else if (!open && dialog.open) {
-      dialog.close();
+    const dialog = dialogRef.current;
+    if (!dialog || dialog.open) {
+      return;
     }
+    dialog.showModal();
+    const target = initialFocusRef?.current ?? dialog;
+    target.focus({ preventScroll: true });
   }, [open, initialFocusRef]);
 
   function tryClose() {
@@ -81,28 +87,34 @@ export function Modal({
     }
   }
 
+  const dialog = (
+    <dialog
+      ref={dialogRef}
+      tabIndex={-1}
+      aria-labelledby={titleId}
+      aria-describedby={describedBy}
+      className={dialogClass}
+      onCancel={(event) => {
+        event.preventDefault();
+        tryClose();
+      }}
+      onClick={(event) => {
+        if (event.target === dialogRef.current) {
+          tryClose();
+        }
+      }}
+    >
+      <Panel
+        className={cn("mx-auto w-full min-w-0", panelWidthClass[size])}
+      >
+        {children}
+      </Panel>
+    </dialog>
+  );
+
   return (
     <ModalTitleIdContext.Provider value={titleId}>
-      <dialog
-        ref={dialogRef}
-        tabIndex={-1}
-        aria-labelledby={titleId}
-        aria-describedby={describedBy}
-        className={dialogClass}
-        onCancel={(event) => {
-          event.preventDefault();
-          tryClose();
-        }}
-        onClick={(event) => {
-          if (event.target === dialogRef.current) {
-            tryClose();
-          }
-        }}
-      >
-        <Panel className={cn("w-full min-w-0", panelWidthClass[size])}>
-          {children}
-        </Panel>
-      </dialog>
+      {mounted && open ? createPortal(dialog, document.body) : null}
     </ModalTitleIdContext.Provider>
   );
 }

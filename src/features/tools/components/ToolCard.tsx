@@ -58,7 +58,7 @@ export function ToolCard({
       isOwnListing={tool.isOwner}
       footer={
         tool.isOwner ? undefined : (
-          <div className="flex min-w-0 items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
             <p
               className={cn(
                 TOOL_CARD_FOOTER_TEXT_CLASS,

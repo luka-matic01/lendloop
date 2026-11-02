@@ -75,6 +75,7 @@ export function ListRow({
     return (
       <div
         className={cn(
+          "min-w-0",
           compact ? "space-y-1 py-2.5" : "space-y-1.5 py-3 sm:py-3.5",
           className,
         )}
@@ -105,14 +106,14 @@ export function ListRow({
   return (
     <div
       className={cn(
-        "flex flex-wrap items-center justify-between gap-x-4 gap-y-2",
+        "flex w-full min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2",
         compact ? "py-2.5" : "py-3 sm:py-3.5",
         className,
       )}
     >
       <div
         className={cn(
-          "min-w-[12rem] flex-1",
+          "min-w-0 flex-1 basis-0",
           compact ? "space-y-1" : "space-y-1.5",
         )}
       >

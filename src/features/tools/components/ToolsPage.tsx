@@ -104,11 +104,47 @@ export function ToolsPage() {
   }
 
   return (
-    <Container className={TOOLS_PAGE_CLASS}>
-      <ToolsPageHeader
-        onListTool={openListModal}
-        listDisabled={isPageBootstrapping}
-      />
+    <>
+      <Container className={TOOLS_PAGE_CLASS}>
+        <ToolsPageHeader
+          onListTool={openListModal}
+          listDisabled={isPageBootstrapping}
+        />
+
+        <NeighborToolsSection
+          isLoading={neighborBoardLoading}
+          isRefreshing={
+            neighborBoardRefreshing || neighborBoardSyncingPagination
+          }
+          tools={neighborBoardTools}
+          boardIsEmpty={boardIsEmpty}
+          neighborTotalOnBoard={neighborTotalOnBoard}
+          categoryFilter={categoryFilter}
+          onCategoryChange={setCategoryFilter}
+          onRemoveTool={requestRemoveListing}
+          onBorrowTool={setBorrowingTool}
+          requestTrustedLenderChange={requestTrustedLenderChange}
+          pendingTrustedUserId={pendingTrustedUserId}
+          canLoadMore={boardCanLoadMore}
+          loadingMore={boardLoadingMore}
+          onLoadMore={loadMoreBoardPage}
+        />
+
+        <MyListingsSection
+          isLoading={isPageBootstrapping}
+          tools={myTools}
+          onEdit={openEditModal}
+          onToggleAvailability={requestToggleListingAvailability}
+          onRemove={requestRemoveListing}
+          markReturnedPendingId={markReturnedPendingId}
+          onMarkReturned={(requestId, toolName) =>
+            requestMarkReturned(requestId, toolName, "incoming")
+          }
+          canLoadMore={myListingsCanLoadMore}
+          loadingMore={myListingsLoadingMore}
+          onLoadMore={loadMoreMyListingsPage}
+        />
+      </Container>
 
       <ToolFormModal
         open={toolFormModalOpen}
@@ -134,42 +170,8 @@ export function ToolsPage() {
         onCancel={cancelListingConfirm}
       />
 
-      <NeighborToolsSection
-        isLoading={neighborBoardLoading}
-        isRefreshing={
-          neighborBoardRefreshing || neighborBoardSyncingPagination
-        }
-        tools={neighborBoardTools}
-        boardIsEmpty={boardIsEmpty}
-        neighborTotalOnBoard={neighborTotalOnBoard}
-        categoryFilter={categoryFilter}
-        onCategoryChange={setCategoryFilter}
-        onRemoveTool={requestRemoveListing}
-        onBorrowTool={setBorrowingTool}
-        requestTrustedLenderChange={requestTrustedLenderChange}
-        pendingTrustedUserId={pendingTrustedUserId}
-        canLoadMore={boardCanLoadMore}
-        loadingMore={boardLoadingMore}
-        onLoadMore={loadMoreBoardPage}
-      />
-
       <MarkReturnedConfirmModal loanActions={loanActions} />
       <TrustedLenderConfirmModal loanActions={loanActions} />
-
-      <MyListingsSection
-        isLoading={isPageBootstrapping}
-        tools={myTools}
-        onEdit={openEditModal}
-        onToggleAvailability={requestToggleListingAvailability}
-        onRemove={requestRemoveListing}
-        markReturnedPendingId={markReturnedPendingId}
-        onMarkReturned={(requestId, toolName) =>
-          requestMarkReturned(requestId, toolName, "incoming")
-        }
-        canLoadMore={myListingsCanLoadMore}
-        loadingMore={myListingsLoadingMore}
-        onLoadMore={loadMoreMyListingsPage}
-      />
-    </Container>
+    </>
   );
 }
