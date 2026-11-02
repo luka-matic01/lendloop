@@ -23,7 +23,7 @@ export const TOOL_CARD_DESCRIPTION_CLASS = `${TOOL_CARD_TEXT_WRAP} line-clamp-3 
 
 export const TOOL_CARD_FOOTER_TEXT_CLASS = `${TOOL_CARD_TEXT_WRAP} min-w-0 text-sm font-semibold text-ink`;
 
-/** Default placeholder cards (e.g. marketing home teaser). */
+/** Default placeholder cards (e.g. home page teaser). */
 export const TOOL_CARD_SKELETON_COUNT = 6;
 
 /** “From neighbors” grid on the tool board — three rows at lg. */

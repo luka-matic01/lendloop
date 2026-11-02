@@ -1,4 +1,4 @@
-import { isBorrowPeriodInProgress, isBorrowPeriodStarted } from "@/lib/format-borrow-due";
+import { isBorrowPeriodInProgress, isBorrowPeriodStarted } from "@/lib/formatBorrowDue";
 
 export type ApprovedLoanRowAction = "cancel" | "markReturned";
 

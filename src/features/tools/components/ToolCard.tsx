@@ -7,7 +7,7 @@ import {
   TrustedLenderIndicator,
 } from "@/components/ui";
 import { LOANS_COPY } from "@/features/loans";
-import { formatBorrowDayMonth } from "@/lib/format-borrow-due";
+import { formatBorrowDayMonth } from "@/lib/formatBorrowDue";
 import { cn } from "@/lib/utils";
 
 import { TOOLS_COPY } from "../constants/copy";

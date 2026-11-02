@@ -1,5 +1,5 @@
 import { InlineRange } from "@/components/ui";
-import { formatBorrowCalendarDate } from "@/lib/format-borrow-due";
+import { formatBorrowCalendarDate } from "@/lib/formatBorrowDue";
 import { cn } from "@/lib/utils";
 
 type BorrowDateRangeProps = {

@@ -10,11 +10,11 @@ import {
   useToast,
 } from "@/components/ui";
 import { Modal, ModalActions, ModalHeader } from "@/components/ui/Modal";
-import { convexErrorMessage } from "@/lib/convex-error-message";
+import { convexErrorMessage } from "@/lib/convexErrorMessage";
 import {
   formatBorrowBookedNotice,
   utcTodayIso,
-} from "@/lib/format-borrow-due";
+} from "@/lib/formatBorrowDue";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 

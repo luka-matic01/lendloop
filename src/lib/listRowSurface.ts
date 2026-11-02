@@ -1,7 +1,7 @@
 import {
   getBorrowDueUrgency,
   isBorrowPeriodInProgress,
-} from "@/lib/format-borrow-due";
+} from "@/lib/formatBorrowDue";
 import { cn } from "@/lib/utils";
 
 /** Bleed list rows to panel edges (matches divide-y list padding). */

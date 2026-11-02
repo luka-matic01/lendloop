@@ -1,4 +1,4 @@
-/** Max listings on the marketing homepage board teaser */
+/** Max listings on the home page board teaser */
 export const HOME_BOARD_PREVIEW_LIMIT = 6;
 
 export const TOOLS_COPY = {

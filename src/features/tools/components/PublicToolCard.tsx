@@ -1,7 +1,7 @@
 import { Panel } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
-import type { PublicToolListing } from "@/lib/convex-server";
+import type { PublicToolListing } from "@/lib/convexServer";
 
 import { TOOL_CATEGORY_ACCENT } from "../constants/categoryVisual";
 import { TOOL_CATEGORY_LABELS } from "../constants/labels";

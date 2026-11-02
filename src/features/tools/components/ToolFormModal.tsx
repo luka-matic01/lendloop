@@ -10,7 +10,7 @@ import {
   useToast,
 } from "@/components/ui";
 import { Modal, ModalActions, ModalHeader } from "@/components/ui/Modal";
-import { convexErrorMessage } from "@/lib/convex-error-message";
+import { convexErrorMessage } from "@/lib/convexErrorMessage";
 import { api } from "convex/_generated/api";
 
 import { TOOLS_COPY } from "../constants/copy";

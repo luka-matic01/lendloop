@@ -16,7 +16,7 @@ import {
   formatBorrowDuePhrase,
   getBorrowDueUrgency,
   isBorrowPeriodStarted,
-} from "@/lib/format-borrow-due";
+} from "@/lib/formatBorrowDue";
 import { cn } from "@/lib/utils";
 import type { Id } from "convex/_generated/dataModel";
 

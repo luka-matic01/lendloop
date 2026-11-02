@@ -8,7 +8,7 @@ import {
   HOME_HERO_IMAGE_ALT,
   HOME_HERO_IMAGE_DISPLAY_IN,
   HOME_HERO_IMAGE_MAX_HEIGHT_IN,
-} from "../constants/visual";
+} from "../constants/heroVisual";
 import { HomeHeroAuthActions } from "./HomeHeroAuthActions";
 
 const taglineBreak = APP_TAGLINE.indexOf(". ");

@@ -1,3 +1,4 @@
+export { HomeLoansPreview } from "./components/HomeLoansPreview";
 export { BorrowDateRange } from "./components/BorrowDateRange";
 export { BorrowRequestModal } from "./components/BorrowRequestModal";
 export { LoansPage } from "./components/LoansPage";

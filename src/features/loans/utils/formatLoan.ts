@@ -1,5 +1,5 @@
-import { isBorrowPeriodStarted } from "@/lib/format-borrow-due";
-import { loanListRowSurfaceClass } from "@/lib/list-row-surface";
+import { isBorrowPeriodStarted } from "@/lib/formatBorrowDue";
+import { loanListRowSurfaceClass } from "@/lib/listRowSurface";
 
 import { LOANS_COPY } from "../constants/copy";
 import type { LoanView } from "../types/loans";

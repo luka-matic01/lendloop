@@ -12,8 +12,8 @@ import {
   TrustedLenderConfirmModal,
   useLoanActions,
 } from "@/features/loans";
-import { convexErrorMessage } from "@/lib/convex-error-message";
-import type { PublicToolListing } from "@/lib/convex-server";
+import { convexErrorMessage } from "@/lib/convexErrorMessage";
+import type { PublicToolListing } from "@/lib/convexServer";
 import { api } from "convex/_generated/api";
 
 import { TOOLS_COPY } from "../constants/copy";

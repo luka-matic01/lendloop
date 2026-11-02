@@ -1,10 +1,13 @@
 import { AppShell, Container, Panel } from "@/components/ui";
 import { Masthead } from "@/components/ui/Masthead";
 import { PUBLIC_ENV_KEYS, SECTION_Y_CLASS } from "@/constants";
-import { HomeDashboardGate, HomeHero } from "@/features/marketing";
-import { HomeToolsSectionSkeleton } from "@/features/tools";
+import {
+  HomeDashboardGate,
+  HomeHero,
+  HomeToolsSectionSkeleton,
+} from "@/features/home";
 import { Suspense } from "react";
-import { isAppConfigured } from "@/lib/app-config";
+import { isAppConfigured } from "@/lib/appConfig";
 
 const BOARD_RULES = [
   {

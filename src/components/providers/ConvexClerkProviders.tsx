@@ -5,7 +5,7 @@ import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ReactNode, useCallback } from "react";
 
 import { ToastProvider } from "@/components/ui";
-import { getConvexReactClient } from "@/lib/convex-client";
+import { getConvexReactClient } from "@/lib/convexClient";
 
 function useClerkAuthWithFallback() {
   const auth = useAuth();

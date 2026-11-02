@@ -4,7 +4,7 @@ import {
   type NextRequest,
 } from "next/server";
 
-import { isClerkConfigured } from "@/lib/clerk-config";
+import { isClerkConfigured } from "@/lib/clerkConfig";
 
 export default async function proxy(
   request: NextRequest,

@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { Button, Panel, Skeleton } from "@/components/ui";
 import type { Id } from "convex/_generated/dataModel";
 
-import { listingListRowSurfaceClass } from "@/lib/list-row-surface";
+import { listingListRowSurfaceClass } from "@/lib/listRowSurface";
 
 import { TOOLS_COPY } from "../constants/copy";
 import {

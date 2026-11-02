@@ -1,7 +1,7 @@
 import {
   isBorrowPeriodInProgress,
   isBorrowPeriodStarted,
-} from "@/lib/format-borrow-due";
+} from "@/lib/formatBorrowDue";
 
 export const LOAN_STATUS_LABELS = {
   pending: "Pending",
