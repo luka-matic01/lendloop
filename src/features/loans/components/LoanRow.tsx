@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { LOANS_COPY } from "../constants/copy";
 import type { useLoanActions } from "../hooks/useLoanActions";
 import type { LoanView } from "../types/loans";
+import { approvedLoanRowAction } from "../utils/approvedLoanAction";
 import {
   type LoanPerspective,
   formatLoanAutomationDetail,
@@ -47,6 +48,7 @@ function renderRowActions(
     approve,
     decline,
     requestMarkReturned,
+    requestCancelBorrow,
     requestTrustedLenderChange,
   } = loanActions;
   const isBusy = pendingId === loan._id;
@@ -77,34 +79,68 @@ function renderRowActions(
       );
     }
     if (loan.status === "approved") {
-      return (
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          disabled={isBusy}
-          onClick={() => requestMarkReturned(loan._id, loan.toolName, "incoming")}
-        >
-          {LOANS_COPY.markReturned}
-        </Button>
-      );
+      const action = approvedLoanRowAction(loan.status, loan.startDate);
+      if (action === "cancel") {
+        return (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={isBusy}
+            onClick={() => requestCancelBorrow(loan._id, loan.toolName)}
+          >
+            {LOANS_COPY.cancelBorrow}
+          </Button>
+        );
+      }
+      if (action === "markReturned") {
+        return (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={isBusy}
+            onClick={() =>
+              requestMarkReturned(loan._id, loan.toolName, "incoming")
+            }
+          >
+            {LOANS_COPY.markReturned}
+          </Button>
+        );
+      }
     }
     return null;
   }
 
   if (perspective === "mine") {
     if (loan.status === "approved") {
-      return (
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          disabled={isBusy}
-          onClick={() => requestMarkReturned(loan._id, loan.toolName, "mine")}
-        >
-          {LOANS_COPY.markReturned}
-        </Button>
-      );
+      const action = approvedLoanRowAction(loan.status, loan.startDate);
+      if (action === "cancel") {
+        return (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={isBusy}
+            onClick={() => requestCancelBorrow(loan._id, loan.toolName)}
+          >
+            {LOANS_COPY.cancelBorrow}
+          </Button>
+        );
+      }
+      if (action === "markReturned") {
+        return (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={isBusy}
+            onClick={() => requestMarkReturned(loan._id, loan.toolName, "mine")}
+          >
+            {LOANS_COPY.markReturned}
+          </Button>
+        );
+      }
     }
     return null;
   }
@@ -152,7 +188,12 @@ export function LoanRow({
       titleClassName={isClosed ? "text-ink-muted" : undefined}
       meta={
         <>
-          <LoanStatusBadge status={loan.status} perspective={perspective} />
+          <LoanStatusBadge
+            status={loan.status}
+            perspective={perspective}
+            startDate={loan.startDate}
+            endDate={loan.endDate}
+          />
           <ListRowMetaSeparator />
           <BorrowDateRange
             startDate={loan.startDate}

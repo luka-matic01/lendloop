@@ -6,6 +6,7 @@ import { api } from "convex/_generated/api";
 
 import { LOANS_COPY } from "../constants/copy";
 import type { useLoanActions } from "../hooks/useLoanActions";
+import { countApprovedLoanPhases } from "../utils/approvedLoanAction";
 import { partitionLoansForSection } from "../utils/sortLoans";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanSection } from "./LoanSection";
@@ -27,13 +28,18 @@ export function IncomingRequestsSection({
   const isLoading = !isReady || loans === undefined;
   const { open } = partitionLoansForSection(loans ?? []);
   const pendingCount = open.filter((l) => l.status === "pending").length;
-  const outCount = open.filter((l) => l.status === "approved").length;
+  const { out: outCount, reserved: reservedCount } =
+    countApprovedLoanPhases(open);
 
   return (
     <LoanSection
       headingId="incoming-loans-heading"
       heading={LOANS_COPY.incomingHeading}
-      summary={LOANS_COPY.sectionSummary(pendingCount, outCount)}
+      summary={LOANS_COPY.sectionSummary(
+        pendingCount,
+        outCount,
+        reservedCount,
+      )}
       isLoading={isLoading}
       itemCount={open.length}
       emptyMessage={LOANS_COPY.emptyIncoming}

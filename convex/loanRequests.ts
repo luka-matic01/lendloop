@@ -2,10 +2,16 @@ import { v } from "convex/values";
 
 import { mutation, query } from "./_generated/server";
 import { assertOwner, requireAdmin, requireUser } from "./lib/auth";
-import { parseBorrowDateRange } from "./lib/borrowDates";
+import {
+  borrowRangesOverlap,
+  isBorrowPeriodStarted,
+  parseBorrowDateRange,
+} from "./lib/borrowDates";
 import { AuthErrorCode, authError } from "./lib/errors";
 import { LIST_PAGE_SIZE } from "./lib/limits";
 import {
+  approvedLoansForTool,
+  assertNoOverlapWithApprovedLoans,
   borrowerHasActiveRequestOnTool,
   listPendingRequestsForToolExcept,
 } from "./lib/loans";
@@ -96,6 +102,9 @@ export const create = mutation({
       );
     }
 
+    const approved = await approvedLoansForTool(ctx, tool._id);
+    assertNoOverlapWithApprovedLoans(approved, startDate, endDate);
+
     if (
       await borrowerHasActiveRequestOnTool(ctx, tool._id, borrower._id)
     ) {
@@ -145,23 +154,30 @@ export const approve = mutation({
       authError(AuthErrorCode.NOT_FOUND, "Tool not found");
     }
 
-    if (!tool.isAvailable) {
-      authError(
-        AuthErrorCode.VALIDATION_ERROR,
-        "Tool is already lent out or paused",
-      );
-    }
+    const approved = await approvedLoansForTool(ctx, tool._id);
+    assertNoOverlapWithApprovedLoans(
+      approved,
+      request.startDate,
+      request.endDate,
+    );
 
     const competingPending = await listPendingRequestsForToolExcept(
       ctx,
       tool._id,
       request._id,
     );
+    const overlappingPending = competingPending.filter((sibling) =>
+      borrowRangesOverlap(
+        request.startDate,
+        request.endDate,
+        sibling.startDate,
+        sibling.endDate,
+      ),
+    );
 
     await Promise.all([
       ctx.db.patch(request._id, { status: "approved" }),
-      ctx.db.patch(tool._id, { isAvailable: false }),
-      ...competingPending.map((sibling) =>
+      ...overlappingPending.map((sibling) =>
         ctx.db.patch(sibling._id, { status: "declined" }),
       ),
     ]);
@@ -231,13 +247,58 @@ export const markReturned = mutation({
       );
     }
 
-    const tool = await ctx.db.get(request.toolId);
+    if (!isBorrowPeriodStarted(request.startDate)) {
+      authError(
+        AuthErrorCode.VALIDATION_ERROR,
+        "The borrow period has not started yet — cancel the reservation instead",
+      );
+    }
 
-    await Promise.all([
-      ctx.db.patch(request._id, { status: "returned" }),
-      tool ? ctx.db.patch(tool._id, { isAvailable: true }) : Promise.resolve(),
+    await ctx.db.patch(request._id, { status: "returned" });
+    return null;
+  },
+});
+
+export const cancelApproved = mutation({
+  args: {
+    requestId: v.id("loanRequests"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const [user, request] = await Promise.all([
+      requireUser(ctx),
+      ctx.db.get(args.requestId),
     ]);
 
+    if (!request) {
+      authError(AuthErrorCode.NOT_FOUND, "Loan request not found");
+    }
+
+    const isParticipant =
+      user._id === request.lenderId || user._id === request.borrowerId;
+
+    if (!isParticipant) {
+      authError(
+        AuthErrorCode.FORBIDDEN,
+        "Only the lender or borrower can cancel this reservation",
+      );
+    }
+
+    if (request.status !== "approved") {
+      authError(
+        AuthErrorCode.VALIDATION_ERROR,
+        "Only approved reservations can be cancelled",
+      );
+    }
+
+    if (isBorrowPeriodStarted(request.startDate)) {
+      authError(
+        AuthErrorCode.VALIDATION_ERROR,
+        "The borrow period has started — mark the tool returned instead",
+      );
+    }
+
+    await ctx.db.patch(request._id, { status: "cancelled" });
     return null;
   },
 });

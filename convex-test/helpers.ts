@@ -52,3 +52,15 @@ export function useAdminBootstrapEnv() {
     vi.unstubAllEnvs();
   });
 }
+
+/** Fixed UTC clock so borrow dates in tests stay in the future. */
+export function useBorrowTestClock(isoDate = "2026-10-15T12:00:00.000Z") {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(isoDate));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+}

@@ -156,6 +156,8 @@ export function ToolsPage() {
         open={borrowingTool !== null}
         toolId={borrowingTool?._id ?? null}
         toolName={borrowingTool?.name ?? ""}
+        loanOutUntil={borrowingTool?.loanOutUntil}
+        bookedRanges={borrowingTool?.bookedRanges}
         onClose={() => setBorrowingTool(null)}
       />
 

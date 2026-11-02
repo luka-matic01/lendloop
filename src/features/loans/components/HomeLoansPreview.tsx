@@ -12,10 +12,12 @@ import { api } from "convex/_generated/api";
 import { LOANS_COPY } from "../constants/copy";
 import { HOME_LOANS_PREVIEW_LIMIT } from "../constants/limits";
 import { useLoanActions } from "../hooks/useLoanActions";
+import { countApprovedLoanPhases } from "../utils/approvedLoanAction";
 import { partitionLoansForSection } from "../utils/sortLoans";
 import { HomeLoansFrame } from "./HomeLoansFrame";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanListSkeleton } from "./LoanRowSkeleton";
+import { CancelBorrowConfirmModal } from "./CancelBorrowConfirmModal";
 import { MarkReturnedConfirmModal } from "./MarkReturnedConfirmModal";
 
 export function HomeLoansPreview() {
@@ -52,16 +54,17 @@ export function HomeLoansPreview() {
   const incomingPendingCount = openIncoming.filter(
     (loan) => loan.status === "pending",
   ).length;
-  const incomingOutCount = openIncoming.filter(
-    (loan) => loan.status === "approved",
-  ).length;
+  const incomingApproved = countApprovedLoanPhases(openIncoming);
+  const mineApproved = countApprovedLoanPhases(openMine);
 
   const hasRows = previewIncoming.length > 0 || previewMine.length > 0;
   const activitySummary = hasRows
     ? LOANS_COPY.homeLoansSummary(
         incomingPendingCount,
-        incomingOutCount,
+        incomingApproved.out,
         openMine.length,
+        incomingApproved.reserved,
+        mineApproved.reserved,
       )
     : null;
 
@@ -126,6 +129,7 @@ export function HomeLoansPreview() {
         </div>
       )}
       <MarkReturnedConfirmModal loanActions={loanActions} />
+      <CancelBorrowConfirmModal loanActions={loanActions} />
     </HomeLoansFrame>
   );
 }

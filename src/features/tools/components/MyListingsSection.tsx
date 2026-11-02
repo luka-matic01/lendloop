@@ -62,7 +62,12 @@ export function MyListingsSection({
   const sortedTools = useMemo(() => sortListings(tools), [tools]);
 
   const liveCount = tools.filter((tool) => tool.isAvailable).length;
-  const onLoanCount = tools.filter((tool) => tool.hasActiveLoan).length;
+  const onLoanCount = tools.filter(
+    (tool) => tool.hasActiveLoan && tool.activeLoan?.started,
+  ).length;
+  const reservedCount = tools.filter(
+    (tool) => tool.upcomingReservationCount > 0,
+  ).length;
   const pausedCount = tools.filter(
     (tool) => !tool.isAvailable && !tool.hasActiveLoan,
   ).length;
@@ -93,6 +98,7 @@ export function MyListingsSection({
               pausedCount,
               onLoanCount,
               totalPendingRequests,
+              reservedCount,
             )}
           </p>
         ) : null}
@@ -115,6 +121,7 @@ export function MyListingsSection({
                     pendingRequestCount: tool.pendingRequestCount,
                     isAvailable: tool.isAvailable,
                     hasActiveLoan: tool.hasActiveLoan,
+                    activeLoanStarted: tool.activeLoan?.started,
                     activeLoanEndDate: tool.activeLoan?.endDate,
                   })}
                 >

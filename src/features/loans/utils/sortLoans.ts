@@ -4,7 +4,8 @@ const STATUS_ORDER: Record<LoanView["status"], number> = {
   pending: 0,
   approved: 1,
   returned: 2,
-  declined: 3,
+  cancelled: 3,
+  declined: 4,
 };
 
 /** Active requests first; closed loans sink to the bottom of each section. */
@@ -24,7 +25,11 @@ export function sortClosedLoansByDate(loans: LoanView[]): LoanView[] {
 }
 
 export function isClosedLoanStatus(status: LoanView["status"]): boolean {
-  return status === "returned" || status === "declined";
+  return (
+    status === "returned" ||
+    status === "declined" ||
+    status === "cancelled"
+  );
 }
 
 export function partitionLoansForSection(loans: LoanView[]) {

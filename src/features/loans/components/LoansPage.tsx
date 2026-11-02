@@ -12,6 +12,7 @@ import { useLoanActions } from "../hooks/useLoanActions";
 import { AllLoansSection } from "./AllLoansSection";
 import { IncomingRequestsSection } from "./IncomingRequestsSection";
 import { LoansPastSection } from "./LoansPastSection";
+import { CancelBorrowConfirmModal } from "./CancelBorrowConfirmModal";
 import { MarkReturnedConfirmModal } from "./MarkReturnedConfirmModal";
 import { TrustedLenderConfirmModal } from "./TrustedLenderConfirmModal";
 import { MyRequestsSection } from "./MyRequestsSection";
@@ -59,6 +60,7 @@ export function LoansPage() {
         loanActions={loanActions}
       />
       <MarkReturnedConfirmModal loanActions={loanActions} />
+      <CancelBorrowConfirmModal loanActions={loanActions} />
       <TrustedLenderConfirmModal loanActions={loanActions} />
     </Container>
   );

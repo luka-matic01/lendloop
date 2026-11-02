@@ -1,3 +1,4 @@
+import { isBorrowPeriodStarted } from "@/lib/format-borrow-due";
 import { loanListRowSurfaceClass } from "@/lib/list-row-surface";
 
 import { LOANS_COPY } from "../constants/copy";
@@ -11,13 +12,29 @@ export function formatLoanPartyLine(
   perspective: LoanPerspective,
 ): string {
   if (perspective === "incoming") {
-    return loan.status === "approved" || loan.status === "returned"
-      ? LOANS_COPY.borrowedBy(loan.borrowerName)
-      : LOANS_COPY.requestedBy(loan.borrowerName);
+    if (loan.status === "returned") {
+      return LOANS_COPY.borrowedBy(loan.borrowerName);
+    }
+    if (
+      loan.status === "approved" &&
+      !isBorrowPeriodStarted(loan.startDate)
+    ) {
+      return LOANS_COPY.reservedFor(loan.borrowerName);
+    }
+    if (loan.status === "approved") {
+      return LOANS_COPY.borrowedBy(loan.borrowerName);
+    }
+    return LOANS_COPY.requestedBy(loan.borrowerName);
   }
   if (perspective === "mine") {
     if (loan.status === "pending" || loan.status === "declined") {
       return LOANS_COPY.requestSentTo(loan.lenderName);
+    }
+    if (
+      loan.status === "approved" &&
+      !isBorrowPeriodStarted(loan.startDate)
+    ) {
+      return LOANS_COPY.upcomingBorrowFrom(loan.lenderName);
     }
     return LOANS_COPY.borrowedFrom(loan.lenderName);
   }
@@ -30,6 +47,7 @@ export function loanRowSurfaceClass(
 ): string {
   return loanListRowSurfaceClass({
     status: loan.status,
+    startDate: loan.startDate,
     endDate: loan.endDate,
     perspective,
     isClosed: isClosedLoanStatus(loan.status),

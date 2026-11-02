@@ -1,4 +1,7 @@
-import { getBorrowDueUrgency } from "@/lib/format-borrow-due";
+import {
+  getBorrowDueUrgency,
+  isBorrowPeriodInProgress,
+} from "@/lib/format-borrow-due";
 import { cn } from "@/lib/utils";
 
 /** Bleed list rows to panel edges (matches divide-y list padding). */
@@ -39,7 +42,8 @@ export function listRowSurfaceClass(surface: ListRowSurface): string {
 }
 
 type LoanListRowSurfaceInput = {
-  status: "pending" | "approved" | "declined" | "returned";
+  status: "pending" | "approved" | "declined" | "cancelled" | "returned";
+  startDate: string;
   endDate: string;
   perspective: "incoming" | "mine" | "admin";
   isClosed: boolean;
@@ -59,6 +63,9 @@ export function loanListRowSurfaceClass(input: LoanListRowSurfaceInput): string 
     return listRowSurfaceClass("awaiting");
   }
   if (input.status === "approved") {
+    if (!isBorrowPeriodInProgress(input.startDate, input.endDate)) {
+      return listRowSurfaceClass("awaiting");
+    }
     if (getBorrowDueUrgency(input.endDate) === "overdue") {
       return listRowSurfaceClass("overdue");
     }
@@ -71,6 +78,7 @@ type ListingListRowSurfaceInput = {
   pendingRequestCount: number;
   isAvailable: boolean;
   hasActiveLoan: boolean;
+  activeLoanStarted?: boolean;
   activeLoanEndDate?: string;
 };
 
@@ -80,7 +88,7 @@ export function listingListRowSurfaceClass(
   if (input.pendingRequestCount > 0) {
     return listRowSurfaceClass("needs_action");
   }
-  if (input.hasActiveLoan) {
+  if (input.hasActiveLoan && input.activeLoanStarted) {
     if (
       input.activeLoanEndDate !== undefined &&
       getBorrowDueUrgency(input.activeLoanEndDate) === "overdue"
@@ -88,6 +96,9 @@ export function listingListRowSurfaceClass(
       return listRowSurfaceClass("overdue");
     }
     return listRowSurfaceClass("out_active");
+  }
+  if (input.hasActiveLoan && !input.activeLoanStarted) {
+    return listRowSurfaceClass("awaiting");
   }
   if (!input.isAvailable) {
     return listRowSurfaceClass("inactive");

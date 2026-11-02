@@ -15,6 +15,7 @@ import {
   BORROW_DUE_TONE_CLASS,
   formatBorrowDuePhrase,
   getBorrowDueUrgency,
+  isBorrowPeriodStarted,
 } from "@/lib/format-borrow-due";
 import { cn } from "@/lib/utils";
 import type { Id } from "convex/_generated/dataModel";
@@ -44,23 +45,36 @@ export function MyListingRow({
   onMarkReturned,
   className,
 }: MyListingRowProps) {
-  const isLive = tool.isAvailable;
-  const isOnLoan = tool.hasActiveLoan;
-  const hasRequests = tool.pendingRequestCount > 0;
-  const listingState = isLive ? "on_board" : isOnLoan ? "on_loan" : "paused";
-  const canToggleAvailability = isLive || !isOnLoan;
-  const listingLocked = isOnLoan;
-  const lockedTooltip = TOOLS_COPY.listingLockedActiveLoan;
   const activeLoan = tool.activeLoan;
+  const loanInProgress = activeLoan?.started === true;
+  const loanUpcoming =
+    activeLoan !== undefined &&
+    !loanInProgress &&
+    !isBorrowPeriodStarted(activeLoan.startDate);
+  const showMarkReturned =
+    activeLoan !== undefined &&
+    onMarkReturned != null &&
+    isBorrowPeriodStarted(activeLoan.startDate);
+  const isLive = tool.isAvailable;
+  const isOnLoan = loanInProgress;
+  const isReserved = loanUpcoming;
+  const hasRequests = tool.pendingRequestCount > 0;
+  const reservationCount = tool.upcomingReservationCount;
+  const listingState = isReserved
+    ? "reserved"
+    : isLive
+      ? "on_board"
+      : isOnLoan
+        ? "on_loan"
+        : "paused";
   const duePhrase =
-    activeLoan !== undefined ? formatBorrowDuePhrase(activeLoan.endDate) : null;
+    loanInProgress && activeLoan
+      ? formatBorrowDuePhrase(activeLoan.endDate)
+      : null;
   const dueUrgency =
-    activeLoan !== undefined ? getBorrowDueUrgency(activeLoan.endDate) : null;
-  const isMuted = !isLive && !isOnLoan && !hasRequests;
-  const showMarkReturned = activeLoan !== undefined && onMarkReturned != null;
-  const hasLoanLine = Boolean(activeLoan && duePhrase && dueUrgency);
-  const hasDetails = hasLoanLine || hasRequests;
-  const hasPrimaryActions = hasRequests || showMarkReturned;
+    loanInProgress && activeLoan
+      ? getBorrowDueUrgency(activeLoan.endDate)
+      : null;
 
   return (
     <ListRow
@@ -68,7 +82,8 @@ export function MyListingRow({
       title={tool.name}
       titleClassName={cn(
         "transition-opacity",
-        isMuted && "text-ink-muted opacity-55",
+        !isLive && !isOnLoan && !isReserved && !hasRequests && reservationCount === 0 &&
+          "text-ink-muted opacity-55",
       )}
       headerActions={
         <div
@@ -80,8 +95,8 @@ export function MyListingRow({
             type="button"
             variant="ghost"
             aria-label={TOOLS_COPY.editListing}
-            tooltip={listingLocked ? lockedTooltip : undefined}
-            disabled={listingLocked}
+            tooltip={isOnLoan ? TOOLS_COPY.listingLockedActiveLoan : undefined}
+            disabled={isOnLoan}
             onClick={onEdit}
             className="hover:bg-canvas disabled:pointer-events-none disabled:opacity-40"
           >
@@ -92,11 +107,11 @@ export function MyListingRow({
             variant="ghost"
             aria-label={isLive ? TOOLS_COPY.pauseListing : TOOLS_COPY.putOnBoard}
             tooltip={
-              !canToggleAvailability
+              !isLive && isOnLoan
                 ? TOOLS_COPY.putOnBoardBlockedActiveLoan
                 : undefined
             }
-            disabled={!canToggleAvailability}
+            disabled={!isLive && isOnLoan}
             onClick={onToggleAvailability}
             className="hover:bg-canvas disabled:pointer-events-none disabled:opacity-40"
           >
@@ -110,8 +125,8 @@ export function MyListingRow({
             type="button"
             variant="ghost"
             aria-label={TOOLS_COPY.removeListing}
-            tooltip={listingLocked ? lockedTooltip : undefined}
-            disabled={listingLocked}
+            tooltip={isOnLoan ? TOOLS_COPY.listingLockedActiveLoan : undefined}
+            disabled={isOnLoan}
             onClick={onRemove}
             className="text-ink-muted hover:bg-canvas hover:text-negative disabled:pointer-events-none disabled:opacity-40"
           >
@@ -119,7 +134,6 @@ export function MyListingRow({
           </IconButton>
         </div>
       }
-      metaClassName={cn("transition-opacity", isMuted && "opacity-55")}
       meta={
         <>
           <ToolListingStateBadge state={listingState} />
@@ -131,29 +145,24 @@ export function MyListingRow({
         </>
       }
       details={
-        hasDetails ? (
-          <div className="space-y-1">
-            {activeLoan && duePhrase && dueUrgency ? (
-              <p className={LIST_ROW_META_TEXT_CLASS}>
-                <span className="min-w-0 [overflow-wrap:anywhere]">
-                  {LOANS_COPY.borrowedBy(activeLoan.borrowerName)}
-                </span>
-                <ListRowMetaSeparator />
-                <span className={cn("shrink-0", BORROW_DUE_TONE_CLASS[dueUrgency])}>
-                  {duePhrase}
-                </span>
-              </p>
-            ) : null}
-            {hasRequests ? (
-              <p className="text-xs font-semibold text-ink">
-                {TOOLS_COPY.listingRequestsNotice(tool.pendingRequestCount)}
-              </p>
-            ) : null}
-          </div>
+        showMarkReturned && activeLoan && duePhrase && dueUrgency ? (
+          <p className={LIST_ROW_META_TEXT_CLASS}>
+            <span className="min-w-0 [overflow-wrap:anywhere]">
+              {LOANS_COPY.borrowedBy(activeLoan.borrowerName)}
+            </span>
+            <ListRowMetaSeparator />
+            <span className={cn("shrink-0", BORROW_DUE_TONE_CLASS[dueUrgency])}>
+              {duePhrase}
+            </span>
+          </p>
+        ) : hasRequests ? (
+          <p className="text-xs font-semibold text-ink">
+            {TOOLS_COPY.listingRequestsNotice(tool.pendingRequestCount)}
+          </p>
         ) : undefined
       }
       actions={
-        hasPrimaryActions ? (
+        hasRequests || reservationCount > 0 || showMarkReturned ? (
           <>
             {hasRequests ? (
               <Link
@@ -165,6 +174,21 @@ export function MyListingRow({
                 )}
               >
                 {TOOLS_COPY.listingRequestsCta(tool.pendingRequestCount)}
+              </Link>
+            ) : null}
+            {reservationCount > 0 ? (
+              <Link
+                href={ROUTES.loans}
+                className={buttonClassName({
+                  variant: hasRequests ? "secondary" : "primary",
+                  size: "sm",
+                })}
+                aria-label={TOOLS_COPY.listingReservationsLinkAria(
+                  reservationCount,
+                  tool.name,
+                )}
+              >
+                {TOOLS_COPY.listingReservationsCta(reservationCount)}
               </Link>
             ) : null}
             {showMarkReturned && activeLoan ? (

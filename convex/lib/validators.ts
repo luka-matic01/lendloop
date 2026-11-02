@@ -16,6 +16,7 @@ export const loanRequestStatuses = [
   "pending",
   "approved",
   "declined",
+  "cancelled",
   "returned",
 ] as const;
 

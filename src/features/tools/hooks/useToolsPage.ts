@@ -109,7 +109,7 @@ export function useToolsPage() {
 
   const openEditModal = useCallback(
     (tool: MyTool) => {
-      if (tool.hasActiveLoan) {
+      if (tool.hasActiveLoan && tool.activeLoan?.started) {
         toast(TOOLS_COPY.listingLockedActiveLoan, "error");
         return;
       }
@@ -149,10 +149,6 @@ export function useToolsPage() {
 
   const requestToggleListingAvailability = useCallback(
     (tool: MyTool) => {
-      if (!tool.isAvailable && tool.hasActiveLoan) {
-        toast(TOOLS_COPY.putOnBoardBlockedActiveLoan, "error");
-        return;
-      }
       setListingConfirm({ type: "availability", tool });
     },
     [toast],

@@ -12,10 +12,12 @@ import {
   createConvexTest,
   provisionUser,
   useAdminBootstrapEnv,
+  useBorrowTestClock,
 } from "../convex-test/helpers";
 
 describe("tools", () => {
   useAdminBootstrapEnv();
+  useBorrowTestClock();
 
   it("listPublic returns only name and category for available tools", async () => {
     const t = createConvexTest();
@@ -302,5 +304,45 @@ describe("tools", () => {
       firstMyListingsPage(),
     );
     expect(lenderListings.page[0]?.pendingRequestCount).toBe(1);
+  });
+
+  it("listBoard shows when a tool is out on loan until return date", async () => {
+    const t = createConvexTest();
+    const { session: lenderSession } = await provisionUser(
+      t,
+      "lender@test.com",
+    );
+    const { session: borrowerSession } = await provisionUser(
+      t,
+      "borrower@test.com",
+    );
+    const { session: neighborSession } = await provisionUser(
+      t,
+      "neighbor@test.com",
+    );
+
+    const toolId = await lenderSession.mutation(api.tools.create, {
+      name: "Pressure washer",
+      category: "garden",
+      condition: "good",
+      description: "",
+    });
+
+    const requestId = await borrowerSession.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-10-15",
+      endDate: "2026-10-18",
+    });
+    await lenderSession.mutation(api.loanRequests.approve, { requestId });
+
+    const board = await neighborSession.query(
+      api.tools.listBoard,
+      firstBoardPage(),
+    );
+    const row = board.page.find((tool) => tool._id === toolId);
+    expect(row?.loanOutUntil).toBe("2026-10-18");
+    expect(row?.bookedRanges).toEqual([
+      { startDate: "2026-10-15", endDate: "2026-10-18" },
+    ]);
   });
 });

@@ -15,21 +15,30 @@ const statusConfig: Record<
   pending: { tone: "text-warning", Icon: Clock },
   approved: { tone: "text-positive", Icon: Handshake },
   declined: { tone: "text-negative", Icon: X },
+  cancelled: { tone: "text-ink-muted", Icon: X },
   returned: { tone: "text-ink-muted", Icon: Check },
 };
 
 type LoanStatusBadgeProps = {
   status: LoanView["status"];
   perspective: LoanStatusPerspective;
+  startDate?: string;
+  endDate?: string;
   className?: string;
 };
 
 export function LoanStatusBadge({
   status,
   perspective,
+  startDate,
+  endDate,
   className,
 }: LoanStatusBadgeProps) {
   const { tone, Icon } = statusConfig[status];
+  const borrowDates =
+    startDate !== undefined && endDate !== undefined
+      ? { startDate, endDate }
+      : undefined;
 
   return (
     <span
@@ -40,7 +49,7 @@ export function LoanStatusBadge({
       )}
     >
       <Icon className="size-3.5 shrink-0" aria-hidden />
-      {loanStatusLabel(status, perspective)}
+      {loanStatusLabel(status, perspective, borrowDates)}
     </span>
   );
 }

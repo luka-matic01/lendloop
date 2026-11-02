@@ -23,6 +23,7 @@ type ToolCardLayoutProps = {
   listingState?: ToolListingState;
   isOwnListing?: boolean;
   footer?: ReactNode;
+  notice?: ReactNode;
   panelClassName?: string;
 };
 
@@ -34,6 +35,7 @@ export function ToolCardLayout({
   listingState,
   isOwnListing = false,
   footer,
+  notice,
   panelClassName,
 }: ToolCardLayoutProps) {
   const accent = TOOL_CATEGORY_ACCENT[category];
@@ -71,6 +73,8 @@ export function ToolCardLayout({
       {description ? (
         <p className={TOOL_CARD_DESCRIPTION_CLASS}>{description}</p>
       ) : null}
+
+      {notice ? <div className="min-w-0">{notice}</div> : null}
 
       {footer ? (
         <div

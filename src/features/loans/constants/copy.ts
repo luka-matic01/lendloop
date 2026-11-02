@@ -1,7 +1,13 @@
+import {
+  isBorrowPeriodInProgress,
+  isBorrowPeriodStarted,
+} from "@/lib/format-borrow-due";
+
 export const LOAN_STATUS_LABELS = {
   pending: "Pending",
   approved: "Out on loan",
   declined: "Declined",
+  cancelled: "Cancelled",
   returned: "Returned",
 } as const;
 
@@ -13,10 +19,26 @@ export type LoanStatusPerspective = "incoming" | "mine" | "admin";
 /** Lender vs borrower — used for mark-returned confirm copy. */
 export type LoanReturnPerspective = "incoming" | "mine";
 
+type LoanStatusBorrowDates = {
+  startDate: string;
+  endDate: string;
+};
+
 export function loanStatusLabel(
   status: LoanStatusLabelKey,
   perspective: LoanStatusPerspective,
+  borrowDates?: LoanStatusBorrowDates,
 ): string {
+  if (status === "approved" && borrowDates) {
+    const { startDate, endDate } = borrowDates;
+    if (!isBorrowPeriodStarted(startDate)) {
+      return perspective === "mine" ? "Upcoming" : "Reserved";
+    }
+    if (!isBorrowPeriodInProgress(startDate, endDate)) {
+      return perspective === "mine" ? "Borrowing" : LOAN_STATUS_LABELS.approved;
+    }
+  }
+
   if (perspective === "mine") {
     if (status === "approved") {
       return "Borrowing";
@@ -35,7 +57,13 @@ export const LOANS_COPY = {
   homeIncomingPreview: "On your tools",
   homeMyRequestsPreview: "Your borrows",
   homeEmptyLoans: "No active loan activity yet.",
-  homeLoansSummary(incomingPending: number, incomingOut: number, myActive: number) {
+  homeLoansSummary(
+    incomingPending: number,
+    incomingOut: number,
+    myActive: number,
+    incomingReserved = 0,
+    myReserved = 0,
+  ) {
     const parts: string[] = [];
     if (incomingPending > 0) {
       parts.push(
@@ -51,11 +79,25 @@ export const LOANS_COPY = {
           : `${incomingOut} of your tools out`,
       );
     }
+    if (incomingReserved > 0) {
+      parts.push(
+        incomingReserved === 1
+          ? "1 tool reserved"
+          : `${incomingReserved} tools reserved`,
+      );
+    }
     if (myActive > 0) {
       parts.push(
         myActive === 1
           ? "1 borrow in flight"
           : `${myActive} borrows in flight`,
+      );
+    }
+    if (myReserved > 0) {
+      parts.push(
+        myReserved === 1
+          ? "1 upcoming borrow"
+          : `${myReserved} upcoming borrows`,
       );
     }
     return parts.join(" · ");
@@ -70,7 +112,7 @@ export const LOANS_COPY = {
   myRequestsHeading: "Your borrows",
   allLoansHeading: "All loans",
   emptyIncoming: "No active requests or loans on your tools.",
-  emptyMyRequests: "You have no active borrows or requests.",
+  emptyMyRequests: "No active borrows or requests.",
   emptyAllLoansOpen: "No active loans on the platform right now.",
   pastLoansSectionTitle: "Past loans",
   showPastLoans(count: number) {
@@ -87,7 +129,11 @@ export const LOANS_COPY = {
       ? "Your borrows · 1 past"
       : `Your borrows · ${count} past`;
   },
-  sectionSummary(pendingCount: number, outCount: number) {
+  sectionSummary(
+    pendingCount: number,
+    outCount: number,
+    reservedCount = 0,
+  ) {
     const parts: string[] = [];
     if (pendingCount > 0) {
       parts.push(pendingCount === 1 ? "1 waiting for OK" : `${pendingCount} waiting for OK`);
@@ -95,12 +141,18 @@ export const LOANS_COPY = {
     if (outCount > 0) {
       parts.push(outCount === 1 ? "1 out on loan" : `${outCount} out on loan`);
     }
+    if (reservedCount > 0) {
+      parts.push(
+        reservedCount === 1 ? "1 reserved" : `${reservedCount} reserved`,
+      );
+    }
     return parts.join(" · ");
   },
   loadErrorTitle: "Could not open loans",
   approve: "Approve",
   decline: "Decline",
   markReturned: "Mark returned",
+  cancelBorrow: "Cancel reservation",
   cancel: "Cancel",
   confirmReturnAction: "Mark returned",
   confirmReturnTitleIncoming(toolName: string) {
@@ -118,6 +170,12 @@ export const LOANS_COPY = {
   },
   borrowedBy(name: string) {
     return `Borrowed by ${name}`;
+  },
+  reservedFor(name: string) {
+    return `Reserved for ${name}`;
+  },
+  upcomingBorrowFrom(name: string) {
+    return `Upcoming borrow from ${name}`;
   },
   requestSentTo(name: string) {
     return `Request sent to ${name}`;
@@ -148,6 +206,15 @@ export const LOANS_COPY = {
   toastReturned(toolName: string) {
     return `${toolName} marked returned`;
   },
+  toastCancelled(toolName: string) {
+    return `Reservation cancelled for ${toolName}`;
+  },
+  confirmCancelBorrowTitle(toolName: string) {
+    return `Cancel the reservation for ${toolName}?`;
+  },
+  confirmCancelBorrowDescription:
+    "The borrow window has not started yet. Neighbors can request those dates again.",
+  confirmCancelBorrowAction: "Cancel reservation",
   toastTrustedUpdated(name: string, trusted: boolean) {
     return trusted ? `${name} marked as trusted lender` : `${name} is no longer trusted`;
   },

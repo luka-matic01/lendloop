@@ -18,6 +18,7 @@ export const TOOLS_COPY = {
     pausedCount: number,
     onLoanCount = 0,
     pendingRequestCount = 0,
+    reservedCount = 0,
   ) {
     const requests =
       pendingRequestCount === 1
@@ -35,8 +36,14 @@ export const TOOLS_COPY = {
         : onLoanCount === 0
           ? ""
           : `${onLoanCount} out on loan`;
+    const reserved =
+      reservedCount === 1
+        ? "1 reserved"
+        : reservedCount === 0
+          ? ""
+          : `${reservedCount} reserved`;
 
-    const parts = [requests, live, paused, onLoan].filter(Boolean);
+    const parts = [requests, live, paused, onLoan, reserved].filter(Boolean);
     if (parts.length === 0) {
       return "";
     }
@@ -59,6 +66,14 @@ export const TOOLS_COPY = {
     return parts.join(" · ");
   },
   listingOutOnLoan: "Out on loan",
+  listingReserved: "Reserved",
+  listingReservationsCta(count: number) {
+    return count === 1 ? "1 reservation" : `${count} reservations`;
+  },
+  listingReservationsLinkAria(count: number, toolName: string) {
+    const noun = count === 1 ? "reservation" : "reservations";
+    return `View ${count} approved ${noun} for ${toolName} on Loans`;
+  },
   listingRequestsNotice(count: number) {
     return count === 1
       ? "1 neighbor wants to borrow this · Needs your OK"
@@ -78,6 +93,9 @@ export const TOOLS_COPY = {
   pauseListing: "Pause",
   putOnBoard: "Put on board",
   borrowTool: "Borrow",
+  boardOutUntil(endDateLabel: string) {
+    return `Out until ${endDateLabel}`;
+  },
   pendingBorrowRequest: "Pending request",
   activeBorrowOnLoan: "On loan",
   removeListing: "Remove",
@@ -92,7 +110,7 @@ export const TOOLS_COPY = {
   loadErrorTitle: "Could not open tool board",
   emptyBoard: "Nothing listed yet.",
   emptyCategory: "No tools in this category.",
-  emptyListings: "You have not listed anything yet.",
+  emptyListings: "No listings yet.",
   addToBoard: "Add to board",
   adding: "Adding…",
   modalTitle: "List a tool",

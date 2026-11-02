@@ -7,6 +7,7 @@ import {
   TrustedLenderIndicator,
 } from "@/components/ui";
 import { LOANS_COPY } from "@/features/loans";
+import { formatBorrowDayMonth } from "@/lib/format-borrow-due";
 import { cn } from "@/lib/utils";
 
 import { TOOLS_COPY } from "../constants/copy";
@@ -48,6 +49,10 @@ export function ToolCard({
   const hasFooterActions =
     showBorrow || borrowStatusLabel !== null || canTrustNeighbor || canRemoveNeighbor;
   const description = toolCardDescription(tool.name, tool.description);
+  const showLoanNotice =
+    tool.loanOutUntil !== undefined &&
+    !tool.isOwner &&
+    tool.viewerBorrowStatus !== "approved";
 
   return (
     <ToolCardLayout
@@ -56,6 +61,15 @@ export function ToolCard({
       name={tool.name}
       description={description}
       isOwnListing={tool.isOwner}
+      notice={
+        showLoanNotice ? (
+          <p className="text-sm font-semibold leading-snug text-ink-muted">
+            {TOOLS_COPY.boardOutUntil(
+              formatBorrowDayMonth(tool.loanOutUntil!),
+            )}
+          </p>
+        ) : null
+      }
       footer={
         tool.isOwner ? undefined : (
           <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1.5">

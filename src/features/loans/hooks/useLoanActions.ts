@@ -19,6 +19,11 @@ export type MarkReturnedConfirm = {
   perspective: LoanReturnPerspective;
 };
 
+export type CancelBorrowConfirm = {
+  requestId: Id<"loanRequests">;
+  toolName: string;
+};
+
 export type TrustedLenderConfirm = {
   userId: Id<"users">;
   name: string;
@@ -30,6 +35,7 @@ export function useLoanActions() {
   const approveMut = useMutation(api.loanRequests.approve);
   const declineMut = useMutation(api.loanRequests.decline);
   const markReturnedMut = useMutation(api.loanRequests.markReturned);
+  const cancelApprovedMut = useMutation(api.loanRequests.cancelApproved);
   const setTrustedMut = useMutation(api.users.setTrustedLender);
 
   const [pendingId, setPendingId] = useState<Id<"loanRequests"> | null>(null);
@@ -37,6 +43,9 @@ export function useLoanActions() {
     useState<Id<"users"> | null>(null);
   const [returnConfirm, setReturnConfirm] =
     useState<MarkReturnedConfirm | null>(null);
+  const [cancelConfirm, setCancelConfirm] = useState<CancelBorrowConfirm | null>(
+    null,
+  );
   const [trustedConfirm, setTrustedConfirm] =
     useState<TrustedLenderConfirm | null>(null);
 
@@ -87,6 +96,37 @@ export function useLoanActions() {
     }
     setReturnConfirm(null);
   }, [pendingId]);
+
+  const requestCancelBorrow = useCallback(
+    (requestId: Id<"loanRequests">, toolName: string) => {
+      setCancelConfirm({ requestId, toolName });
+    },
+    [],
+  );
+
+  const cancelCancelBorrow = useCallback(() => {
+    if (pendingId !== null) {
+      return;
+    }
+    setCancelConfirm(null);
+  }, [pendingId]);
+
+  const confirmCancelBorrow = useCallback(async () => {
+    if (!cancelConfirm) {
+      return;
+    }
+    const { requestId, toolName } = cancelConfirm;
+    setPendingId(requestId);
+    try {
+      await cancelApprovedMut({ requestId });
+      toast(LOANS_COPY.toastCancelled(toolName));
+      setCancelConfirm(null);
+    } catch (error) {
+      toast(convexErrorMessage(error, "Could not cancel reservation"), "error");
+    } finally {
+      setPendingId(null);
+    }
+  }, [cancelApprovedMut, cancelConfirm, toast]);
 
   const confirmMarkReturned = useCallback(async () => {
     if (!returnConfirm) {
@@ -140,12 +180,16 @@ export function useLoanActions() {
     pendingId,
     pendingTrustedUserId,
     returnConfirm,
+    cancelConfirm,
     trustedConfirm,
     approve,
     decline,
     requestMarkReturned,
+    requestCancelBorrow,
     confirmMarkReturned,
     cancelMarkReturned,
+    confirmCancelBorrow,
+    cancelCancelBorrow,
     requestTrustedLenderChange,
     confirmTrustedLenderChange,
     cancelTrustedLenderChange,

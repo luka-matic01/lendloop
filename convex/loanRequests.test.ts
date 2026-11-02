@@ -11,10 +11,12 @@ import {
   errorCode,
   provisionUser,
   useAdminBootstrapEnv,
+  useBorrowTestClock,
 } from "../convex-test/helpers";
 
 describe("loanRequests", () => {
   useAdminBootstrapEnv();
+  useBorrowTestClock();
 
   it("rejects unauthenticated callers on queries and mutations", async () => {
     const t = createConvexTest();
@@ -95,6 +97,17 @@ describe("loanRequests", () => {
       (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
     );
 
+    // Start date in the past
+    await expect(
+      borrower.mutation(api.loanRequests.create, {
+        toolId,
+        startDate: "2026-10-01",
+        endDate: "2026-11-03",
+      }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
+    );
+
     // Valid request succeeds
     await borrower.mutation(api.loanRequests.create, {
       toolId,
@@ -137,14 +150,14 @@ describe("loanRequests", () => {
 
     const requestA = await borrowerA.mutation(api.loanRequests.create, {
       toolId,
-      startDate: "2026-11-01",
-      endDate: "2026-11-03",
+      startDate: "2026-10-15",
+      endDate: "2026-10-17",
     });
 
     const requestB = await borrowerB.mutation(api.loanRequests.create, {
       toolId,
-      startDate: "2026-11-02",
-      endDate: "2026-11-04",
+      startDate: "2026-10-16",
+      endDate: "2026-10-18",
     });
 
     // Borrower and stranger cannot approve or decline
@@ -160,7 +173,7 @@ describe("loanRequests", () => {
       (err: unknown) => errorCode(err) === AuthErrorCode.FORBIDDEN,
     );
 
-    // Lender approves requestA -> tool becomes unavailable and requestB is auto-declined
+    // Lender approves requestA -> overlapping requestB is auto-declined
     await lender.mutation(api.loanRequests.approve, { requestId: requestA });
 
     const incoming = await lender.query(
@@ -178,18 +191,9 @@ describe("loanRequests", () => {
       api.tools.listMine,
       firstMyListingsPage(),
     );
-    expect(lenderTools.page[0]?.isAvailable).toBe(false);
+    expect(lenderTools.page[0]?.isAvailable).toBe(true);
     expect(lenderTools.page[0]?.hasActiveLoan).toBe(true);
-
-    // Cannot manually re-enable availability while an approved loan is active
-    await expect(
-      lender.mutation(api.tools.setAvailability, {
-        toolId,
-        isAvailable: true,
-      }),
-    ).rejects.toSatisfy(
-      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
-    );
+    expect(lenderTools.page[0]?.activeLoan?.started).toBe(true);
 
     await expect(
       lender.mutation(api.tools.update, {
@@ -210,6 +214,64 @@ describe("loanRequests", () => {
     );
   });
 
+  it("keeps listings on the board and blocks only overlapping borrow dates", async () => {
+    const t = createConvexTest();
+    const { session: lender } = await provisionUser(t, "lender@test.com");
+    const { session: borrower } = await provisionUser(t, "borrower@test.com");
+    const { session: neighbor } = await provisionUser(t, "neighbor@test.com");
+
+    const toolId = await lender.mutation(api.tools.create, {
+      name: "Ladder",
+      category: "other",
+      condition: "good",
+      description: "6 ft",
+    });
+
+    const requestId = await borrower.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-20",
+      endDate: "2026-11-22",
+    });
+
+    await lender.mutation(api.loanRequests.approve, { requestId });
+
+    const lenderTools = await lender.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    expect(lenderTools.page[0]?.isAvailable).toBe(true);
+    expect(lenderTools.page[0]?.activeLoan?.started).toBe(false);
+
+    const board = await neighbor.query(api.tools.listBoard, {
+      paginationOpts: { numItems: 10, cursor: null },
+    });
+    expect(board.page.some((row) => row._id === toolId)).toBe(true);
+
+    await expect(
+      neighbor.mutation(api.loanRequests.create, {
+        toolId,
+        startDate: "2026-11-21",
+        endDate: "2026-11-23",
+      }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
+    );
+
+    await neighbor.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-25",
+      endDate: "2026-11-27",
+    });
+
+    await lender.mutation(api.tools.update, {
+      toolId,
+      name: "Tall ladder",
+      category: "other",
+      condition: "good",
+      description: "6 ft aluminum",
+    });
+  });
+
   it("allows lender or borrower to mark an approved loan returned, and forbids strangers", async () => {
     const t = createConvexTest();
     const { session: lender } = await provisionUser(t, "lender@test.com");
@@ -225,8 +287,8 @@ describe("loanRequests", () => {
 
     const requestId = await borrower.mutation(api.loanRequests.create, {
       toolId,
-      startDate: "2026-11-01",
-      endDate: "2026-11-03",
+      startDate: "2026-10-15",
+      endDate: "2026-10-17",
     });
 
     // Cannot mark pending loan returned
@@ -245,8 +307,9 @@ describe("loanRequests", () => {
     expect(lenderListings.page[0]?.hasActiveLoan).toBe(true);
     expect(lenderListings.page[0]?.activeLoan).toMatchObject({
       requestId,
-      startDate: "2026-11-01",
-      endDate: "2026-11-03",
+      startDate: "2026-10-15",
+      endDate: "2026-10-17",
+      started: true,
     });
     expect(lenderListings.page[0]?.activeLoan?.borrowerName).toBeTruthy();
 
@@ -276,6 +339,124 @@ describe("loanRequests", () => {
       firstMyListingsPage(),
     );
     expect(lenderTools.page[0]?.isAvailable).toBe(true);
+  });
+
+  it("lets lender or borrower cancel an approved reservation before the borrow starts", async () => {
+    const t = createConvexTest();
+    const { session: lender } = await provisionUser(t, "lender@test.com");
+    const { session: borrower } = await provisionUser(t, "borrower@test.com");
+    const { session: stranger } = await provisionUser(t, "stranger@test.com");
+
+    const toolId = await lender.mutation(api.tools.create, {
+      name: "Pressure washer",
+      category: "garden",
+      condition: "good",
+      description: "",
+    });
+
+    const requestId = await borrower.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-20",
+      endDate: "2026-11-22",
+    });
+
+    await lender.mutation(api.loanRequests.approve, { requestId });
+
+    await expect(
+      lender.mutation(api.loanRequests.markReturned, { requestId }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
+    );
+
+    await expect(
+      stranger.mutation(api.loanRequests.cancelApproved, { requestId }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.FORBIDDEN,
+    );
+
+    await borrower.mutation(api.loanRequests.cancelApproved, { requestId });
+
+    const mine = await borrower.query(api.loanRequests.listMyRequests, {});
+    expect(mine[0]?.status).toBe("cancelled");
+
+    const lenderTools = await lender.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    expect(lenderTools.page[0]?.hasActiveLoan).toBe(false);
+    expect(lenderTools.page[0]?.upcomingReservationCount).toBe(0);
+  });
+
+  it("lists additional upcoming reservations on the same listing", async () => {
+    const t = createConvexTest();
+    const { session: lender } = await provisionUser(t, "lender@test.com");
+    const { session: borrowerA } = await provisionUser(t, "a@test.com");
+    const { session: borrowerB } = await provisionUser(t, "b@test.com");
+
+    const toolId = await lender.mutation(api.tools.create, {
+      name: "Shop vac",
+      category: "other",
+      condition: "good",
+      description: "",
+    });
+
+    const firstId = await borrowerA.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-20",
+      endDate: "2026-11-21",
+    });
+    const secondId = await borrowerB.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-25",
+      endDate: "2026-11-26",
+    });
+
+    await lender.mutation(api.loanRequests.approve, { requestId: firstId });
+    await lender.mutation(api.loanRequests.approve, { requestId: secondId });
+
+    const listings = await lender.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    const row = listings.page[0];
+    expect(row?.activeLoan?.requestId).toBe(firstId);
+    expect(row?.upcomingReservationCount).toBe(2);
+  });
+
+  it("counts only upcoming approved borrows as reservations, not the loan in progress", async () => {
+    const t = createConvexTest();
+    const { session: lender } = await provisionUser(t, "lender@test.com");
+    const { session: borrowerA } = await provisionUser(t, "a@test.com");
+    const { session: borrowerB } = await provisionUser(t, "b@test.com");
+
+    const toolId = await lender.mutation(api.tools.create, {
+      name: "Socket set",
+      category: "other",
+      condition: "good",
+      description: "",
+    });
+
+    const outNow = await borrowerA.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-10-15",
+      endDate: "2026-11-05",
+    });
+    const later = await borrowerB.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-20",
+      endDate: "2026-11-22",
+    });
+
+    await lender.mutation(api.loanRequests.approve, { requestId: outNow });
+    await lender.mutation(api.loanRequests.approve, { requestId: later });
+
+    const listings = await lender.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    const row = listings.page[0];
+    expect(row?.activeLoan?.started).toBe(true);
+    expect(row?.upcomingReservationCount).toBe(1);
   });
 
   it("restricts listAllForAdmin to admin and hydrates latestAutomation", async () => {

@@ -14,10 +14,17 @@ import {
   HOME_PUBLIC_POOL_SIZE,
 } from "./lib/limits";
 import {
+  isBorrowPeriodInProgress,
+  isUpcomingBorrowReservation,
+} from "./lib/borrowDates";
+import {
   activeBorrowStatusByToolForBorrower,
-  approvedLoansByToolForLender,
+  approvedLoanListsByToolForLender,
+  pickPrimaryApprovedLoan,
+  bookedRangesByToolIds,
+  loanOutUntilFromRanges,
   pendingRequestCountByToolForLender,
-  toolHasApprovedLoan,
+  toolHasInProgressApprovedLoan,
 } from "./lib/loans";
 import {
   toolCategoryValidator,
@@ -73,6 +80,13 @@ const boardToolRowValidator = v.object({
   viewerBorrowStatus: v.optional(
     v.union(v.literal("pending"), v.literal("approved")),
   ),
+  loanOutUntil: v.optional(v.string()),
+  bookedRanges: v.array(
+    v.object({
+      startDate: v.string(),
+      endDate: v.string(),
+    }),
+  ),
 });
 
 const myToolRowValidator = v.object({
@@ -90,8 +104,10 @@ const myToolRowValidator = v.object({
       borrowerName: v.string(),
       startDate: v.string(),
       endDate: v.string(),
+      started: v.boolean(),
     }),
   ),
+  upcomingReservationCount: v.number(),
 });
 
 async function hydrateBoardPage(
@@ -99,10 +115,13 @@ async function hydrateBoardPage(
   viewer: Doc<"users">,
   tools: Doc<"tools">[],
 ) {
-  const activeBorrowsByTool = await activeBorrowStatusByToolForBorrower(
-    ctx,
-    viewer._id,
-  );
+  const [activeBorrowsByTool, bookedByTool] = await Promise.all([
+    activeBorrowStatusByToolForBorrower(ctx, viewer._id),
+    bookedRangesByToolIds(
+      ctx,
+      tools.map((tool) => tool._id),
+    ),
+  ]);
 
   const uniqueOwnerIds = [...new Set(tools.map((t) => t.ownerId))];
   const owners = await Promise.all(
@@ -115,6 +134,7 @@ async function hydrateBoardPage(
   return tools.map((tool) => {
     const owner = ownersById.get(tool.ownerId);
     const isOwner = tool.ownerId === viewer._id;
+    const bookedRanges = bookedByTool.get(tool._id) ?? [];
 
     return {
       _id: tool._id,
@@ -128,6 +148,8 @@ async function hydrateBoardPage(
       isOwner,
       canRemove: viewer.role === "admin" || isOwner,
       viewerBorrowStatus: activeBorrowsByTool.get(tool._id),
+      loanOutUntil: loanOutUntilFromRanges(bookedRanges),
+      bookedRanges,
     };
   });
 }
@@ -139,7 +161,7 @@ async function rejectIfToolOnActiveLoan(
   ctx: MutationCtx,
   toolId: Id<"tools">,
 ) {
-  if (await toolHasApprovedLoan(ctx, toolId)) {
+  if (await toolHasInProgressApprovedLoan(ctx, toolId)) {
     authError(AuthErrorCode.VALIDATION_ERROR, ACTIVE_LOAN_LISTING_MESSAGE);
   }
 }
@@ -179,13 +201,17 @@ export const listMine = query({
       .order("desc")
       .paginate(args.paginationOpts);
 
-    const [pendingByTool, approvedByTool] = await Promise.all([
+    const [pendingByTool, approvedListsByTool] = await Promise.all([
       pendingRequestCountByToolForLender(ctx, user._id),
-      approvedLoansByToolForLender(ctx, user._id),
+      approvedLoanListsByToolForLender(ctx, user._id),
     ]);
 
     const borrowerIds = [
-      ...new Set([...approvedByTool.values()].map((loan) => loan.borrowerId)),
+      ...new Set(
+        [...approvedListsByTool.values()]
+          .flat()
+          .map((loan) => loan.borrowerId),
+      ),
     ];
     const borrowers = await Promise.all(
       borrowerIds.map((id) => ctx.db.get(id)),
@@ -199,7 +225,9 @@ export const listMine = query({
 
     const page = pageResult.page.map(
       ({ _id, name, category, condition, description, isAvailable }) => {
-        const approved = approvedByTool.get(_id);
+        const approvedLoans = approvedListsByTool.get(_id) ?? [];
+        const approved = pickPrimaryApprovedLoan(approvedLoans);
+
         return {
           _id,
           name,
@@ -216,8 +244,15 @@ export const listMine = query({
                   borrowerNameById.get(approved.borrowerId) ?? "Neighbor",
                 startDate: approved.startDate,
                 endDate: approved.endDate,
+                started: isBorrowPeriodInProgress(
+                  approved.startDate,
+                  approved.endDate,
+                ),
               }
             : undefined,
+          upcomingReservationCount: approvedLoans.filter((loan) =>
+            isUpcomingBorrowReservation(loan.startDate),
+          ).length,
         };
       },
     );
@@ -320,13 +355,6 @@ export const setAvailability = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireToolAccess(ctx, args.toolId);
-
-    if (args.isAvailable && (await toolHasApprovedLoan(ctx, args.toolId))) {
-      authError(
-        AuthErrorCode.VALIDATION_ERROR,
-        "Cannot put tool on board while it has an active loan",
-      );
-    }
 
     await ctx.db.patch(args.toolId, { isAvailable: args.isAvailable });
     return null;

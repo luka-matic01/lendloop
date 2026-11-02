@@ -6,19 +6,31 @@ import { FormEvent, useId, useRef, useState } from "react";
 import {
   fieldClass,
   fieldLabelClass,
+  Panel,
   useToast,
 } from "@/components/ui";
 import { Modal, ModalActions, ModalHeader } from "@/components/ui/Modal";
 import { convexErrorMessage } from "@/lib/convex-error-message";
+import {
+  formatBorrowBookedNotice,
+  utcTodayIso,
+} from "@/lib/format-borrow-due";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 
 import { LOANS_COPY } from "../constants/copy";
 
+export type BookedBorrowRange = {
+  startDate: string;
+  endDate: string;
+};
+
 type BorrowRequestModalProps = {
   open: boolean;
   toolId: Id<"tools"> | null;
   toolName: string;
+  loanOutUntil?: string;
+  bookedRanges?: BookedBorrowRange[];
   onClose: () => void;
 };
 
@@ -26,6 +38,8 @@ export function BorrowRequestModal({
   open,
   toolId,
   toolName,
+  loanOutUntil,
+  bookedRanges = [],
   onClose,
 }: BorrowRequestModalProps) {
   const errorId = useId();
@@ -37,6 +51,8 @@ export function BorrowRequestModal({
 
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const minBorrowDate = utcTodayIso();
+  const bookedNotice = formatBorrowBookedNotice(bookedRanges, loanOutUntil);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,6 +66,16 @@ export function BorrowRequestModal({
 
     if (!startDate || !endDate) {
       setFormError("Choose start and return dates");
+      return;
+    }
+
+    if (startDate < minBorrowDate) {
+      setFormError("Start date cannot be in the past");
+      return;
+    }
+
+    if (endDate < startDate) {
+      setFormError("Return date must be on or after start date");
       return;
     }
 
@@ -86,6 +112,12 @@ export function BorrowRequestModal({
         className="mt-6 space-y-4"
         onSubmit={handleSubmit}
       >
+        {bookedNotice ? (
+          <Panel tone="notice" className="!p-3 text-sm font-semibold text-ink">
+            {bookedNotice}
+          </Panel>
+        ) : null}
+
         <label htmlFor={startId} className="block space-y-1.5">
           <span className={fieldLabelClass}>{LOANS_COPY.startDateLabel}</span>
           <input
@@ -94,6 +126,7 @@ export function BorrowRequestModal({
             name="startDate"
             type="date"
             required
+            min={minBorrowDate}
             className={fieldClass}
           />
         </label>
@@ -104,6 +137,7 @@ export function BorrowRequestModal({
             name="endDate"
             type="date"
             required
+            min={minBorrowDate}
             className={fieldClass}
           />
         </label>

@@ -1,4 +1,4 @@
-import { Handshake, Pause, Radio } from "lucide-react";
+import { CalendarClock, Handshake, Pause, Radio } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -18,7 +18,11 @@ import { TOOLS_COPY } from "../constants/copy";
 import { TOOLS_ICON_CLASS } from "../constants/visual";
 import { ToolCategoryIcon } from "./ToolCategoryIcon";
 
-export type ToolListingState = "on_board" | "paused" | "on_loan";
+export type ToolListingState =
+  | "on_board"
+  | "paused"
+  | "on_loan"
+  | "reserved";
 
 type ToolCardCategoryBadgeProps = {
   category: ToolCategoryKey;
@@ -105,6 +109,27 @@ export function ToolListingStateBadge({
           <span className="sr-only">{TOOLS_COPY.listingOutOnLoan}</span>
         ) : (
           TOOLS_COPY.listingOutOnLoan
+        )}
+      </span>
+    );
+  }
+
+  if (state === "reserved") {
+    return (
+      <span
+        className={cn(
+          "inline-flex shrink-0 items-center leading-none text-warning",
+          !iconOnly && "gap-1 text-xs font-semibold",
+        )}
+      >
+        <CalendarClock
+          className={cn(TOOLS_ICON_CLASS, "size-3.5")}
+          aria-hidden
+        />
+        {iconOnly ? (
+          <span className="sr-only">{TOOLS_COPY.listingReserved}</span>
+        ) : (
+          TOOLS_COPY.listingReserved
         )}
       </span>
     );
