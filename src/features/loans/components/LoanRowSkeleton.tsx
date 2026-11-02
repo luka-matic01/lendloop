@@ -1,37 +1,15 @@
-import { Skeleton } from "@/components/ui";
+import { ListRowSkeleton } from "@/components/ui";
 
 import { LoanListPanel } from "./LoanListPanel";
 
 type LoanRowSkeletonProps = {
-  /** Placeholder width for action buttons on the row. */
+  /** Placeholder count for action buttons on the row. */
   actionCount?: 0 | 1 | 2;
 };
 
-/** Matches {@link LoanRow} title, inline meta line, and optional actions. */
+/** Matches {@link LoanRow} — shared `ListRow` grid (title/meta left, actions right). */
 export function LoanRowSkeleton({ actionCount = 0 }: LoanRowSkeletonProps) {
-  return (
-    <div
-      className={
-        actionCount > 0
-          ? "flex flex-col gap-2.5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-3.5"
-          : "flex flex-col gap-2.5 py-3 sm:flex-row sm:items-center sm:gap-4 sm:py-3.5"
-      }
-      aria-hidden
-    >
-      <div className="min-w-0 flex-1 space-y-2">
-        <Skeleton className="h-6 w-2/5 sm:h-7" />
-        <Skeleton className="h-3.5 w-64 max-w-full" />
-      </div>
-      {actionCount > 0 ? (
-        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-          <Skeleton className="h-8 w-[5.25rem]" />
-          {actionCount > 1 ? (
-            <Skeleton className="h-8 w-[5.25rem]" />
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  );
+  return <ListRowSkeleton actionCount={actionCount} />;
 }
 
 type LoanListSkeletonProps = {

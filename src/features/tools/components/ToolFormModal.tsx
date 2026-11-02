@@ -1,26 +1,16 @@
 "use client";
 
 import { useMutation } from "convex/react";
-import { X } from "lucide-react";
-import { FormEvent, useEffect, useId, useRef, useState } from "react";
+import { FormEvent, useId, useRef, useState } from "react";
 
 import {
-  Button,
   fieldClass,
   fieldLabelClass,
-  IconButton,
-  Panel,
   Select,
   useToast,
 } from "@/components/ui";
+import { Modal, ModalActions, ModalHeader } from "@/components/ui/Modal";
 import { convexErrorMessage } from "@/lib/convex-error-message";
-import { ModalTitle } from "@/components/ui/ModalTitle";
-import {
-  MODAL_DIALOG_CLASS,
-  MODAL_PANEL_CLASS,
-  syncModalDialogOpen,
-} from "@/lib/modal-dialog";
-import { cn } from "@/lib/utils";
 import { api } from "convex/_generated/api";
 
 import { TOOLS_COPY } from "../constants/copy";
@@ -36,7 +26,6 @@ import {
   type ToolCategoryKey,
   type ToolConditionKey,
 } from "../constants/labels";
-import { TOOLS_ICON_CLASS } from "../constants/visual";
 import type { MyTool } from "../types/tools";
 
 type ListToolFields = {
@@ -91,11 +80,9 @@ function listingUnchanged(tool: MyTool, fields: ListToolFields) {
 }
 
 export function ToolFormModal({ open, onClose, tool = null }: ToolFormModalProps) {
-  const titleId = useId();
   const errorId = useId();
   const categoryId = useId();
   const conditionId = useId();
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
   const createTool = useMutation(api.tools.create);
@@ -104,16 +91,6 @@ export function ToolFormModal({ open, onClose, tool = null }: ToolFormModalProps
 
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
-    syncModalDialogOpen(dialog, open, {
-      initialFocus: open ? nameInputRef.current : null,
-    });
-  }, [open]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -156,55 +133,29 @@ export function ToolFormModal({ open, onClose, tool = null }: ToolFormModalProps
   }
 
   return (
-    <dialog
-      ref={dialogRef}
-      tabIndex={-1}
-      aria-labelledby={titleId}
-      className={MODAL_DIALOG_CLASS}
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
-      }}
-      onClick={(event) => {
-        if (event.target === dialogRef.current) {
-          onClose();
-        }
-      }}
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="form"
+      dismissible={!submitting}
+      initialFocusRef={nameInputRef}
+      describedBy={formError ? errorId : undefined}
     >
-      <Panel className={cn(MODAL_PANEL_CLASS, "max-w-lg")}>
-        <div className="flex min-w-0 items-start justify-between gap-3">
-          {isEditing ? (
-            <ModalTitle
-              id={titleId}
-              size="form"
-              className="flex-1 pr-2"
-              title={TOOLS_COPY.editListingTitle(tool.name)}
-            />
-          ) : (
-            <h2
-              id={titleId}
-              className="font-display text-3xl font-extrabold leading-none tracking-tight text-ink"
-            >
-              {TOOLS_COPY.modalTitle}
-            </h2>
-          )}
-          <IconButton
-            type="button"
-            variant="ghost"
-            className="text-ink-muted hover:text-ink"
-            aria-label="Close"
-            onClick={onClose}
-          >
-            <X className={TOOLS_ICON_CLASS} aria-hidden />
-          </IconButton>
-        </div>
+      <ModalHeader
+        title={
+          isEditing
+            ? TOOLS_COPY.editListingTitle(tool.name)
+            : TOOLS_COPY.modalTitle
+        }
+        closeDisabled={submitting}
+        onClose={onClose}
+      />
 
-        <form
-          key={`${open}-${tool?._id ?? "new"}`}
-          className="mt-6 space-y-4"
-          aria-describedby={formError ? errorId : undefined}
-          onSubmit={handleSubmit}
-        >
+      <form
+        key={`${open}-${tool?._id ?? "new"}`}
+        className="mt-6 space-y-4"
+        onSubmit={handleSubmit}
+      >
           <label className="block space-y-1.5">
             <span className={fieldLabelClass}>Name</span>
             <input
@@ -261,17 +212,26 @@ export function ToolFormModal({ open, onClose, tool = null }: ToolFormModalProps
             </p>
           ) : null}
 
-          <Button type="submit" disabled={submitting} className="w-full">
-            {submitting
+        <ModalActions
+          cancelLabel={TOOLS_COPY.cancel}
+          cancelDisabled={submitting}
+          onCancel={onClose}
+          primaryType="submit"
+          primaryDisabled={submitting}
+          primaryLabel={
+            submitting
               ? isEditing
                 ? TOOLS_COPY.savingListing
                 : TOOLS_COPY.adding
               : isEditing
-                ? TOOLS_COPY.saveListing
-                : TOOLS_COPY.addToBoard}
-          </Button>
-        </form>
-      </Panel>
-    </dialog>
+                ? TOOLS_COPY.saveListingAction
+                : TOOLS_COPY.addToBoardAction
+          }
+          primaryTitle={
+            isEditing ? TOOLS_COPY.saveListing : TOOLS_COPY.addToBoard
+          }
+        />
+      </form>
+    </Modal>
   );
 }

@@ -27,7 +27,7 @@ function listingConfirmModalCopy(listingConfirm: ListingConfirm) {
       description: ownerName
         ? TOOLS_COPY.confirmRemoveNeighborDescription(ownerName)
         : TOOLS_COPY.confirmRemoveDescription,
-      confirmLabel: TOOLS_COPY.confirmRemoveAction(name),
+      confirmLabel: TOOLS_COPY.removeListing,
     };
   }
 
@@ -40,9 +40,7 @@ function listingConfirmModalCopy(listingConfirm: ListingConfirm) {
     description: pausing
       ? TOOLS_COPY.confirmPauseDescription
       : TOOLS_COPY.confirmPutOnBoardDescription,
-    confirmLabel: pausing
-      ? TOOLS_COPY.confirmPauseAction(name)
-      : TOOLS_COPY.confirmPutOnBoardAction(name),
+    confirmLabel: pausing ? TOOLS_COPY.pauseListing : TOOLS_COPY.putOnBoard,
   };
 }
 

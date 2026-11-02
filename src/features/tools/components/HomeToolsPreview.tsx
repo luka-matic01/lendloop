@@ -156,9 +156,7 @@ function HomeSignedInPreview() {
             ? TOOLS_COPY.confirmRemoveNeighborDescription(removingTool.ownerName)
             : ""
         }
-        confirmLabel={
-          removingTool ? TOOLS_COPY.confirmRemoveAction(removingTool.name) : ""
-        }
+        confirmLabel={removingTool ? TOOLS_COPY.removeListing : ""}
         cancelLabel={TOOLS_COPY.cancel}
         confirming={removingSubmitting}
         onConfirm={confirmRemove}

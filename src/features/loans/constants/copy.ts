@@ -102,7 +102,7 @@ export const LOANS_COPY = {
   decline: "Decline",
   markReturned: "Mark returned",
   cancel: "Cancel",
-  confirmReturnAction: "Yes, mark returned",
+  confirmReturnAction: "Mark returned",
   confirmReturnTitleIncoming(toolName: string) {
     return `Are you sure you got ${toolName} back?`;
   },
@@ -132,6 +132,7 @@ export const LOANS_COPY = {
     return `Borrow ${toolName}`;
   },
   borrowSubmit: "Send request",
+  borrowSubmitAction: "Send",
   borrowSubmitting: "Sending…",
   startDateLabel: "Start date",
   endDateLabel: "Return date",

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import { Panel, Skeleton } from "@/components/ui";
+import { ListRowSkeleton, Panel, Skeleton } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 import {
@@ -113,18 +113,10 @@ export function MyListingsSkeletonList({
   return (
     <Panel className={MY_LISTINGS_PANEL_CLASS} aria-busy="true">
       <p className="sr-only">{label}</p>
-      <ul aria-hidden="true" className="divide-y divide-board/25">
+      <ul aria-hidden="true" className="divide-y divide-board/25 px-3 sm:px-4">
         {Array.from({ length: count }, (_, index) => (
-          <li
-            key={index}
-            className="flex items-start gap-3 px-3 py-3 sm:items-center sm:px-4 sm:py-3.5"
-            style={skeletonDelay(index)}
-          >
-            <div className="min-w-0 flex-1 space-y-2">
-              <Skeleton className="h-5 w-2/5 sm:h-6" />
-              <Skeleton className="h-3 w-56 max-w-full" />
-            </div>
-            <Skeleton className="h-8 w-[6.75rem] shrink-0" />
+          <li key={index} style={skeletonDelay(index)}>
+            <ListRowSkeleton iconActions />
           </li>
         ))}
       </ul>

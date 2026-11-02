@@ -97,7 +97,9 @@ export const TOOLS_COPY = {
   adding: "Adding…",
   modalTitle: "List a tool",
   saveListing: "Save changes",
+  saveListingAction: "Save",
   savingListing: "Saving…",
+  addToBoardAction: "Add",
   toastListingCreated(toolName: string) {
     return `${toolName} is on the board`;
   },
@@ -123,12 +125,6 @@ export const TOOLS_COPY = {
   },
   confirmPutOnBoardDescription:
     "Neighbors will see the name, category, and condition on the board.",
-  confirmPauseAction(toolName: string) {
-    return `Pause ${toolName}`;
-  },
-  confirmPutOnBoardAction(toolName: string) {
-    return `Put ${toolName} on board`;
-  },
   confirmRemoveTitle(toolName: string) {
     return `Remove ${toolName}?`;
   },
@@ -136,9 +132,6 @@ export const TOOLS_COPY = {
     "This permanently deletes the listing. You can add the tool again later if you want.",
   confirmRemoveNeighborDescription(ownerName: string) {
     return `This permanently removes ${ownerName}’s listing from the board.`;
-  },
-  confirmRemoveAction(toolName: string) {
-    return `Remove ${toolName}`;
   },
   cancel: "Cancel",
   seeFullBoard: "See the full board",

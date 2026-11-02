@@ -1,25 +1,15 @@
 "use client";
 
 import { useMutation } from "convex/react";
-import { X } from "lucide-react";
-import { FormEvent, useEffect, useId, useRef, useState } from "react";
+import { FormEvent, useId, useRef, useState } from "react";
 
 import {
-  Button,
   fieldClass,
   fieldLabelClass,
-  IconButton,
-  Panel,
   useToast,
 } from "@/components/ui";
+import { Modal, ModalActions, ModalHeader } from "@/components/ui/Modal";
 import { convexErrorMessage } from "@/lib/convex-error-message";
-import { ModalTitle } from "@/components/ui/ModalTitle";
-import {
-  MODAL_DIALOG_CLASS,
-  MODAL_PANEL_CLASS,
-  syncModalDialogOpen,
-} from "@/lib/modal-dialog";
-import { cn } from "@/lib/utils";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 
@@ -38,27 +28,15 @@ export function BorrowRequestModal({
   toolName,
   onClose,
 }: BorrowRequestModalProps) {
-  const titleId = useId();
   const errorId = useId();
   const startId = useId();
   const endId = useId();
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const startRef = useRef<HTMLInputElement>(null);
   const toast = useToast();
   const createRequest = useMutation(api.loanRequests.create);
 
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) {
-      return;
-    }
-    syncModalDialogOpen(dialog, open, {
-      initialFocus: open ? startRef.current : null,
-    });
-  }, [open]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -89,79 +67,65 @@ export function BorrowRequestModal({
   }
 
   return (
-    <dialog
-      ref={dialogRef}
-      tabIndex={-1}
-      aria-labelledby={titleId}
-      className={MODAL_DIALOG_CLASS}
-      onCancel={(event) => {
-        event.preventDefault();
-        onClose();
-      }}
-      onClick={(event) => {
-        if (event.target === dialogRef.current) {
-          onClose();
-        }
-      }}
+    <Modal
+      open={open}
+      onClose={onClose}
+      size="form"
+      dismissible={!submitting}
+      initialFocusRef={startRef}
+      describedBy={formError ? errorId : undefined}
     >
-      <Panel className={cn(MODAL_PANEL_CLASS, "max-w-lg")}>
-        <div className="flex min-w-0 items-start justify-between gap-3">
-          <ModalTitle
-            id={titleId}
-            size="form"
-            className="flex-1 pr-2"
-            title={LOANS_COPY.borrowModalTitle(toolName)}
+      <ModalHeader
+        title={LOANS_COPY.borrowModalTitle(toolName)}
+        closeDisabled={submitting}
+        onClose={onClose}
+      />
+
+      <form
+        key={`${open}-${toolId ?? "none"}`}
+        className="mt-6 space-y-4"
+        onSubmit={handleSubmit}
+      >
+        <label htmlFor={startId} className="block space-y-1.5">
+          <span className={fieldLabelClass}>{LOANS_COPY.startDateLabel}</span>
+          <input
+            ref={startRef}
+            id={startId}
+            name="startDate"
+            type="date"
+            required
+            className={fieldClass}
           />
-          <IconButton
-            type="button"
-            variant="ghost"
-            className="text-ink-muted hover:text-ink"
-            aria-label="Close"
-            onClick={onClose}
-          >
-            <X className="size-4 shrink-0" aria-hidden />
-          </IconButton>
-        </div>
+        </label>
+        <label htmlFor={endId} className="block space-y-1.5">
+          <span className={fieldLabelClass}>{LOANS_COPY.endDateLabel}</span>
+          <input
+            id={endId}
+            name="endDate"
+            type="date"
+            required
+            className={fieldClass}
+          />
+        </label>
 
-        <form
-          key={`${open}-${toolId ?? "none"}`}
-          className="mt-6 space-y-4"
-          aria-describedby={formError ? errorId : undefined}
-          onSubmit={handleSubmit}
-        >
-          <label htmlFor={startId} className="block space-y-1.5">
-            <span className={fieldLabelClass}>{LOANS_COPY.startDateLabel}</span>
-            <input
-              ref={startRef}
-              id={startId}
-              name="startDate"
-              type="date"
-              required
-              className={fieldClass}
-            />
-          </label>
-          <label htmlFor={endId} className="block space-y-1.5">
-            <span className={fieldLabelClass}>{LOANS_COPY.endDateLabel}</span>
-            <input
-              id={endId}
-              name="endDate"
-              type="date"
-              required
-              className={fieldClass}
-            />
-          </label>
+        {formError ? (
+          <p id={errorId} className="text-sm text-negative" role="alert">
+            {formError}
+          </p>
+        ) : null}
 
-          {formError ? (
-            <p id={errorId} className="text-sm text-negative" role="alert">
-              {formError}
-            </p>
-          ) : null}
-
-          <Button type="submit" disabled={submitting || !toolId} className="w-full">
-            {submitting ? LOANS_COPY.borrowSubmitting : LOANS_COPY.borrowSubmit}
-          </Button>
-        </form>
-      </Panel>
-    </dialog>
+        <ModalActions
+          cancelLabel={LOANS_COPY.cancel}
+          cancelDisabled={submitting}
+          onCancel={onClose}
+          primaryType="submit"
+          primaryDisabled={submitting || !toolId}
+          primaryLabel={
+            submitting ? LOANS_COPY.borrowSubmitting : LOANS_COPY.borrowSubmitAction
+          }
+          primaryTitle={LOANS_COPY.borrowSubmit}
+        />
+      </form>
+    </Modal>
   );
 }

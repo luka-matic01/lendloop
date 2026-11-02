@@ -21,8 +21,6 @@ export const TOOL_CARD_TITLE_CLASS = `${TOOL_CARD_TEXT_WRAP} font-display text-x
 
 export const TOOL_CARD_DESCRIPTION_CLASS = `${TOOL_CARD_TEXT_WRAP} line-clamp-3 text-sm leading-relaxed text-ink-muted`;
 
-export const TOOL_LISTING_ROW_TITLE_CLASS = `${TOOL_CARD_TEXT_WRAP} font-display text-lg font-bold leading-tight text-ink line-clamp-2 sm:text-xl`;
-
 export const TOOL_CARD_FOOTER_TEXT_CLASS = `${TOOL_CARD_TEXT_WRAP} min-w-0 text-sm font-semibold text-ink`;
 
 /** Default placeholder cards (e.g. marketing home teaser). */

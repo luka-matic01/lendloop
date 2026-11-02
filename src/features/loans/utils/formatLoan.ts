@@ -1,6 +1,3 @@
-import {
-  formatBorrowCalendarDate,
-} from "@/lib/format-borrow-due";
 import { loanListRowSurfaceClass } from "@/lib/list-row-surface";
 
 import { LOANS_COPY } from "../constants/copy";
@@ -24,11 +21,7 @@ export function formatLoanPartyLine(
     }
     return LOANS_COPY.borrowedFrom(loan.lenderName);
   }
-  return `${loan.borrowerName} → ${loan.lenderName}`;
-}
-
-export function formatLoanDateRange(startDate: string, endDate: string) {
-  return `${formatBorrowCalendarDate(startDate)} → ${formatBorrowCalendarDate(endDate)}`;
+  return `${loan.borrowerName} to ${loan.lenderName}`;
 }
 
 export function loanRowSurfaceClass(

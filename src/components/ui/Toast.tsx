@@ -53,7 +53,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           role="status"
           aria-live="polite"
           className={cn(
-            "pointer-events-none fixed top-6 left-1/2 z-[100] max-w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 border-2 border-ink px-4 py-2.5 text-sm font-semibold shadow-[4px_4px_0_0_var(--color-ink)] md:top-24",
+            "pointer-events-none fixed top-6 left-1/2 z-[100] w-max max-w-[min(24rem,calc(100%-2rem))] -translate-x-1/2 border-2 border-ink px-4 py-2.5 text-sm font-semibold shadow-[4px_4px_0_0_var(--color-ink)] md:top-24",
             toast.tone === "error"
               ? "bg-surface text-negative"
               : "bg-board text-on-board",
