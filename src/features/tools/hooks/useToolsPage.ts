@@ -32,6 +32,15 @@ type ListingConfirmAvailability = {
 
 export type ListingConfirm = ListingConfirmRemove | ListingConfirmAvailability;
 
+/** Enough for remove confirm UI; loan-lock fields optional (board rows omit them). */
+export type ListingRemoveTarget = Pick<MyTool, "_id" | "name"> & {
+  isOwner?: boolean;
+  ownerName?: string;
+  hasActiveLoan?: boolean;
+  activeLoan?: MyTool["activeLoan"];
+  upcomingReservationCount?: number;
+};
+
 export function useToolsPage() {
   const toast = useToast();
   const { phase, errorMessage } = useEnsureCurrentUser();
@@ -130,21 +139,9 @@ export function useToolsPage() {
   }, []);
 
   const requestRemoveListing = useCallback(
-    (
-      tool: Pick<
-        MyTool,
-        | "_id"
-        | "name"
-        | "hasActiveLoan"
-        | "activeLoan"
-        | "upcomingReservationCount"
-      > & {
-        isOwner?: boolean;
-        ownerName?: string;
-      },
-    ) => {
+    (tool: ListingRemoveTarget) => {
       const locked =
-        tool.hasActiveLoan ||
+        tool.hasActiveLoan === true ||
         (tool.upcomingReservationCount ?? 0) > 0;
       if (locked) {
         toast(
