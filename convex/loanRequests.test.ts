@@ -362,6 +362,63 @@ describe("loanRequests", () => {
     expect(lenderTools.page[0]?.isAvailable).toBe(true);
   });
 
+  it("lets the borrower cancel a pending request and forbids others", async () => {
+    const t = createConvexTest();
+    const { session: lender } = await provisionUser(t, "lender@test.com");
+    const { session: borrower } = await provisionUser(t, "borrower@test.com");
+    const { session: stranger } = await provisionUser(t, "stranger@test.com");
+
+    const toolId = await lender.mutation(api.tools.create, {
+      name: "Leaf blower",
+      category: "garden",
+      condition: "good",
+      description: "",
+    });
+
+    const requestId = await borrower.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-01",
+      endDate: "2026-11-03",
+    });
+
+    await expect(
+      lender.mutation(api.loanRequests.cancelPending, { requestId }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.FORBIDDEN,
+    );
+
+    await expect(
+      stranger.mutation(api.loanRequests.cancelPending, { requestId }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.FORBIDDEN,
+    );
+
+    await borrower.mutation(api.loanRequests.cancelPending, { requestId });
+
+    const mine = await borrower.query(api.loanRequests.listMyRequests, {});
+    expect(mine[0]?.status).toBe("cancelled");
+
+    const incoming = await lender.query(
+      api.loanRequests.listIncomingRequests,
+      {},
+    );
+    expect(incoming.find((row) => row._id === requestId)?.status).toBe(
+      "cancelled",
+    );
+
+    const lenderTools = await lender.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    expect(lenderTools.page[0]?.pendingRequestCount).toBe(0);
+
+    await borrower.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-04",
+      endDate: "2026-11-06",
+    });
+  });
+
   it("lets lender or borrower cancel an approved reservation before the borrow starts", async () => {
     const t = createConvexTest();
     const { session: lender } = await provisionUser(t, "lender@test.com");

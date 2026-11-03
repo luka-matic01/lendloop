@@ -153,6 +153,7 @@ export const LOANS_COPY = {
   decline: "Decline",
   markReturned: "Mark returned",
   cancelBorrow: "Cancel reservation",
+  cancelRequest: "Cancel request",
   cancel: "Cancel",
   confirmReturnAction: "Mark returned",
   confirmReturnTitleIncoming(toolName: string) {
@@ -209,12 +210,21 @@ export const LOANS_COPY = {
   toastCancelled(toolName: string) {
     return `Reservation cancelled for ${toolName}`;
   },
+  toastRequestCancelled(toolName: string) {
+    return `Request cancelled for ${toolName}`;
+  },
   confirmCancelBorrowTitle(toolName: string) {
     return `Cancel the reservation for ${toolName}?`;
   },
   confirmCancelBorrowDescription:
     "The borrow window has not started yet. Neighbors can request those dates again.",
   confirmCancelBorrowAction: "Cancel reservation",
+  confirmCancelRequestTitle(toolName: string) {
+    return `Cancel your request for ${toolName}?`;
+  },
+  confirmCancelRequestDescription:
+    "The lender will no longer see this request. You can ask again later if you change your mind.",
+  confirmCancelRequestAction: "Cancel request",
   toastTrustedUpdated(name: string, trusted: boolean) {
     return trusted ? `${name} marked as trusted lender` : `${name} is no longer trusted`;
   },

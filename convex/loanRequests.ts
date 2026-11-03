@@ -267,6 +267,45 @@ export const decline = mutation({
   },
 });
 
+export const cancelPending = mutation({
+  args: {
+    requestId: v.id("loanRequests"),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const [user, request] = await Promise.all([
+      requireUser(ctx),
+      ctx.db.get(args.requestId),
+    ]);
+
+    if (!request) {
+      authError(AuthErrorCode.NOT_FOUND, "Loan request not found");
+    }
+
+    assertOwner(user, request.borrowerId);
+
+    if (request.status !== "pending") {
+      authError(
+        AuthErrorCode.VALIDATION_ERROR,
+        "Only pending requests can be cancelled",
+      );
+    }
+
+    await ctx.db.patch(request._id, {
+      status: "cancelled",
+      statusDecidedAt: Date.now(),
+    });
+
+    scheduleLoanNotification(ctx, {
+      loanRequestId: request._id,
+      event: "request.status_changed",
+      notifyRole: "lender",
+    });
+
+    return null;
+  },
+});
+
 export const markReturned = mutation({
   args: {
     requestId: v.id("loanRequests"),

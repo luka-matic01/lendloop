@@ -19,9 +19,12 @@ export type MarkReturnedConfirm = {
   perspective: LoanReturnPerspective;
 };
 
+export type CancelBorrowConfirmKind = "pending" | "reservation";
+
 export type CancelBorrowConfirm = {
   requestId: Id<"loanRequests">;
   toolName: string;
+  kind: CancelBorrowConfirmKind;
 };
 
 export type TrustedLenderConfirm = {
@@ -36,6 +39,7 @@ export function useLoanActions() {
   const declineMut = useMutation(api.loanRequests.decline);
   const markReturnedMut = useMutation(api.loanRequests.markReturned);
   const cancelApprovedMut = useMutation(api.loanRequests.cancelApproved);
+  const cancelPendingMut = useMutation(api.loanRequests.cancelPending);
   const setTrustedMut = useMutation(api.users.setTrustedLender);
 
   const [pendingId, setPendingId] = useState<Id<"loanRequests"> | null>(null);
@@ -98,8 +102,12 @@ export function useLoanActions() {
   }, [pendingId]);
 
   const requestCancelBorrow = useCallback(
-    (requestId: Id<"loanRequests">, toolName: string) => {
-      setCancelConfirm({ requestId, toolName });
+    (
+      requestId: Id<"loanRequests">,
+      toolName: string,
+      kind: CancelBorrowConfirmKind = "reservation",
+    ) => {
+      setCancelConfirm({ requestId, toolName, kind });
     },
     [],
   );
@@ -115,18 +123,31 @@ export function useLoanActions() {
     if (!cancelConfirm) {
       return;
     }
-    const { requestId, toolName } = cancelConfirm;
+    const { requestId, toolName, kind } = cancelConfirm;
     setPendingId(requestId);
     try {
-      await cancelApprovedMut({ requestId });
-      toast(LOANS_COPY.toastCancelled(toolName));
+      if (kind === "pending") {
+        await cancelPendingMut({ requestId });
+        toast(LOANS_COPY.toastRequestCancelled(toolName));
+      } else {
+        await cancelApprovedMut({ requestId });
+        toast(LOANS_COPY.toastCancelled(toolName));
+      }
       setCancelConfirm(null);
     } catch (error) {
-      toast(convexErrorMessage(error, "Could not cancel reservation"), "error");
+      toast(
+        convexErrorMessage(
+          error,
+          kind === "pending"
+            ? "Could not cancel request"
+            : "Could not cancel reservation",
+        ),
+        "error",
+      );
     } finally {
       setPendingId(null);
     }
-  }, [cancelApprovedMut, cancelConfirm, toast]);
+  }, [cancelApprovedMut, cancelConfirm, cancelPendingMut, toast]);
 
   const confirmMarkReturned = useCallback(async () => {
     if (!returnConfirm) {

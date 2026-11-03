@@ -108,6 +108,21 @@ function renderRowActions(
   }
 
   if (perspective === "mine") {
+    if (loan.status === "pending") {
+      return (
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={isBusy}
+          onClick={() =>
+            requestCancelBorrow(loan._id, loan.toolName, "pending")
+          }
+        >
+          {LOANS_COPY.cancelRequest}
+        </Button>
+      );
+    }
     if (loan.status === "approved") {
       const action = approvedLoanRowAction(loan.status, loan.startDate);
       if (action === "cancel") {
