@@ -37,11 +37,10 @@ yarn-error.log*
 # n8n local persistence
 /n8n-data/
 
-# Local AI config (never publish — rules + installed skills)
-.cursor/rules/
-.cursor/mcp.json
-.claude/skills/
-.agents/skills/
+# Local AI / editor tooling (never publish)
+.cursor/
+.claude/
+.agents/
 
 # vercel
 .vercel

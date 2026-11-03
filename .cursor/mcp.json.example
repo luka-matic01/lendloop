@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "n8n": {
-      "type": "streamable-http",
-      "url": "http://localhost:5678/mcp-server/http"
-    }
-  }
-}
