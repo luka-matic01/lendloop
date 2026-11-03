@@ -4,6 +4,7 @@ import {
   borrowRangesOverlap,
   isBorrowPeriodInProgress,
   isBorrowPeriodStarted,
+  isUpcomingBorrowReservation,
 } from "./borrowDates";
 import { AuthErrorCode, authError } from "./errors";
 import { LIST_PAGE_SIZE } from "./limits";
@@ -70,6 +71,17 @@ export async function toolHasInProgressApprovedLoan(
   const approved = await approvedLoansForTool(ctx, toolId);
   return approved.some((loan) =>
     isBorrowPeriodInProgress(loan.startDate, loan.endDate, nowMs),
+  );
+}
+
+export async function toolHasUpcomingApprovedReservation(
+  ctx: DbCtx,
+  toolId: Id<"tools">,
+  nowMs = Date.now(),
+): Promise<boolean> {
+  const approved = await approvedLoansForTool(ctx, toolId);
+  return approved.some((loan) =>
+    isUpcomingBorrowReservation(loan.startDate, nowMs),
   );
 }
 

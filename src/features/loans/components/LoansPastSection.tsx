@@ -26,11 +26,11 @@ export function LoansPastSection({ isReady }: LoansPastSectionProps) {
   const mine = useQuery(api.loanRequests.listMyRequests, isReady ? {} : "skip");
 
   const incomingHistory = useMemo(
-    () => partitionLoansForSection(incoming ?? []).history,
+    () => partitionLoansForSection(incoming ?? [], "incoming").history,
     [incoming],
   );
   const mineHistory = useMemo(
-    () => partitionLoansForSection(mine ?? []).history,
+    () => partitionLoansForSection(mine ?? [], "mine").history,
     [mine],
   );
 

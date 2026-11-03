@@ -1,6 +1,7 @@
 import {
   getBorrowDueUrgency,
   isBorrowPeriodInProgress,
+  isBorrowPeriodStarted,
 } from "@/lib/formatBorrowDue";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,18 @@ type LoanListRowSurfaceInput = {
   isClosed: boolean;
 };
 
+export function isApprovedLoanOverdue(input: {
+  status: LoanListRowSurfaceInput["status"];
+  startDate: string;
+  endDate: string;
+}): boolean {
+  return (
+    input.status === "approved" &&
+    isBorrowPeriodStarted(input.startDate) &&
+    getBorrowDueUrgency(input.endDate) === "overdue"
+  );
+}
+
 export function loanListRowSurfaceClass(input: LoanListRowSurfaceInput): string {
   if (input.isClosed) {
     return listRowSurfaceClass("inactive");
@@ -63,7 +76,7 @@ export function loanListRowSurfaceClass(input: LoanListRowSurfaceInput): string 
     return listRowSurfaceClass("awaiting");
   }
   if (input.status === "approved") {
-    if (!isBorrowPeriodInProgress(input.startDate, input.endDate)) {
+    if (!isBorrowPeriodStarted(input.startDate)) {
       return listRowSurfaceClass("awaiting");
     }
     if (getBorrowDueUrgency(input.endDate) === "overdue") {

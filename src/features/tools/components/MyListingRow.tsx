@@ -60,6 +60,12 @@ export function MyListingRow({
   const isReserved = loanUpcoming;
   const hasRequests = tool.pendingRequestCount > 0;
   const reservationCount = tool.upcomingReservationCount;
+  const listingLockedForEdit = isOnLoan || reservationCount > 0;
+  const listingLockedTooltip = isOnLoan
+    ? TOOLS_COPY.listingLockedActiveLoan
+    : listingLockedForEdit
+      ? TOOLS_COPY.listingLockedReservation
+      : undefined;
   const listingState = isReserved
     ? "reserved"
     : isLive
@@ -95,8 +101,8 @@ export function MyListingRow({
             type="button"
             variant="ghost"
             aria-label={TOOLS_COPY.editListing}
-            tooltip={isOnLoan ? TOOLS_COPY.listingLockedActiveLoan : undefined}
-            disabled={isOnLoan}
+            tooltip={listingLockedTooltip}
+            disabled={listingLockedForEdit}
             onClick={onEdit}
             className="hover:bg-canvas disabled:pointer-events-none disabled:opacity-40"
           >
@@ -125,8 +131,8 @@ export function MyListingRow({
             type="button"
             variant="ghost"
             aria-label={TOOLS_COPY.removeListing}
-            tooltip={isOnLoan ? TOOLS_COPY.listingLockedActiveLoan : undefined}
-            disabled={isOnLoan}
+            tooltip={listingLockedTooltip}
+            disabled={listingLockedForEdit}
             onClick={onRemove}
             className="text-ink-muted hover:bg-canvas hover:text-negative disabled:pointer-events-none disabled:opacity-40"
           >
@@ -145,22 +151,42 @@ export function MyListingRow({
         </>
       }
       details={
-        showMarkReturned && activeLoan && duePhrase && dueUrgency ? (
-          <p className={LIST_ROW_META_TEXT_CLASS}>
-            <span className="min-w-0 [overflow-wrap:anywhere]">
-              {LOANS_COPY.borrowedBy(activeLoan.borrowerName)}
-            </span>
-            <ListRowMetaSeparator />
-            <span className={cn("shrink-0", BORROW_DUE_TONE_CLASS[dueUrgency])}>
-              {duePhrase}
-            </span>
-          </p>
-        ) : hasRequests ? (
-          <p className="text-xs font-semibold text-ink">
-            {TOOLS_COPY.listingRequestsNotice(tool.pendingRequestCount)}
-          </p>
+        (showMarkReturned && activeLoan) || hasRequests ? (
+          <div className="space-y-1">
+            {showMarkReturned && activeLoan ? (
+              <p className={LIST_ROW_META_TEXT_CLASS}>
+                <span className="min-w-0 [overflow-wrap:anywhere]">
+                  {LOANS_COPY.borrowedBy(activeLoan.borrowerName)}
+                </span>
+                {duePhrase && dueUrgency ? (
+                  <>
+                    <ListRowMetaSeparator />
+                    <span
+                      className={cn(
+                        "shrink-0",
+                        BORROW_DUE_TONE_CLASS[dueUrgency],
+                      )}
+                    >
+                      {duePhrase}
+                    </span>
+                  </>
+                ) : null}
+              </p>
+            ) : null}
+            {hasRequests ? (
+              <p
+                className={cn(
+                  LIST_ROW_META_TEXT_CLASS,
+                  "font-semibold text-ink",
+                )}
+              >
+                {TOOLS_COPY.listingRequestsNotice(tool.pendingRequestCount)}
+              </p>
+            ) : null}
+          </div>
         ) : undefined
       }
+      actionsPlacement="bodyEnd"
       actions={
         hasRequests || reservationCount > 0 || showMarkReturned ? (
           <>

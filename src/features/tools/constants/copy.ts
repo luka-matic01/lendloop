@@ -76,8 +76,8 @@ export const TOOLS_COPY = {
   },
   listingRequestsNotice(count: number) {
     return count === 1
-      ? "1 neighbor wants to borrow this · Needs your OK"
-      : `${count} neighbors want to borrow this · Needs your OK`;
+      ? "1 borrow request waiting"
+      : `${count} borrow requests waiting`;
   },
   listingRequestsCta(count: number) {
     return count === 1 ? "Review request" : `Review ${count} requests`;
@@ -88,6 +88,8 @@ export const TOOLS_COPY = {
   },
   listingLockedActiveLoan:
     "This listing is locked while the tool is out on an approved loan. Mark it returned first.",
+  listingLockedReservation:
+    "This listing is locked while there is an upcoming reservation. Cancel it on Loans first.",
   putOnBoardBlockedActiveLoan:
     "Cannot put on board while this tool is out on an approved loan. Mark it returned first.",
   pauseListing: "Pause",
@@ -104,7 +106,6 @@ export const TOOLS_COPY = {
     return `Edit ${toolName}`;
   },
   listingActionsLabel: "Listing actions",
-  moderationActionsLabel: "Board moderation",
   listingsHeading: "Your listings",
   listTool: "List a tool",
   loadErrorTitle: "Could not open tool board",

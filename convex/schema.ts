@@ -35,6 +35,10 @@ export default defineSchema({
     startDate: v.string(),
     endDate: v.string(),
     status: loanRequestStatusValidator,
+    /** Lender borrow-alert delivered (n8n success for `request.created`). */
+    requestNotifiedAt: v.optional(v.number()),
+    /** Last status transition (approve, decline, return, cancel). */
+    statusDecidedAt: v.optional(v.number()),
     lastReminderSentAt: v.optional(v.number()),
   })
     .index("by_borrower", ["borrowerId"])

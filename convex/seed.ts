@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { env, internalMutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
+import { utcTodayIso } from "./lib/borrowDates";
 import {
   personalDemoTools,
   SEED_USER_TOKEN_PREFIX,
@@ -98,6 +99,75 @@ async function clearPersonalDemoListings(
   }
 }
 
+function isoDaysFromToday(offsetDays: number, nowMs = Date.now()): string {
+  const base = Date.parse(`${utcTodayIso(nowMs)}T00:00:00Z`);
+  const shifted = new Date(base + offsetDays * 86_400_000);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+async function seedAutomationDemoLoans(
+  ctx: MutationCtx,
+  ownerId: Id<"users">,
+) {
+  const users = await ctx.db.query("users").collect();
+  const maria = users.find((user) =>
+    user.tokenIdentifier.endsWith("maria-s"),
+  );
+  if (!maria) {
+    return;
+  }
+
+  const mariaTools = await ctx.db
+    .query("tools")
+    .withIndex("by_owner", (q) => q.eq("ownerId", maria._id))
+    .collect();
+  const mariaLendable = mariaTools.find((tool) => tool.name === "Circular saw");
+  if (mariaLendable) {
+    await ctx.db.insert("loanRequests", {
+      toolId: mariaLendable._id,
+      borrowerId: ownerId,
+      lenderId: maria._id,
+      startDate: isoDaysFromToday(-12),
+      endDate: isoDaysFromToday(-4),
+      status: "approved",
+    });
+  }
+
+  const ownerTools = await ctx.db
+    .query("tools")
+    .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
+    .collect();
+  const toolByName = (name: string) =>
+    ownerTools.find((tool) => tool.name === name);
+
+  const demoDrill = toolByName("Cordless drill");
+  if (demoDrill) {
+    await ctx.db.insert("loanRequests", {
+      toolId: demoDrill._id,
+      borrowerId: maria._id,
+      lenderId: ownerId,
+      startDate: isoDaysFromToday(0),
+      endDate: isoDaysFromToday(3),
+      status: "pending",
+    });
+  }
+
+  const demoLadder = toolByName("6 ft step ladder");
+  if (demoLadder) {
+    await ctx.db.insert("loanRequests", {
+      toolId: demoLadder._id,
+      borrowerId: maria._id,
+      lenderId: ownerId,
+      startDate: isoDaysFromToday(5),
+      endDate: isoDaysFromToday(8),
+      status: "pending",
+    });
+  }
+}
+
 function resolveOwnerEmail(argsOwnerEmail?: string): string | null {
   const fromArgs = argsOwnerEmail?.trim().toLowerCase();
   if (fromArgs) {
@@ -163,6 +233,7 @@ export const run = internalMutation({
           });
           personalTools += 1;
         }
+        await seedAutomationDemoLoans(ctx, owner._id);
       }
     }
 

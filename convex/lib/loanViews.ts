@@ -31,13 +31,54 @@ export const loanViewValidator = v.object({
   startDate: v.string(),
   endDate: v.string(),
   status: loanRequestStatusValidator,
+  requestNotifiedAt: v.optional(v.number()),
+  statusDecidedAt: v.optional(v.number()),
   lastReminderSentAt: v.optional(v.number()),
   latestAutomation: latestAutomationValidator,
 });
 
+/** Who may receive automation log fields on loan list queries. */
+export type AutomationLogAudience = "member" | "admin";
+
+export type HydrateLoanRequestOptions = {
+  /**
+   * `member` (borrower/lender lists): only successful `sent` rows, no `detail`.
+   * `admin`: latest log including `failed` / `skipped` and optional `detail`.
+   */
+  automationAudience: AutomationLogAudience;
+};
+
+function mapLatestAutomation(
+  latestLog: Doc<"automationLogs"> | null | undefined,
+  audience: AutomationLogAudience,
+) {
+  if (!latestLog) {
+    return undefined;
+  }
+
+  if (audience === "member") {
+    if (latestLog.status !== "sent") {
+      return undefined;
+    }
+    return {
+      kind: latestLog.kind,
+      status: latestLog.status,
+      createdAt: latestLog._creationTime,
+    };
+  }
+
+  return {
+    kind: latestLog.kind,
+    status: latestLog.status,
+    detail: latestLog.detail,
+    createdAt: latestLog._creationTime,
+  };
+}
+
 export async function hydrateLoanRequests(
   ctx: QueryCtx,
   requests: Doc<"loanRequests">[],
+  options: HydrateLoanRequestOptions = { automationAudience: "member" },
 ) {
   if (requests.length === 0) {
     return [];
@@ -48,18 +89,22 @@ export async function hydrateLoanRequests(
     ...new Set(requests.flatMap((r) => [r.borrowerId, r.lenderId])),
   ];
 
+  const includeAutomationLogs = options.automationAudience === "admin";
+
   const [tools, users, latestLogs] = await Promise.all([
     Promise.all(toolIds.map((id) => ctx.db.get(id))),
     Promise.all(userIds.map((id) => ctx.db.get(id))),
-    Promise.all(
-      requests.map((r) =>
-        ctx.db
-          .query("automationLogs")
-          .withIndex("by_loan", (q) => q.eq("loanRequestId", r._id))
-          .order("desc")
-          .first(),
-      ),
-    ),
+    includeAutomationLogs
+      ? Promise.all(
+          requests.map((r) =>
+            ctx.db
+              .query("automationLogs")
+              .withIndex("by_loan", (q) => q.eq("loanRequestId", r._id))
+              .order("desc")
+              .first(),
+          ),
+        )
+      : Promise.resolve(requests.map(() => null)),
   ]);
 
   const toolsById = new Map<Id<"tools">, Doc<"tools"> | null>(
@@ -89,14 +134,11 @@ export async function hydrateLoanRequests(
       startDate: req.startDate,
       endDate: req.endDate,
       status: req.status,
+      requestNotifiedAt: req.requestNotifiedAt,
+      statusDecidedAt: req.statusDecidedAt,
       lastReminderSentAt: req.lastReminderSentAt,
-      latestAutomation: latestLog
-        ? {
-            kind: latestLog.kind,
-            status: latestLog.status,
-            detail: latestLog.detail,
-            createdAt: latestLog._creationTime,
-          }
+      latestAutomation: includeAutomationLogs
+        ? mapLatestAutomation(latestLog, "admin")
         : undefined,
     };
   });

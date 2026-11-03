@@ -25,6 +25,7 @@ import {
   loanOutUntilFromRanges,
   pendingRequestCountByToolForLender,
   toolHasInProgressApprovedLoan,
+  toolHasUpcomingApprovedReservation,
 } from "./lib/loans";
 import {
   toolCategoryValidator,
@@ -156,13 +157,21 @@ async function hydrateBoardPage(
 
 const ACTIVE_LOAN_LISTING_MESSAGE =
   "Cannot modify listing while tool has an active loan";
+const UPCOMING_RESERVATION_LISTING_MESSAGE =
+  "Cannot modify listing while tool has an upcoming reservation";
 
-async function rejectIfToolOnActiveLoan(
+async function rejectIfToolListingLockedForEdit(
   ctx: MutationCtx,
   toolId: Id<"tools">,
 ) {
   if (await toolHasInProgressApprovedLoan(ctx, toolId)) {
     authError(AuthErrorCode.VALIDATION_ERROR, ACTIVE_LOAN_LISTING_MESSAGE);
+  }
+  if (await toolHasUpcomingApprovedReservation(ctx, toolId)) {
+    authError(
+      AuthErrorCode.VALIDATION_ERROR,
+      UPCOMING_RESERVATION_LISTING_MESSAGE,
+    );
   }
 }
 
@@ -321,7 +330,7 @@ export const update = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireToolAccess(ctx, args.toolId);
-    await rejectIfToolOnActiveLoan(ctx, args.toolId);
+    await rejectIfToolListingLockedForEdit(ctx, args.toolId);
     const { name, description } = normalizeToolFields(args);
 
     await ctx.db.patch(args.toolId, {
@@ -341,7 +350,7 @@ export const remove = mutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     await requireToolAccess(ctx, args.toolId);
-    await rejectIfToolOnActiveLoan(ctx, args.toolId);
+    await rejectIfToolListingLockedForEdit(ctx, args.toolId);
     await ctx.db.delete(args.toolId);
     return null;
   },

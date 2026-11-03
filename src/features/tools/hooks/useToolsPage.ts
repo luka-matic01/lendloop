@@ -109,8 +109,13 @@ export function useToolsPage() {
 
   const openEditModal = useCallback(
     (tool: MyTool) => {
-      if (tool.hasActiveLoan && tool.activeLoan?.started) {
-        toast(TOOLS_COPY.listingLockedActiveLoan, "error");
+      if (tool.hasActiveLoan) {
+        toast(
+          tool.activeLoan?.started
+            ? TOOLS_COPY.listingLockedActiveLoan
+            : TOOLS_COPY.listingLockedReservation,
+          "error",
+        );
         return;
       }
       setListModalOpen(false);
@@ -125,15 +130,29 @@ export function useToolsPage() {
   }, []);
 
   const requestRemoveListing = useCallback(
-    (tool: {
-      _id: Id<"tools">;
-      name: string;
-      hasActiveLoan?: boolean;
-      isOwner?: boolean;
-      ownerName?: string;
-    }) => {
-      if (tool.hasActiveLoan) {
-        toast(TOOLS_COPY.listingLockedActiveLoan, "error");
+    (
+      tool: Pick<
+        MyTool,
+        | "_id"
+        | "name"
+        | "hasActiveLoan"
+        | "activeLoan"
+        | "upcomingReservationCount"
+      > & {
+        isOwner?: boolean;
+        ownerName?: string;
+      },
+    ) => {
+      const locked =
+        tool.hasActiveLoan ||
+        (tool.upcomingReservationCount ?? 0) > 0;
+      if (locked) {
+        toast(
+          tool.activeLoan?.started
+            ? TOOLS_COPY.listingLockedActiveLoan
+            : TOOLS_COPY.listingLockedReservation,
+          "error",
+        );
         return;
       }
       setListingConfirm({

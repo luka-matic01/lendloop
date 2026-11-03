@@ -7,19 +7,19 @@ services:
       - "${N8N_PORT:-5678}:5678"
     env_file:
       - path: .env.local
-        required: false
+        required: true
     environment:
       - N8N_HOST=localhost
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - NODE_ENV=production
+      - NODE_FUNCTION_ALLOW_BUILTIN=crypto
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-UTC}
-      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:-lendloop_dev_encryption_key_change_me}
       # Allow n8n Code / Expression nodes to read strictly scoped environment variables
       # so secrets are never stored in exported workflow JSON files.
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      - WEBHOOK_HMAC_SECRET=${WEBHOOK_HMAC_SECRET:-dev_hmac_secret_replace_in_env_local}
-      - CONVEX_SITE_URL=${CONVEX_SITE_URL:-https://replace-me.convex.site}
+      # WEBHOOK_HMAC_SECRET, CONVEX_SITE_URL, N8N_ENCRYPTION_KEY: set in .env.local only.
+      # Do not duplicate them here — compose ${VAR} reads .env (not .env.local) and would override env_file.
     volumes:
       - n8n_data:/home/node/.n8n
       - ./n8n:/home/node/workflows:ro

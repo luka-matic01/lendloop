@@ -15,7 +15,12 @@ import {
   borrowerHasActiveRequestOnTool,
   listPendingRequestsForToolExcept,
 } from "./lib/loans";
+import { sortLoanViewsByLastActivity } from "./lib/loanLastActivity";
 import { hydrateLoanRequests, loanViewValidator } from "./lib/loanViews";
+import {
+  scheduleLoanNotification,
+  scheduleNotifyOtherParty,
+} from "./lib/scheduleLoanNotification";
 
 export { loanViewValidator } from "./lib/loanViews";
 
@@ -31,7 +36,10 @@ export const listMyRequests = query({
       .order("desc")
       .take(LIST_PAGE_SIZE);
 
-    return await hydrateLoanRequests(ctx, requests);
+    const rows = await hydrateLoanRequests(ctx, requests, {
+      automationAudience: "member",
+    });
+    return sortLoanViewsByLastActivity(rows, "borrower");
   },
 });
 
@@ -47,7 +55,10 @@ export const listIncomingRequests = query({
       .order("desc")
       .take(LIST_PAGE_SIZE);
 
-    return await hydrateLoanRequests(ctx, requests);
+    const rows = await hydrateLoanRequests(ctx, requests, {
+      automationAudience: "member",
+    });
+    return sortLoanViewsByLastActivity(rows, "lender");
   },
 });
 
@@ -62,7 +73,10 @@ export const listAllForAdmin = query({
       .order("desc")
       .take(LIST_PAGE_SIZE);
 
-    return await hydrateLoanRequests(ctx, requests);
+    const rows = await hydrateLoanRequests(ctx, requests, {
+      automationAudience: "admin",
+    });
+    return sortLoanViewsByLastActivity(rows, "admin");
   },
 });
 
@@ -114,7 +128,7 @@ export const create = mutation({
       );
     }
 
-    return await ctx.db.insert("loanRequests", {
+    const requestId = await ctx.db.insert("loanRequests", {
       toolId: tool._id,
       borrowerId: borrower._id,
       lenderId: tool.ownerId,
@@ -122,6 +136,14 @@ export const create = mutation({
       endDate,
       status: "pending",
     });
+
+    scheduleLoanNotification(ctx, {
+      loanRequestId: requestId,
+      event: "request.created",
+      notifyRole: "lender",
+    });
+
+    return requestId;
   },
 });
 
@@ -175,12 +197,32 @@ export const approve = mutation({
       ),
     );
 
+    const decidedAt = Date.now();
     await Promise.all([
-      ctx.db.patch(request._id, { status: "approved" }),
+      ctx.db.patch(request._id, {
+        status: "approved",
+        statusDecidedAt: decidedAt,
+      }),
       ...overlappingPending.map((sibling) =>
-        ctx.db.patch(sibling._id, { status: "declined" }),
+        ctx.db.patch(sibling._id, {
+          status: "declined",
+          statusDecidedAt: decidedAt,
+        }),
       ),
     ]);
+
+    scheduleLoanNotification(ctx, {
+      loanRequestId: request._id,
+      event: "request.status_changed",
+      notifyRole: "borrower",
+    });
+    for (const sibling of overlappingPending) {
+      scheduleLoanNotification(ctx, {
+        loanRequestId: sibling._id,
+        event: "request.status_changed",
+        notifyRole: "borrower",
+      });
+    }
 
     return null;
   },
@@ -210,7 +252,17 @@ export const decline = mutation({
       );
     }
 
-    await ctx.db.patch(request._id, { status: "declined" });
+    await ctx.db.patch(request._id, {
+      status: "declined",
+      statusDecidedAt: Date.now(),
+    });
+
+    scheduleLoanNotification(ctx, {
+      loanRequestId: request._id,
+      event: "request.status_changed",
+      notifyRole: "borrower",
+    });
+
     return null;
   },
 });
@@ -254,7 +306,18 @@ export const markReturned = mutation({
       );
     }
 
-    await ctx.db.patch(request._id, { status: "returned" });
+    await ctx.db.patch(request._id, {
+      status: "returned",
+      statusDecidedAt: Date.now(),
+    });
+
+    scheduleNotifyOtherParty(ctx, {
+      loanRequestId: request._id,
+      actorUserId: user._id,
+      lenderId: request.lenderId,
+      borrowerId: request.borrowerId,
+    });
+
     return null;
   },
 });
@@ -298,7 +361,18 @@ export const cancelApproved = mutation({
       );
     }
 
-    await ctx.db.patch(request._id, { status: "cancelled" });
+    await ctx.db.patch(request._id, {
+      status: "cancelled",
+      statusDecidedAt: Date.now(),
+    });
+
+    scheduleNotifyOtherParty(ctx, {
+      loanRequestId: request._id,
+      actorUserId: user._id,
+      lenderId: request.lenderId,
+      borrowerId: request.borrowerId,
+    });
+
     return null;
   },
 });

@@ -1,0 +1,72 @@
+{
+  "name": "01 Request notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lendloop-request-events",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "lendloop-request-events"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst secret = $env.WEBHOOK_HMAC_SECRET;\nif (!secret) throw new Error('WEBHOOK_HMAC_SECRET is not set');\n\nconst item = $input.first();\nconst headers = item.json.headers ?? {};\nconst signature = headers['x-lendloop-signature'] ?? headers['X-LendLoop-Signature'];\nconst rawBody = typeof item.json.body === 'string'\n  ? item.json.body\n  : JSON.stringify(item.json.body ?? item.json);\n\nconst expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');\nif (!signature || signature.toLowerCase() !== expected.toLowerCase()) {\n  throw new Error('Invalid X-LendLoop-Signature');\n}\n\nconst payload = JSON.parse(rawBody);\nreturn [{ json: payload }];"
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000002",
+      "name": "Verify HMAC",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $input.first().json;\nconst who = p.notify;\ntry {\n  if ($env.SIMULATE_DELIVERY_FAIL === '1') {\n    throw new Error('Simulated delivery failure (SIMULATE_DELIVERY_FAIL)');\n  }\n  const email = (who?.email ?? '').trim();\n  if (!email) {\n    throw new Error('Missing recipient email');\n  }\n  const line = `${p.event} — ${p.toolName} (${p.startDate} → ${p.endDate}), status ${p.status}. Notify ${who.role}: ${who.name} <${email}>`;\n  console.log(line);\n  return [{ json: p }];\n} catch (error) {\n  const detail = error instanceof Error ? error.message : String(error);\n  console.error('Request notification failed:', detail);\n  throw error;\n}"
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000003",
+      "name": "Deliver notification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true } }}"
+      },
+      "id": "a1b2c3d4-1111-4000-8000-000000000004",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 0]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{ "node": "Verify HMAC", "type": "main", "index": 0 }]]
+    },
+    "Verify HMAC": {
+      "main": [[{ "node": "Deliver notification", "type": "main", "index": 0 }]]
+    },
+    "Deliver notification": {
+      "main": [[{ "node": "Respond", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "03 Error workflow"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

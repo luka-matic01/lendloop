@@ -1,5 +1,5 @@
 import {
-  isBorrowPeriodInProgress,
+  getBorrowDueUrgency,
   isBorrowPeriodStarted,
 } from "@/lib/formatBorrowDue";
 
@@ -34,8 +34,8 @@ export function loanStatusLabel(
     if (!isBorrowPeriodStarted(startDate)) {
       return perspective === "mine" ? "Upcoming" : "Reserved";
     }
-    if (!isBorrowPeriodInProgress(startDate, endDate)) {
-      return perspective === "mine" ? "Borrowing" : LOAN_STATUS_LABELS.approved;
+    if (getBorrowDueUrgency(endDate) === "overdue") {
+      return "Overdue";
     }
   }
 
@@ -217,6 +217,60 @@ export const LOANS_COPY = {
   confirmCancelBorrowAction: "Cancel reservation",
   toastTrustedUpdated(name: string, trusted: boolean) {
     return trusted ? `${name} marked as trusted lender` : `${name} is no longer trusted`;
+  },
+  /**
+   * Loan row activity timeline (domain timestamps + admin-only automation failures).
+   * @param when from `formatLoanActivityWhen` — relative for most lines; calendar for reminders
+   */
+  loanActivityLine(args: {
+    line:
+      | "reminder_sent"
+      | "request_received"
+      | "request_submitted"
+      | "approved"
+      | "declined"
+      | "notification_failed"
+      | "reminder_failed"
+      | "automation_failed";
+    when: string;
+    detail?: string;
+  }): { text: string; tone: "muted" | "negative" } {
+    const when = args.when;
+    const failureDetail = args.detail?.trim()
+      ? `: ${args.detail.trim()}`
+      : "";
+
+    switch (args.line) {
+      case "reminder_sent":
+        return { text: `Reminder sent ${when}`, tone: "muted" };
+      case "request_received":
+        return { text: `Received ${when}`, tone: "muted" };
+      case "request_submitted":
+        return { text: `Sent ${when}`, tone: "muted" };
+      case "approved":
+        return { text: `Approved ${when}`, tone: "muted" };
+      case "declined":
+        return { text: `Declined ${when}`, tone: "muted" };
+      case "notification_failed":
+        return {
+          text: `Notification failed ${when}${failureDetail}`,
+          tone: "negative",
+        };
+      case "reminder_failed":
+        return {
+          text: `Reminder failed ${when}${failureDetail}`,
+          tone: "negative",
+        };
+      case "automation_failed":
+        return {
+          text: `Automation failed ${when}${failureDetail}`,
+          tone: "negative",
+        };
+      default: {
+        const _exhaustive: never = args.line;
+        return _exhaustive;
+      }
+    }
   },
 } as const;
 

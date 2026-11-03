@@ -34,11 +34,11 @@ export function HomeLoansPreview() {
   const isLoading = !isReady || incoming === undefined || mine === undefined;
 
   const openIncoming = useMemo(
-    () => partitionLoansForSection(incoming ?? []).open,
+    () => partitionLoansForSection(incoming ?? [], "incoming").open,
     [incoming],
   );
   const openMine = useMemo(
-    () => partitionLoansForSection(mine ?? []).open,
+    () => partitionLoansForSection(mine ?? [], "mine").open,
     [mine],
   );
 

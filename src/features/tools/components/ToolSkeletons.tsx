@@ -12,7 +12,10 @@ import {
 } from "../constants/visual";
 
 const TITLE_WIDTHS = ["w-3/5", "w-2/3", "w-1/2", "w-[70%]", "w-2/5", "w-[62%]"] as const;
+const META_WIDTHS = ["w-[58%]", "w-1/2", "w-[62%]", "w-[48%]", "w-[55%]", "w-[52%]"] as const;
 const BODY_WIDTHS = ["w-4/5", "w-11/12", "w-3/4", "w-full", "w-2/3", "w-5/6"] as const;
+
+const TOOL_CARD_TITLE_SKELETON = "h-7 max-w-full sm:h-8";
 
 type SkeletonDelayStyle = CSSProperties & {
   "--skeleton-delay"?: string;
@@ -29,46 +32,58 @@ type ToolCardSkeletonProps = {
   variant?: ToolCardSkeletonVariant;
 };
 
+function PublicToolCardSkeleton({ index }: { index: number }) {
+  const titleWidth = TITLE_WIDTHS[index % TITLE_WIDTHS.length];
+
+  return (
+    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+      <Skeleton className={cn(TOOL_CARD_TITLE_SKELETON, titleWidth)} />
+      <Skeleton className="h-3 w-20" />
+    </div>
+  );
+}
+
+function BoardToolCardSkeleton({ index }: { index: number }) {
+  const titleWidth = TITLE_WIDTHS[index % TITLE_WIDTHS.length];
+  const metaWidth = META_WIDTHS[index % META_WIDTHS.length];
+  const bodyWidth = BODY_WIDTHS[index % BODY_WIDTHS.length];
+
+  return (
+    <>
+      <div className="min-w-0">
+        <Skeleton className={cn(TOOL_CARD_TITLE_SKELETON, titleWidth)} />
+      </div>
+
+      <Skeleton className={cn("h-3.5", metaWidth)} />
+
+      <div className="space-y-1.5">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className={cn("h-3.5", bodyWidth)} />
+      </div>
+
+      <div className="mt-auto border-t border-line pt-3">
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1.5">
+          <Skeleton className="h-4 w-28 max-w-[55%]" />
+          <Skeleton className="h-8 w-[5.25rem] shrink-0" />
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function ToolCardSkeleton({
   index = 0,
   variant = "board",
 }: ToolCardSkeletonProps) {
-  const titleWidth = TITLE_WIDTHS[index % TITLE_WIDTHS.length];
-  const bodyWidth = BODY_WIDTHS[index % BODY_WIDTHS.length];
-
   return (
     <Panel
       className={cn(TOOL_CARD_PANEL_CLASS, "border-t-4 border-t-line")}
       style={skeletonDelay(index)}
     >
       {variant === "public" ? (
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-          <Skeleton className={cn("h-6 sm:h-7", titleWidth)} />
-          <Skeleton className="h-3 w-16" />
-        </div>
+        <PublicToolCardSkeleton index={index} />
       ) : (
-        <>
-          <div className="flex items-start justify-between gap-2 sm:gap-3">
-            <Skeleton className={cn("h-6 sm:h-7", titleWidth)} />
-            <span className="inline-flex shrink-0 items-center gap-1.5">
-              <Skeleton className="size-7" />
-              <Skeleton className="h-3 w-14" />
-            </span>
-          </div>
-
-          <div className="flex items-center justify-end gap-2">
-            <Skeleton className="h-5 w-16" />
-          </div>
-
-          <div className="space-y-2">
-            <Skeleton className="h-3.5 w-full" />
-            <Skeleton className={cn("h-3.5", bodyWidth)} />
-          </div>
-
-          <div className="mt-auto border-t border-line pt-3">
-            <Skeleton className="h-4 w-32" />
-          </div>
-        </>
+        <BoardToolCardSkeleton index={index} />
       )}
     </Panel>
   );
@@ -116,7 +131,11 @@ export function MyListingsSkeletonList({
       <ul aria-hidden="true" className="divide-y divide-board/25 px-3 sm:px-4">
         {Array.from({ length: count }, (_, index) => (
           <li key={index} style={skeletonDelay(index)}>
-            <ListRowSkeleton iconActions />
+            <ListRowSkeleton
+              iconActions
+              actionCount={1}
+              actionsPlacement="bodyEnd"
+            />
           </li>
         ))}
       </ul>

@@ -1,27 +1,40 @@
+import {
+  compareLoanViewsByLastActivity,
+  type LoanListSortPerspective,
+} from "convex/lib/loanLastActivity";
+
 import type { LoanView } from "../types/loans";
+import type { LoanPerspective } from "./formatLoan";
 
-const STATUS_ORDER: Record<LoanView["status"], number> = {
-  pending: 0,
-  approved: 1,
-  returned: 2,
-  cancelled: 3,
-  declined: 4,
-};
-
-/** Active requests first; closed loans sink to the bottom of each section. */
-export function sortLoansForList(loans: LoanView[]): LoanView[] {
-  return [...loans].sort((a, b) => {
-    const byStatus = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
-    if (byStatus !== 0) {
-      return byStatus;
-    }
-    return b._creationTime - a._creationTime;
-  });
+export function loanListSortPerspective(
+  perspective: LoanPerspective,
+): LoanListSortPerspective {
+  if (perspective === "mine") {
+    return "borrower";
+  }
+  if (perspective === "incoming") {
+    return "lender";
+  }
+  return "admin";
 }
 
-/** Past / closed loans: newest request first (recent declines and returns on top). */
-export function sortClosedLoansByDate(loans: LoanView[]): LoanView[] {
-  return [...loans].sort((a, b) => b._creationTime - a._creationTime);
+/** Open loans: most recent activity first (matches row footnote timestamps). */
+export function sortLoansForList(
+  loans: LoanView[],
+  perspective: LoanPerspective,
+): LoanView[] {
+  const sortPerspective = loanListSortPerspective(perspective);
+  return [...loans].sort((a, b) =>
+    compareLoanViewsByLastActivity(a, b, sortPerspective),
+  );
+}
+
+/** Past / closed loans: newest activity first. */
+export function sortClosedLoansByActivity(
+  loans: LoanView[],
+  perspective: LoanPerspective,
+): LoanView[] {
+  return sortLoansForList(loans, perspective);
 }
 
 export function isClosedLoanStatus(status: LoanView["status"]): boolean {
@@ -32,7 +45,10 @@ export function isClosedLoanStatus(status: LoanView["status"]): boolean {
   );
 }
 
-export function partitionLoansForSection(loans: LoanView[]) {
+export function partitionLoansForSection(
+  loans: LoanView[],
+  perspective: LoanPerspective,
+) {
   const open: LoanView[] = [];
   const history: LoanView[] = [];
   for (const loan of loans) {
@@ -43,7 +59,7 @@ export function partitionLoansForSection(loans: LoanView[]) {
     }
   }
   return {
-    open: sortLoansForList(open),
-    history: sortClosedLoansByDate(history),
+    open: sortLoansForList(open, perspective),
+    history: sortClosedLoansByActivity(history, perspective),
   };
 }

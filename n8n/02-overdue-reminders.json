@@ -1,0 +1,151 @@
+{
+  "name": "02 Overdue reminders",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "days", "triggerAtHour": 9 }]
+        }
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000001",
+      "name": "Daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst secret = $env.WEBHOOK_HMAC_SECRET;\nconst base = $env.CONVEX_SITE_URL?.replace(/\\/$/, '');\nif (!secret || !base) throw new Error('WEBHOOK_HMAC_SECRET and CONVEX_SITE_URL required');\n\nconst path = '/automation/overdue-loans';\nconst now = new Date();\nconst today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;\nconst signature = crypto.createHmac('sha256', secret).update(path).digest('hex');\nconst url = `${base}${path}?today=${today}`;\nreturn [{ json: { url, signature, today } }];"
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000002",
+      "name": "Sign GET",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": false
+            }
+          },
+          "retry": {
+            "retryOnFail": true,
+            "maxTries": 3
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-LendLoop-Signature",
+              "value": "={{ $json.signature }}"
+            }
+          ]
+        }
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000003",
+      "name": "Fetch overdue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 0]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "loans",
+        "options": {}
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000004",
+      "name": "Split loans",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [720, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\ntry {\n  if ($env.SIMULATE_DELIVERY_FAIL === '1') {\n    throw new Error('Simulated delivery failure (SIMULATE_DELIVERY_FAIL)');\n  }\n  const email = (row.borrowerEmail ?? '').trim();\n  if (!email) {\n    throw new Error('Missing borrower email');\n  }\n  const line = `Overdue reminder — return \"${row.toolName}\" (was due ${row.endDate}). To: ${row.borrowerName} <${email}>`;\n  console.log(line);\n  return [{ json: { ...row, reminderStatus: 'sent' } }];\n} catch (error) {\n  const detail = error instanceof Error ? error.message : String(error);\n  console.error('Overdue reminder failed:', detail);\n  return [{ json: { ...row, reminderStatus: 'failed', detail } }];\n}"
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000005",
+      "name": "Deliver reminder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst secret = $env.WEBHOOK_HMAC_SECRET;\nconst base = $env.CONVEX_SITE_URL?.replace(/\\/$/, '');\nconst row = $input.first().json;\nconst status = row.reminderStatus === 'sent' ? 'sent' : 'failed';\nconst payload = {\n  idempotencyKey: row.idempotencyKey,\n  loanRequestId: row.loanRequestId,\n  status,\n};\nif (status === 'failed' && row.detail) {\n  payload.detail = row.detail;\n}\nconst body = JSON.stringify(payload);\nconst signature = crypto.createHmac('sha256', secret).update(body).digest('hex');\nreturn [{ json: { url: `${base}/automation/reminder-sent`, body, signature } }];"
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000006",
+      "name": "Sign write-back",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.url }}",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.body }}",
+        "options": {
+          "retry": {
+            "retryOnFail": true,
+            "maxTries": 3
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-LendLoop-Signature",
+              "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "b1b2c3d4-1111-4000-8000-000000000007",
+      "name": "Write back",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1440, 0]
+    }
+  ],
+  "connections": {
+    "Daily": {
+      "main": [[{ "node": "Sign GET", "type": "main", "index": 0 }]]
+    },
+    "Sign GET": {
+      "main": [[{ "node": "Fetch overdue", "type": "main", "index": 0 }]]
+    },
+    "Fetch overdue": {
+      "main": [[{ "node": "Split loans", "type": "main", "index": 0 }]]
+    },
+    "Split loans": {
+      "main": [[{ "node": "Deliver reminder", "type": "main", "index": 0 }]]
+    },
+    "Deliver reminder": {
+      "main": [[{ "node": "Sign write-back", "type": "main", "index": 0 }]]
+    },
+    "Sign write-back": {
+      "main": [[{ "node": "Write back", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "03 Error workflow"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

@@ -1,0 +1,36 @@
+{
+  "name": "03 Error workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "c1b2c3d4-1111-4000-8000-000000000001",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const e = $input.first().json;\nconst msg = `Automation failure workflow=${e.workflow?.name ?? 'unknown'} execution=${e.execution?.id ?? 'n/a'} node=${e.trigger?.error?.node?.name ?? 'n/a'} message=${e.trigger?.error?.message ?? JSON.stringify(e)}`;\nconsole.error(msg);\nreturn [{ json: { alert: msg } }];"
+      },
+      "id": "c1b2c3d4-1111-4000-8000-000000000002",
+      "name": "Log alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 0]
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [[{ "node": "Log alert", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

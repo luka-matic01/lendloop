@@ -34,7 +34,7 @@ export function AllLoansSection({
   );
 
   const { open, history } = useMemo(
-    () => partitionLoansForSection(loans ?? []),
+    () => partitionLoansForSection(loans ?? [], "admin"),
     [loans],
   );
 

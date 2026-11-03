@@ -12,6 +12,7 @@ export {
   LIST_ROW_META_TEXT_CLASS,
   LIST_ROW_TITLE_CLASS,
   ListRow,
+  LIST_ROW_FOOTER_CLASS,
   ListRowMetaSeparator,
   ListRowSkeleton,
 } from "./ListRow";

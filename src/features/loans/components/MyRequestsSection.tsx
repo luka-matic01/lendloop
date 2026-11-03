@@ -26,7 +26,7 @@ export function MyRequestsSection({
   );
 
   const isLoading = !isReady || loans === undefined;
-  const { open } = partitionLoansForSection(loans ?? []);
+  const { open } = partitionLoansForSection(loans ?? [], "mine");
   const pendingCount = open.filter((l) => l.status === "pending").length;
   const { out: outCount, reserved: reservedCount } =
     countApprovedLoanPhases(open);

@@ -5,7 +5,10 @@ import { cn } from "@/lib/utils";
 
 import { LOAN_LIST_PANEL_CLASS, LOAN_LIST_UL_CLASS } from "../constants/visual";
 import type { LoanView } from "../types/loans";
-import { type LoanPerspective, loanRowSurfaceClass } from "../utils/formatLoan";
+import { loanListRowSurfaceClass } from "@/lib/listRowSurface";
+
+import type { LoanPerspective } from "../utils/formatLoan";
+import { isClosedLoanStatus } from "../utils/sortLoans";
 import { LoanRow, type LoanRowActions } from "./LoanRow";
 
 type LoanListPanelProps =
@@ -39,7 +42,13 @@ export function LoanListPanel(props: LoanListPanelProps) {
                 key={loan._id}
                 className={cn(
                   density === "default" &&
-                    loanRowSurfaceClass(loan, props.perspective),
+                    loanListRowSurfaceClass({
+                      status: loan.status,
+                      startDate: loan.startDate,
+                      endDate: loan.endDate,
+                      perspective: props.perspective,
+                      isClosed: isClosedLoanStatus(loan.status),
+                    }),
                 )}
               >
                 <LoanRow

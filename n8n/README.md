@@ -1,66 +1,92 @@
-# n8n Workflows Directory
+# n8n
 
-Exported n8n workflow JSON files live in this directory:
+Three exported workflows integrate Convex with notifications and overdue reminders. Secrets live in env only — never in JSON.
 
-- `01-request-notification.json` — Outbound webhook receiver for borrow request creation & status transitions (HMAC-SHA256 verified).
-- `02-overdue-reminders.json` — Scheduled daily workflow that queries overdue loans from Convex HTTP endpoint, sends reminders, and performs idempotent write-backs.
-- `03-error-workflow.json` — Global n8n Error Trigger workflow that captures failed executions and prevents silent failures.
+| File | n8n name | Role |
+|------|----------|------|
+| `01-request-notification.json` | 01 Request notification | Webhook: verify HMAC → deliver → respond |
+| `02-overdue-reminders.json` | 02 Overdue reminders | Daily: fetch overdue loans → remind → write-back |
+| `03-error-workflow.json` | 03 Error workflow | Error trigger for 01 and 02 |
 
-> **Security Policy:** Never export hardcoded API keys or HMAC secrets in these JSON files. All secrets are referenced via `$env.WEBHOOK_HMAC_SECRET` and `$env.CONVEX_SITE_URL` injected by `docker-compose.yml`.
+## Environment
 
-## Run n8n locally
+| Variable | Where | Purpose |
+|----------|--------|---------|
+| `WEBHOOK_HMAC_SECRET` | Convex + `.env.local` | Shared HMAC key (must match) |
+| `N8N_REQUEST_WEBHOOK_URL` | Convex (`npx convex env set …`) | **Public HTTPS** URL for workflow **01** — not `localhost` when Convex runs in the cloud |
+| `CONVEX_SITE_URL` | `.env.local` | `https://<deployment>.convex.site` for workflow **02** |
+| `N8N_ENCRYPTION_KEY` | `.env.local` | n8n encryption |
+| `SIMULATE_DELIVERY_FAIL=1` | `.env.local` (optional) | Force deliver step to fail in **01** or **02** |
+
+## Run
 
 ```bash
-# From repo root — uses .env.local for WEBHOOK_HMAC_SECRET, CONVEX_SITE_URL, N8N_ENCRYPTION_KEY
 docker compose up -d n8n
 ```
 
-Open the editor at [http://localhost:5678](http://localhost:5678).
+Open [http://localhost:5678](http://localhost:5678). Import the three JSON files, then activate **03** → **01** → **02**. Workflows **01** and **02** already point at **03** as their error workflow.
 
-When Convex runs in the cloud, expose the request webhook with a tunnel (ngrok, cloudflared, etc.) and set `N8N_REQUEST_WEBHOOK_URL` in Convex to the **production** webhook URL (e.g. `https://….ngrok.io/webhook/lendloop-request-events`).
+Implementation details for agents: [`.cursor/rules/n8n-automation.mdc`](../.cursor/rules/n8n-automation.mdc). HTTP routes: [`convex/http.ts`](../convex/http.ts).
 
-## Connect Cursor to n8n (MCP)
+## Workflow **01** and ngrok (typical dev setup)
 
-Instance-level MCP lets the agent **search, create, edit, and test** workflows in your n8n instance instead of hand-editing JSON blind.
+If Convex is deployed (cloud) and n8n runs locally via Docker, **workflow 01 will not work without a tunnel**. Cloud Convex cannot POST to `http://localhost:5678`. The app will still create `automationLogs` rows with `request_notification` / `failed` and detail **`HTTP 404`** (or connection errors) until the webhook URL is reachable.
 
-1. In n8n: **Settings → Instance-level MCP → Enable MCP access** (instance owner/admin).
-2. **Settings → Instance-level MCP → Connect a client → Cursor**
-   - Prefer **One-click setup** (OAuth), or copy the **Server URL** (ends with `/mcp-server/http`).
-3. In this repo:
+Workflow **02** does **not** need a tunnel — n8n calls **out** to `CONVEX_SITE_URL`.
 
-   ```bash
-   cp .cursor/mcp.json.example .cursor/mcp.json
-   ```
+1. Start n8n and **activate** workflow **01** (inactive webhooks return 404 on the production path).
+2. Expose port **5678** with [ngrok](https://ngrok.com/) or [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/local-management/create-local-tunnel/):
 
-   - Local Docker: URL is usually `http://localhost:5678/mcp-server/http` (use `http://`, not `https://`).
-   - For API key auth instead of OAuth, add headers per [n8n MCP client examples](https://docs.n8n.io/connect/connect-to-n8n-mcp-server/mcp-client-examples/).
+```bash
+ngrok http 5678
+# or: cloudflared tunnel --url http://localhost:5678
+```
 
-4. Reload MCP in Cursor (**Settings → MCP**). You should see the `n8n` server and tools such as workflow search/create/edit.
+3. Point Convex at the **production** webhook path (not the “Test URL” from the n8n editor):
 
-Use MCP to build the three workflows above, then **export** sanitized JSON into this folder for reviewers who do not run your live n8n.
+```bash
+npx convex env set N8N_REQUEST_WEBHOOK_URL 'https://YOUR_TUNNEL_HOST/webhook/lendloop-request-events'
+```
 
-## Integration contract (Convex ↔ n8n)
+4. Match secrets: `WEBHOOK_HMAC_SECRET` in Convex (`npx convex env set …`) and in `.env.local` for the n8n container, then restart n8n if you changed `.env.local`.
 
-Implement on the Convex side in `convex/http.ts` (not yet wired — schema and UI already expect write-backs):
+5. When the tunnel hostname changes (free ngrok sessions), run step 3 again.
 
-| Direction | Endpoint / trigger | Purpose |
-|-----------|-------------------|---------|
-| Convex → n8n | `N8N_REQUEST_WEBHOOK_URL` | POST signed JSON on request create / status change |
-| n8n → Convex | `GET /automation/overdue-loans` | List approved loans past `endDate` needing a reminder |
-| n8n → Convex | `POST /automation/reminder-sent` | Idempotent log + `lastReminderSentAt` |
+**Sanity check:** from any machine on the internet (not your laptop shell to localhost), a POST without HMAC should hit n8n — you should **not** get 404 if **01** is active and the path is correct. With HMAC, workflow **01** should execute in n8n when you create or update a borrow request in the app.
 
-**Signature:** header `X-LendLoop-Signature` = hex(HMAC-SHA256(`WEBHOOK_HMAC_SECRET`, raw body)).
+### `HTTP 404` on `request_notification`
 
-**Idempotency:** `automationLogs.idempotencyKey` unique index; reminder keys like `overdue:{loanRequestId}:{YYYY-MM-DD}` (see `convex/loanRequests.test.ts`).
+| Cause | Fix |
+|--------|-----|
+| Workflow **01** not **Active** | Toggle Active in n8n; use `/webhook/…`, not `/webhook-test/…` |
+| Wrong `N8N_REQUEST_WEBHOOK_URL` | Must end with `/webhook/lendloop-request-events` |
+| Stale or missing tunnel | Restart ngrok/cloudflared; update Convex env with the new `https://…` host |
+| `N8N_REQUEST_WEBHOOK_URL` still `localhost` | Set the public tunnel URL in **Convex** env, not only in `.env.local` |
 
-**Notification payload (minimal):** `event`, `idempotencyKey`, `loanRequestId`, `status`, `toolName`, dates, and `notify: { email, name, role }` for the recipient only.
+## Integration contract
 
-Details for agents live in `.cursor/rules/n8n-automation.mdc`.
+Header: `X-LendLoop-Signature` = hex(HMAC-SHA256(`WEBHOOK_HMAC_SECRET`, message)).
 
-## Workflow checklist (take-home)
+| Direction | Call | HMAC message |
+|-----------|------|----------------|
+| Convex → n8n | POST `N8N_REQUEST_WEBHOOK_URL` | Raw JSON body |
+| n8n → Convex | GET `/automation/overdue-loans?today=YYYY-MM-DD` | Path `/automation/overdue-loans` only (`today` not signed) |
+| n8n → Convex | POST `/automation/reminder-sent` | Raw JSON body |
 
-- [ ] Workflow 1: Webhook → verify HMAC → notify correct party on create / approve / decline / return
-- [ ] Workflow 2: Cron daily → signed GET overdue list → per-row notify → signed POST write-back
-- [ ] Workflow 3: Error workflow assigned on 1 & 2; HTTP nodes retry; failures visible in executions
-- [ ] Secrets only in Convex env, `.env.local`, and n8n credentials — never in committed JSON
-- [ ] Bonus: write-backs populate `automationLogs` so loan rows show “reminder sent …” in the app
+**Payload (Convex → n8n):** `event`, `idempotencyKey`, `loanRequestId`, `status`, `toolName`, `startDate`, `endDate`, `notify: { email, name, role }`.
+
+**Idempotency:** `request:{loanRequestId}:created` or `request:{loanRequestId}:status:{status}`; overdue `overdue:{loanRequestId}:{YYYY-MM-DD}`.
+
+**Overdue list:** Loans with `sent` for that day’s key are omitted. `failed` stays eligible same day; Convex can upgrade `failed` → `sent` on retry.
+
+**Logs:** Request notifications are recorded in Convex after the n8n HTTP result (`request_notification`). Reminders are recorded via the reminder POST (`overdue_reminder`). Loan rows read `automationLogs` — UI copy is in the app, not in n8n `detail`. POST `detail` only when `status: failed`.
+
+## Verify
+
+```bash
+npx vitest run convex/automation.test.ts convex/loanRequests.test.ts
+```
+
+**01:** Create a borrow request in the app → n8n execution on **01** → loan row “Notification sent …”.
+
+**02:** Approved loan with `endDate` before UTC today → **Execute workflow** on **02** → “Reminder sent …”; second run same UTC day should not re-remind.

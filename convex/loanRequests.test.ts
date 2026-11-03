@@ -263,13 +263,34 @@ describe("loanRequests", () => {
       endDate: "2026-11-27",
     });
 
-    await lender.mutation(api.tools.update, {
+    await expect(
+      lender.mutation(api.tools.update, {
+        toolId,
+        name: "Tall ladder",
+        category: "other",
+        condition: "good",
+        description: "6 ft aluminum",
+      }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
+    );
+
+    await expect(
+      lender.mutation(api.tools.remove, { toolId }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
+    );
+
+    await lender.mutation(api.tools.setAvailability, {
       toolId,
-      name: "Tall ladder",
-      category: "other",
-      condition: "good",
-      description: "6 ft aluminum",
+      isAvailable: false,
     });
+
+    const afterPause = await lender.query(
+      api.tools.listMine,
+      firstMyListingsPage(),
+    );
+    expect(afterPause.page[0]?.isAvailable).toBe(false);
   });
 
   it("allows lender or borrower to mark an approved loan returned, and forbids strangers", async () => {
@@ -505,6 +526,88 @@ describe("loanRequests", () => {
         status: "sent",
         detail: "Reminder sent via n8n",
       },
+    });
+  });
+
+  it("hydrates member timeline fields and sets statusDecidedAt on approve", async () => {
+    const t = createConvexTest();
+    const { session: lender } = await provisionUser(t, "lender@test.com");
+    const { session: borrower } = await provisionUser(t, "borrower@test.com");
+
+    const toolId = await lender.mutation(api.tools.create, {
+      name: "Level",
+      category: "other",
+      condition: "good",
+      description: "",
+    });
+
+    const requestId = await borrower.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-01",
+      endDate: "2026-11-02",
+    });
+
+    const pendingIncoming = await lender.query(
+      api.loanRequests.listIncomingRequests,
+      {},
+    );
+    expect(pendingIncoming[0]).toMatchObject({
+      _id: requestId,
+      status: "pending",
+    });
+    expect(pendingIncoming[0]?._creationTime).toBeTypeOf("number");
+
+    await lender.mutation(api.loanRequests.approve, { requestId });
+
+    const mine = await borrower.query(api.loanRequests.listMyRequests, {});
+    expect(mine[0]?.status).toBe("approved");
+    expect(mine[0]?.statusDecidedAt).toBeTypeOf("number");
+    expect(mine[0]?.latestAutomation).toBeUndefined();
+  });
+
+  it("omits failed automation logs from member loan queries (admin-only in API)", async () => {
+    const t = createConvexTest();
+    const { session: lender } = await provisionUser(t, "lender@test.com");
+    const { session: borrower } = await provisionUser(t, "borrower@test.com");
+    const { session: admin } = await provisionUser(t, ADMIN_EMAIL);
+
+    const toolId = await lender.mutation(api.tools.create, {
+      name: "Router",
+      category: "power_tools",
+      condition: "good",
+      description: "",
+    });
+
+    const requestId = await borrower.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-01",
+      endDate: "2026-11-02",
+    });
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("automationLogs", {
+        loanRequestId: requestId,
+        kind: "request_notification",
+        idempotencyKey: `notify:${requestId}:fail`,
+        status: "failed",
+        detail: "SMTP connection refused",
+      });
+    });
+
+    const mine = await borrower.query(api.loanRequests.listMyRequests, {});
+    expect(mine[0]?.latestAutomation).toBeUndefined();
+
+    const incoming = await lender.query(
+      api.loanRequests.listIncomingRequests,
+      {},
+    );
+    expect(incoming[0]?.latestAutomation).toBeUndefined();
+
+    const allLoans = await admin.query(api.loanRequests.listAllForAdmin, {});
+    expect(allLoans[0]?.latestAutomation).toMatchObject({
+      kind: "request_notification",
+      status: "failed",
+      detail: "SMTP connection refused",
     });
   });
 });

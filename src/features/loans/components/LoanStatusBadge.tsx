@@ -1,5 +1,6 @@
-import { Check, Clock, Handshake, X } from "lucide-react";
+import { AlertTriangle, Check, Clock, Handshake, X } from "lucide-react";
 
+import { getBorrowDueUrgency, isBorrowPeriodStarted } from "@/lib/formatBorrowDue";
 import { cn } from "@/lib/utils";
 
 import {
@@ -34,11 +35,18 @@ export function LoanStatusBadge({
   endDate,
   className,
 }: LoanStatusBadgeProps) {
-  const { tone, Icon } = statusConfig[status];
   const borrowDates =
     startDate !== undefined && endDate !== undefined
       ? { startDate, endDate }
       : undefined;
+  const isOverdue =
+    status === "approved" &&
+    borrowDates !== undefined &&
+    isBorrowPeriodStarted(borrowDates.startDate) &&
+    getBorrowDueUrgency(borrowDates.endDate) === "overdue";
+  const { tone, Icon } = isOverdue
+    ? { tone: "text-negative", Icon: AlertTriangle }
+    : statusConfig[status];
 
   return (
     <span

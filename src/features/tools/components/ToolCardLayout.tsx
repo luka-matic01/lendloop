@@ -22,6 +22,7 @@ type ToolCardLayoutProps = {
   description: string | null;
   listingState?: ToolListingState;
   isOwnListing?: boolean;
+  headerActions?: ReactNode;
   footer?: ReactNode;
   notice?: ReactNode;
   panelClassName?: string;
@@ -34,6 +35,7 @@ export function ToolCardLayout({
   description,
   listingState,
   isOwnListing = false,
+  headerActions,
   footer,
   notice,
   panelClassName,
@@ -61,7 +63,23 @@ export function ToolCardLayout({
             Yours
           </p>
         ) : null}
-        <h3 className={TOOL_CARD_TITLE_CLASS}>{name}</h3>
+        <div
+          className={cn(
+            headerActions && "flex items-start justify-between gap-2",
+          )}
+        >
+          <h3
+            className={cn(
+              TOOL_CARD_TITLE_CLASS,
+              headerActions && "min-w-0 flex-1",
+            )}
+          >
+            {name}
+          </h3>
+          {headerActions ? (
+            <div className="flex shrink-0 items-center">{headerActions}</div>
+          ) : null}
+        </div>
       </div>
 
       <ToolCardStateRow

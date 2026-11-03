@@ -34,9 +34,7 @@ export function ToolCard({
   onTrustLender,
   trustPending = false,
 }: ToolCardProps) {
-  const canModerateNeighbor = !tool.isOwner && tool.canRemove;
-  const canRemoveNeighbor = canModerateNeighbor && onRemove;
-  const canTrustNeighbor = canModerateNeighbor && onTrustLender;
+  const canModerateBoard = !tool.isOwner && tool.canRemove;
   const borrowBlocked = tool.viewerBorrowStatus !== undefined;
   const showBorrow =
     onBorrow !== undefined && !tool.isOwner && !borrowBlocked;
@@ -46,8 +44,6 @@ export function ToolCard({
       : tool.viewerBorrowStatus === "pending"
         ? TOOLS_COPY.pendingBorrowRequest
         : null;
-  const hasFooterActions =
-    showBorrow || borrowStatusLabel !== null || canTrustNeighbor || canRemoveNeighbor;
   const description = toolCardDescription(tool.name, tool.description);
   const showLoanNotice =
     tool.loanOutUntil !== undefined &&
@@ -61,6 +57,20 @@ export function ToolCard({
       name={tool.name}
       description={description}
       isOwnListing={tool.isOwner}
+      headerActions={
+        canModerateBoard && onRemove ? (
+          <IconButton
+            type="button"
+            variant="ghost"
+            aria-label={TOOLS_COPY.removeListing}
+            tooltip={TOOLS_COPY.removeListing}
+            onClick={onRemove}
+            className="text-ink-muted hover:bg-canvas hover:text-negative"
+          >
+            <Trash2 className={TOOLS_ICON_CLASS} aria-hidden />
+          </IconButton>
+        ) : undefined
+      }
       notice={
         showLoanNotice ? (
           <p className="text-sm font-semibold leading-snug text-ink-muted">
@@ -76,62 +86,38 @@ export function ToolCard({
             <p
               className={cn(
                 TOOL_CARD_FOOTER_TEXT_CLASS,
-                "flex min-w-0 flex-1 items-center gap-x-1.5",
+                "inline-flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-0.5 leading-snug",
               )}
             >
               <span className="truncate">{tool.ownerName}</span>
               {tool.ownerIsTrustedLender ? <TrustedLenderIndicator /> : null}
+              {canModerateBoard && onTrustLender ? (
+                <LenderTrustToggleIconButton
+                  lenderName={tool.ownerName}
+                  isTrusted={tool.ownerIsTrustedLender}
+                  disabled={trustPending}
+                  markTrustedLabel={LOANS_COPY.markTrusted}
+                  removeTrustedLabel={LOANS_COPY.removeTrusted}
+                  className="-my-1.5 shrink-0"
+                  onClick={() => onTrustLender?.()}
+                />
+              ) : null}
             </p>
 
-            {hasFooterActions ? (
-              <div className="flex shrink-0 items-center gap-1">
-                {showBorrow ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    aria-label={`Borrow ${tool.name}`}
-                    onClick={onBorrow}
-                  >
-                    {TOOLS_COPY.borrowTool}
-                  </Button>
-                ) : borrowStatusLabel ? (
-                  <span className="whitespace-nowrap text-xs font-semibold text-ink-muted">
-                    {borrowStatusLabel}
-                  </span>
-                ) : null}
-
-                {canTrustNeighbor || canRemoveNeighbor ? (
-                  <div
-                    role="group"
-                    aria-label={TOOLS_COPY.moderationActionsLabel}
-                    className="flex items-center gap-0.5"
-                  >
-                    {canTrustNeighbor ? (
-                      <LenderTrustToggleIconButton
-                        lenderName={tool.ownerName}
-                        isTrusted={tool.ownerIsTrustedLender}
-                        disabled={trustPending}
-                        markTrustedLabel={LOANS_COPY.markTrusted}
-                        removeTrustedLabel={LOANS_COPY.removeTrusted}
-                        onClick={() => onTrustLender?.()}
-                      />
-                    ) : null}
-                    {canRemoveNeighbor ? (
-                      <IconButton
-                        type="button"
-                        variant="ghost"
-                        aria-label={TOOLS_COPY.removeListing}
-                        tooltip={TOOLS_COPY.removeListing}
-                        onClick={onRemove}
-                        className="text-ink-muted hover:bg-canvas hover:text-negative"
-                      >
-                        <Trash2 className={TOOLS_ICON_CLASS} aria-hidden />
-                      </IconButton>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
+            {showBorrow ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                aria-label={`Borrow ${tool.name}`}
+                onClick={onBorrow}
+              >
+                {TOOLS_COPY.borrowTool}
+              </Button>
+            ) : borrowStatusLabel ? (
+              <span className="shrink-0 whitespace-nowrap text-xs font-semibold text-ink-muted">
+                {borrowStatusLabel}
+              </span>
             ) : null}
           </div>
         )
