@@ -6,7 +6,7 @@ import { useQuery } from "convex/react";
 
 import { Panel, buttonClassName } from "@/components/ui";
 import { ROUTES } from "@/constants";
-import { useEnsureCurrentUser } from "@/features/account";
+import type { AccountSyncState } from "@/features/account";
 import { api } from "convex/_generated/api";
 
 import { LOANS_COPY } from "../constants/copy";
@@ -20,9 +20,13 @@ import { LoanListSkeleton } from "./LoanRowSkeleton";
 import { CancelBorrowConfirmModal } from "./CancelBorrowConfirmModal";
 import { MarkReturnedConfirmModal } from "./MarkReturnedConfirmModal";
 
-export function HomeLoansPreview() {
-  const { phase } = useEnsureCurrentUser();
-  const isReady = phase === "ready";
+type HomeLoansPreviewProps = {
+  accountSync: AccountSyncState;
+};
+
+export function HomeLoansPreview({ accountSync }: HomeLoansPreviewProps) {
+  const isReady = accountSync.phase === "ready";
+  const syncFailed = accountSync.phase === "error";
 
   const incoming = useQuery(
     api.loanRequests.listIncomingRequests,
@@ -31,7 +35,8 @@ export function HomeLoansPreview() {
   const mine = useQuery(api.loanRequests.listMyRequests, isReady ? {} : "skip");
   const loanActions = useLoanActions();
 
-  const isLoading = !isReady || incoming === undefined || mine === undefined;
+  const isLoading =
+    !syncFailed && (!isReady || incoming === undefined || mine === undefined);
 
   const openIncoming = useMemo(
     () => partitionLoansForSection(incoming ?? [], "incoming").open,
@@ -74,7 +79,14 @@ export function HomeLoansPreview() {
       description={LOANS_COPY.homeLoansSignedInDescription}
       summary={activitySummary}
     >
-      {isLoading ? (
+      {syncFailed ? (
+        <Panel tone="notice">
+          <p className="text-base text-ink-muted">
+            {accountSync.errorMessage ??
+              "Could not sync your account. Refresh and try again."}
+          </p>
+        </Panel>
+      ) : isLoading ? (
         <LoanListSkeleton actionCount={2} label="Loading loan activity" />
       ) : (
         <div className="space-y-6">

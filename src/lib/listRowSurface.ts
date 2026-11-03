@@ -1,6 +1,5 @@
 import {
   getBorrowDueUrgency,
-  isBorrowPeriodInProgress,
   isBorrowPeriodStarted,
 } from "@/lib/formatBorrowDue";
 import { cn } from "@/lib/utils";

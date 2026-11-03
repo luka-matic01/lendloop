@@ -50,21 +50,9 @@ export type HydrateLoanRequestOptions = {
 
 function mapLatestAutomation(
   latestLog: Doc<"automationLogs"> | null | undefined,
-  audience: AutomationLogAudience,
 ) {
   if (!latestLog) {
     return undefined;
-  }
-
-  if (audience === "member") {
-    if (latestLog.status !== "sent") {
-      return undefined;
-    }
-    return {
-      kind: latestLog.kind,
-      status: latestLog.status,
-      createdAt: latestLog._creationTime,
-    };
   }
 
   return {
@@ -138,7 +126,7 @@ export async function hydrateLoanRequests(
       statusDecidedAt: req.statusDecidedAt,
       lastReminderSentAt: req.lastReminderSentAt,
       latestAutomation: includeAutomationLogs
-        ? mapLatestAutomation(latestLog, "admin")
+        ? mapLatestAutomation(latestLog)
         : undefined,
     };
   });

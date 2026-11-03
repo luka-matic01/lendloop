@@ -4,10 +4,9 @@ import {
   borrowRangesOverlap,
   isBorrowPeriodInProgress,
   isBorrowPeriodStarted,
-  isUpcomingBorrowReservation,
 } from "./borrowDates";
 import { AuthErrorCode, authError } from "./errors";
-import { LIST_PAGE_SIZE } from "./limits";
+import { LIST_PAGE_SIZE, TOOL_LOAN_ROWS_CAP } from "./limits";
 
 type DbCtx = QueryCtx | MutationCtx;
 
@@ -30,16 +29,27 @@ export type BookedBorrowRange = {
   endDate: string;
 };
 
+const TOOL_LOAN_ROWS_CAP_MESSAGE =
+  "This tool has too many active borrows to process safely";
+
+function assertBelowToolLoanRowsCap(rowCount: number) {
+  if (rowCount >= TOOL_LOAN_ROWS_CAP) {
+    authError(AuthErrorCode.VALIDATION_ERROR, TOOL_LOAN_ROWS_CAP_MESSAGE);
+  }
+}
+
 export async function approvedLoansForTool(
   ctx: DbCtx,
   toolId: Id<"tools">,
 ): Promise<Doc<"loanRequests">[]> {
-  return await ctx.db
+  const rows = await ctx.db
     .query("loanRequests")
     .withIndex("by_tool_and_status", (q) =>
       q.eq("toolId", toolId).eq("status", "approved"),
     )
-    .take(32);
+    .take(TOOL_LOAN_ROWS_CAP);
+  assertBelowToolLoanRowsCap(rows.length);
+  return rows;
 }
 
 export function assertNoOverlapWithApprovedLoans(
@@ -63,26 +73,18 @@ export function assertNoOverlapWithApprovedLoans(
   }
 }
 
-export async function toolHasInProgressApprovedLoan(
+/** Any approved borrow on the tool (including overdue, not yet returned). */
+export async function toolHasOpenApprovedLoan(
   ctx: DbCtx,
   toolId: Id<"tools">,
-  nowMs = Date.now(),
 ): Promise<boolean> {
-  const approved = await approvedLoansForTool(ctx, toolId);
-  return approved.some((loan) =>
-    isBorrowPeriodInProgress(loan.startDate, loan.endDate, nowMs),
-  );
-}
-
-export async function toolHasUpcomingApprovedReservation(
-  ctx: DbCtx,
-  toolId: Id<"tools">,
-  nowMs = Date.now(),
-): Promise<boolean> {
-  const approved = await approvedLoansForTool(ctx, toolId);
-  return approved.some((loan) =>
-    isUpcomingBorrowReservation(loan.startDate, nowMs),
-  );
+  const row = await ctx.db
+    .query("loanRequests")
+    .withIndex("by_tool_and_status", (q) =>
+      q.eq("toolId", toolId).eq("status", "approved"),
+    )
+    .first();
+  return row !== null;
 }
 
 /** Pending or approved request from the same borrower on the same tool. */
@@ -97,7 +99,8 @@ export async function borrowerHasActiveRequestOnTool(
       .withIndex("by_tool_and_status", (q) =>
         q.eq("toolId", toolId).eq("status", status),
       )
-      .take(status === "approved" ? 32 : 32);
+      .take(TOOL_LOAN_ROWS_CAP);
+    assertBelowToolLoanRowsCap(rows.length);
 
     if (rows.some((row) => row.borrowerId === borrowerId)) {
       return true;
@@ -199,24 +202,6 @@ export async function approvedLoanListsByToolForLender(
   return byTool;
 }
 
-/** Primary approved loan per tool for lender listings (in progress, else next upcoming). */
-export async function approvedLoansByToolForLender(
-  ctx: DbCtx,
-  lenderId: Id<"users">,
-  nowMs = Date.now(),
-): Promise<Map<Id<"tools">, ApprovedLoanOnTool>> {
-  const byTool = await approvedLoanListsByToolForLender(ctx, lenderId);
-
-  const primary = new Map<Id<"tools">, ApprovedLoanOnTool>();
-  for (const [toolId, loans] of byTool) {
-    const picked = pickPrimaryApprovedLoan(loans, nowMs);
-    if (picked) {
-      primary.set(toolId, picked);
-    }
-  }
-  return primary;
-}
-
 /** Pending incoming requests per tool for a lender (one listMine query). */
 export async function pendingRequestCountByToolForLender(
   ctx: DbCtx,
@@ -283,7 +268,8 @@ export async function listPendingRequestsForToolExcept(
     .withIndex("by_tool_and_status", (q) =>
       q.eq("toolId", toolId).eq("status", "pending"),
     )
-    .take(32);
+    .take(TOOL_LOAN_ROWS_CAP);
+  assertBelowToolLoanRowsCap(pending.length);
 
   return pending.filter((row) => row._id !== exceptRequestId);
 }

@@ -101,6 +101,18 @@ http.route({
       detail: typeof detail === "string" ? detail : undefined,
     });
 
+    if (result.rejected === "invalid_idempotency_key") {
+      return badRequest("idempotencyKey does not match loanRequestId");
+    }
+    if (
+      result.rejected === "loan_not_found" ||
+      result.rejected === "loan_not_approved"
+    ) {
+      return new Response("Loan request not found or not approved", {
+        status: 404,
+      });
+    }
+
     return Response.json({ ok: true, duplicate: result.duplicate });
   }),
 });

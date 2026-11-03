@@ -6,7 +6,7 @@ import { useMutation, usePaginatedQuery } from "convex/react";
 
 import { ConfirmModal, Panel, buttonClassName, useToast } from "@/components/ui";
 import { ROUTES } from "@/constants";
-import { useEnsureCurrentUser } from "@/features/account";
+import type { AccountSyncState } from "@/features/account";
 import {
   BorrowRequestModal,
   TrustedLenderConfirmModal,
@@ -29,12 +29,14 @@ import { ToolCardSkeletonGrid } from "./ToolSkeletons";
 
 type HomeToolsPreviewProps = {
   isAuthenticated: boolean;
+  accountSync?: AccountSyncState;
   publicTools?: PublicToolListing[];
   loadFailed?: boolean;
 };
 
 export function HomeToolsPreview({
   isAuthenticated,
+  accountSync,
   publicTools = [],
   loadFailed = false,
 }: HomeToolsPreviewProps) {
@@ -44,7 +46,13 @@ export function HomeToolsPreview({
   );
 
   if (isAuthenticated) {
-    return <HomeSignedInPreview />;
+    return (
+      <HomeSignedInPreview
+        accountSync={
+          accountSync ?? { phase: "syncing", errorMessage: null }
+        }
+      />
+    );
   }
 
   return (
@@ -96,16 +104,17 @@ function HomeBoardToolGrid<T extends { _id: string }>({
   );
 }
 
-function HomeSignedInPreview() {
+function HomeSignedInPreview({ accountSync }: { accountSync: AccountSyncState }) {
   const toast = useToast();
   const loanActions = useLoanActions();
   const { pendingTrustedUserId, requestTrustedLenderChange } = loanActions;
   const [borrowingTool, setBorrowingTool] = useState<BoardTool | null>(null);
   const [removingTool, setRemovingTool] = useState<BoardTool | null>(null);
   const [removingSubmitting, setRemovingSubmitting] = useState(false);
-  const { phase } = useEnsureCurrentUser();
-  const isReady = phase === "ready";
   const removeTool = useMutation(api.tools.remove);
+
+  const isReady = accountSync.phase === "ready";
+  const syncFailed = accountSync.phase === "error";
 
   const { results: boardTools, status: boardStatus } = usePaginatedQuery(
     api.tools.listBoard,
@@ -113,7 +122,8 @@ function HomeSignedInPreview() {
     { initialNumItems: HOME_BOARD_PAGE_SIZE },
   );
 
-  const isLoading = !isReady || boardStatus === "LoadingFirstPage";
+  const isLoading =
+    !syncFailed && (!isReady || boardStatus === "LoadingFirstPage");
 
   const preview = useMemo(() => {
     const neighbors = boardTools.filter((tool) => !tool.isOwner);
@@ -168,7 +178,14 @@ function HomeSignedInPreview() {
           }
         }}
       />
-      {isLoading ? (
+      {syncFailed ? (
+        <Panel tone="notice">
+          <p className="text-base text-ink-muted">
+            {accountSync.errorMessage ??
+              "Could not sync your account. Refresh and try again."}
+          </p>
+        </Panel>
+      ) : isLoading ? (
         <ToolCardSkeletonGrid label="Loading tools on the board" />
       ) : (
         <div className="space-y-4">

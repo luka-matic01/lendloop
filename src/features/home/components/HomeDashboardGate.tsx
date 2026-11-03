@@ -1,8 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 
 import { ConvexClerkProviders } from "@/components/providers/ConvexClerkProviders";
-import { HomeLoansPreview } from "@/features/loans";
 import { HomeToolsPreview } from "@/features/tools";
+
+import { HomeSignedInDashboard } from "./HomeSignedInDashboard";
 import { fetchPublicToolListings } from "@/lib/convexServer";
 
 /** One Convex + Clerk tree for signed-in homepage sections (tools + loans). */
@@ -23,8 +24,7 @@ export async function HomeDashboardGate() {
 
   return (
     <ConvexClerkProviders>
-      <HomeToolsPreview isAuthenticated />
-      <HomeLoansPreview />
+      <HomeSignedInDashboard />
     </ConvexClerkProviders>
   );
 }

@@ -176,6 +176,9 @@ export const recordAutomation = internalMutation({
       .unique();
 
     if (existing) {
+      if (existing.status === "sent") {
+        return null;
+      }
       const patch: { status: string; detail?: string } = { status: args.status };
       if (args.detail !== undefined) {
         patch.detail = args.detail;
@@ -256,16 +259,28 @@ export const recordReminderSent = internalMutation({
     status: v.union(v.literal("sent"), v.literal("failed")),
     detail: v.optional(v.string()),
   },
-  returns: v.object({ duplicate: v.boolean() }),
+  returns: v.object({
+    duplicate: v.boolean(),
+    rejected: v.optional(
+      v.union(
+        v.literal("loan_not_found"),
+        v.literal("loan_not_approved"),
+        v.literal("invalid_idempotency_key"),
+      ),
+    ),
+  }),
   handler: async (ctx, args) => {
     const request = await ctx.db.get(args.loanRequestId);
-    if (!request || request.status !== "approved") {
-      return { duplicate: false };
+    if (!request) {
+      return { duplicate: false, rejected: "loan_not_found" as const };
+    }
+    if (request.status !== "approved") {
+      return { duplicate: false, rejected: "loan_not_approved" as const };
     }
 
     const prefix = `overdue:${args.loanRequestId}:`;
     if (!args.idempotencyKey.startsWith(prefix)) {
-      return { duplicate: false };
+      return { duplicate: false, rejected: "invalid_idempotency_key" as const };
     }
 
     const existing = await ctx.db

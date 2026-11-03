@@ -1,6 +1,9 @@
 /** Upper bound for loan list queries and related aggregations. */
 export const LIST_PAGE_SIZE = 100;
 
+/** Per-tool loan rows for overlap checks; at cap we fail closed. */
+export const TOOL_LOAN_ROWS_CAP = 32;
+
 /** Default page size for the neighbor tool board (client + server). */
 export const BOARD_PAGE_SIZE = 15;
 

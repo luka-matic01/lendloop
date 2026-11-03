@@ -1,11 +1,8 @@
 import { AppShell, Container, Panel } from "@/components/ui";
 import { Masthead } from "@/components/ui/Masthead";
 import { PUBLIC_ENV_KEYS } from "@/constants";
-import {
-  HomeDashboardGate,
-  HomeHero,
-  HomeToolsSectionSkeleton,
-} from "@/features/home";
+import { HomeDashboardGate, HomeHero } from "@/features/home";
+import { HomeToolsSectionSkeleton } from "@/features/tools";
 import { Suspense } from "react";
 import { isAppConfigured } from "@/lib/appConfig";
 

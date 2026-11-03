@@ -14,15 +14,17 @@ import { partitionLoansForSection } from "../utils/sortLoans";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanSection } from "./LoanSection";
 
+type AdminAccess = "loading" | "hidden" | "admin";
+
 type AllLoansSectionProps = {
   isReady: boolean;
-  isAdmin: boolean;
+  adminAccess: AdminAccess;
   loanActions: ReturnType<typeof useLoanActions>;
 };
 
 export function AllLoansSection({
   isReady,
-  isAdmin,
+  adminAccess,
   loanActions,
 }: AllLoansSectionProps) {
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -30,7 +32,7 @@ export function AllLoansSection({
 
   const loans = useQuery(
     api.loanRequests.listAllForAdmin,
-    isReady && isAdmin ? {} : "skip",
+    isReady && adminAccess === "admin" ? {} : "skip",
   );
 
   const { open, history } = useMemo(
@@ -38,11 +40,12 @@ export function AllLoansSection({
     [loans],
   );
 
-  if (!isAdmin) {
+  if (adminAccess === "hidden") {
     return null;
   }
 
-  const isLoading = !isReady || loans === undefined;
+  const isLoading =
+    adminAccess === "loading" || !isReady || loans === undefined;
   const pendingCount = open.filter((l) => l.status === "pending").length;
   const { out: outCount, reserved: reservedCount } =
     countApprovedLoanPhases(open);

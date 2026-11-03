@@ -19,8 +19,8 @@ function HomeHeroAuthActionsFallback() {
           "pointer-events-none invisible select-none",
         )}
       >
-        <UserPlus className={iconClass} aria-hidden />
-        Sign up
+        <LogIn className={iconClass} aria-hidden />
+        Sign in to lend or borrow
       </span>
       <span
         className={cn(
@@ -28,8 +28,8 @@ function HomeHeroAuthActionsFallback() {
           "pointer-events-none invisible select-none",
         )}
       >
-        <LogIn className={iconClass} aria-hidden />
-        Sign in
+        <UserPlus className={iconClass} aria-hidden />
+        Sign up
       </span>
     </div>
   );
@@ -68,24 +68,24 @@ async function HomeHeroAuthActionsContent() {
   return (
     <div className={actionRowClass}>
       <Link
-        href={ROUTES.signUp}
+        href={ROUTES.signIn}
         className={cn(
           buttonClassName({ variant: "primary" }),
           "focus-visible:ring-offset-board",
         )}
       >
-        <UserPlus className={iconClass} aria-hidden />
-        Sign up
+        <LogIn className={iconClass} aria-hidden />
+        Sign in to lend or borrow
       </Link>
       <Link
-        href={ROUTES.signIn}
+        href={ROUTES.signUp}
         className={cn(
           buttonClassName({ variant: "board-secondary" }),
           "focus-visible:ring-offset-board",
         )}
       >
-        <LogIn className={iconClass} aria-hidden />
-        Sign in
+        <UserPlus className={iconClass} aria-hidden />
+        Sign up
       </Link>
     </div>
   );

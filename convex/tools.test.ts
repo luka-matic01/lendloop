@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { api } from "./_generated/api";
+import { AuthErrorCode } from "./lib/errors";
 import {
   firstBoardPage,
   firstMyListingsPage,
@@ -10,6 +11,7 @@ import {
 import {
   ADMIN_EMAIL,
   createConvexTest,
+  errorCode,
   provisionUser,
   useAdminBootstrapEnv,
   useBorrowTestClock,
@@ -344,5 +346,53 @@ describe("tools", () => {
     expect(row?.bookedRanges).toEqual([
       { startDate: "2026-10-15", endDate: "2026-10-18" },
     ]);
+  });
+
+  it("blocks listing edit and remove while an approved borrow is overdue", async () => {
+    const t = createConvexTest();
+    const { session: lenderSession } = await provisionUser(
+      t,
+      "lender@test.com",
+    );
+    const { session: borrowerSession } = await provisionUser(
+      t,
+      "borrower@test.com",
+    );
+
+    const toolId = await lenderSession.mutation(api.tools.create, {
+      name: "Circular saw",
+      category: "power_tools",
+      condition: "good",
+      description: "",
+    });
+
+    const requestId = await borrowerSession.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-10-15",
+      endDate: "2026-10-20",
+    });
+    await lenderSession.mutation(api.loanRequests.approve, { requestId });
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(requestId, { endDate: "2026-10-14" });
+    });
+
+    await expect(
+      lenderSession.mutation(api.tools.update, {
+        toolId,
+        name: "Renamed saw",
+        category: "power_tools",
+        condition: "good",
+        description: "",
+      }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
+    );
+
+    await expect(
+      lenderSession.mutation(api.tools.remove, { toolId }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
+    );
   });
 });

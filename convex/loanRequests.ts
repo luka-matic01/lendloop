@@ -176,6 +176,13 @@ export const approve = mutation({
       authError(AuthErrorCode.NOT_FOUND, "Tool not found");
     }
 
+    if (!tool.isAvailable) {
+      authError(
+        AuthErrorCode.VALIDATION_ERROR,
+        "This tool is not currently available to borrow",
+      );
+    }
+
     const approved = await approvedLoansForTool(ctx, tool._id);
     assertNoOverlapWithApprovedLoans(
       approved,

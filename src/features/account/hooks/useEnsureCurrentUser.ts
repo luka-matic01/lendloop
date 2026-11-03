@@ -16,10 +16,12 @@ export type EnsureCurrentUserPhase =
   | "error"
   | "ready";
 
-export function useEnsureCurrentUser(): {
+export type AccountSyncState = {
   phase: EnsureCurrentUserPhase;
   errorMessage: string | null;
-} {
+};
+
+export function useEnsureCurrentUser(): AccountSyncState {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const { sessionId } = useAuth();
   const { user, isLoaded: userLoaded } = useUser();
@@ -32,30 +34,40 @@ export function useEnsureCurrentUser(): {
       return;
     }
 
+    let cancelled = false;
+    setSyncPhase("idle");
+    setErrorMessage(null);
+
     const primaryEmail = user?.primaryEmailAddress?.emailAddress;
-    const primaryEmailVerified =
-      user?.primaryEmailAddress?.verification?.status === "verified";
 
     void ensureCurrentUser({
       ...(primaryEmail ? { primaryEmail } : {}),
-      primaryEmailVerified,
     })
-      .then(() => setSyncPhase("ready"))
+      .then(() => {
+        if (!cancelled) {
+          setSyncPhase("ready");
+        }
+      })
       .catch((err: unknown) => {
-        setSyncPhase("error");
-        setErrorMessage(
-          err instanceof Error
-            ? err.message
-            : ACCOUNT_MESSAGES.syncFailedFallback,
-        );
+        if (!cancelled) {
+          setSyncPhase("error");
+          setErrorMessage(
+            err instanceof Error
+              ? err.message
+              : ACCOUNT_MESSAGES.syncFailedFallback,
+          );
+        }
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     authLoading,
     isAuthenticated,
     userLoaded,
     sessionId,
     user?.primaryEmailAddress?.emailAddress,
-    user?.primaryEmailAddress?.verification?.status,
     ensureCurrentUser,
   ]);
 

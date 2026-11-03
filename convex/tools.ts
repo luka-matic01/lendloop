@@ -24,8 +24,7 @@ import {
   bookedRangesByToolIds,
   loanOutUntilFromRanges,
   pendingRequestCountByToolForLender,
-  toolHasInProgressApprovedLoan,
-  toolHasUpcomingApprovedReservation,
+  toolHasOpenApprovedLoan,
 } from "./lib/loans";
 import {
   toolCategoryValidator,
@@ -155,23 +154,15 @@ async function hydrateBoardPage(
   });
 }
 
-const ACTIVE_LOAN_LISTING_MESSAGE =
-  "Cannot modify listing while tool has an active loan";
-const UPCOMING_RESERVATION_LISTING_MESSAGE =
-  "Cannot modify listing while tool has an upcoming reservation";
+const OPEN_LOAN_LISTING_MESSAGE =
+  "Cannot modify listing while an approved borrow is still open";
 
 async function rejectIfToolListingLockedForEdit(
   ctx: MutationCtx,
   toolId: Id<"tools">,
 ) {
-  if (await toolHasInProgressApprovedLoan(ctx, toolId)) {
-    authError(AuthErrorCode.VALIDATION_ERROR, ACTIVE_LOAN_LISTING_MESSAGE);
-  }
-  if (await toolHasUpcomingApprovedReservation(ctx, toolId)) {
-    authError(
-      AuthErrorCode.VALIDATION_ERROR,
-      UPCOMING_RESERVATION_LISTING_MESSAGE,
-    );
+  if (await toolHasOpenApprovedLoan(ctx, toolId)) {
+    authError(AuthErrorCode.VALIDATION_ERROR, OPEN_LOAN_LISTING_MESSAGE);
   }
 }
 

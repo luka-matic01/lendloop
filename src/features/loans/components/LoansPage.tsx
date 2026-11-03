@@ -25,7 +25,12 @@ export function LoansPage() {
   const loanActions = useLoanActions();
 
   const me = useQuery(api.users.me, isReady ? {} : "skip");
-  const isAdmin = me?.role === "admin";
+  const adminAccess =
+    !isReady || me === undefined
+      ? "loading"
+      : me.role === "admin"
+        ? "admin"
+        : "hidden";
 
   if (phase === "error") {
     return (
@@ -47,7 +52,9 @@ export function LoansPage() {
           {LOANS_COPY.pageTitle}
         </h1>
         <p className="max-w-xl text-sm text-ink-muted sm:text-base">
-          {isAdmin ? LOANS_COPY.pageDescriptionAdmin : LOANS_COPY.pageDescription}
+          {adminAccess === "admin"
+            ? LOANS_COPY.pageDescriptionAdmin
+            : LOANS_COPY.pageDescription}
         </p>
       </header>
 
@@ -56,7 +63,7 @@ export function LoansPage() {
       <LoansPastSection isReady={isReady} />
       <AllLoansSection
         isReady={isReady}
-        isAdmin={isAdmin ?? false}
+        adminAccess={adminAccess}
         loanActions={loanActions}
       />
       <MarkReturnedConfirmModal loanActions={loanActions} />

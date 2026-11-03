@@ -15,7 +15,7 @@ import {
   BOARD_PAGE_SIZE,
   MY_LISTINGS_PAGE_SIZE,
 } from "../constants/pagination";
-import type { BoardTool, MyTool } from "../types/tools";
+import type { MyTool } from "../types/tools";
 import { useStaleTabResults } from "./useStaleTabResults";
 
 type ListingConfirmRemove = {
@@ -163,12 +163,9 @@ export function useToolsPage() {
     [toast],
   );
 
-  const requestToggleListingAvailability = useCallback(
-    (tool: MyTool) => {
-      setListingConfirm({ type: "availability", tool });
-    },
-    [toast],
-  );
+  const requestToggleListingAvailability = useCallback((tool: MyTool) => {
+    setListingConfirm({ type: "availability", tool });
+  }, []);
 
   const cancelListingConfirm = useCallback(() => {
     if (confirmSubmitting) {

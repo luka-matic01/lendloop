@@ -222,6 +222,68 @@ describe("automation", () => {
     expect(result.loans.map((row) => row.loanRequestId)).toEqual([requestId]);
   });
 
+  it("rejects reminder write-backs for invalid loan or idempotency key", async () => {
+    const t = createConvexTest();
+    const { session: lender } = await provisionUser(t, "lender@test.com");
+    const { session: borrower } = await provisionUser(t, "borrower@test.com");
+
+    const toolId = await lender.mutation(api.tools.create, {
+      name: "Tile cutter",
+      category: "other",
+      condition: "good",
+      description: "",
+    });
+
+    const requestId = await borrower.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-01",
+      endDate: "2026-11-03",
+    });
+    await lender.mutation(api.loanRequests.approve, { requestId });
+
+    const badKeyBody = JSON.stringify({
+      idempotencyKey: "overdue:wrong:2026-11-05",
+      loanRequestId: requestId,
+      status: "sent",
+    });
+    const badKeySig = await signPayload(TEST_SECRET, badKeyBody);
+    expect(
+      (
+        await t.fetch("/automation/reminder-sent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-LendLoop-Signature": badKeySig,
+          },
+          body: badKeyBody,
+        })
+      ).status,
+    ).toBe(400);
+
+    await t.run(async (ctx) => {
+      await ctx.db.patch(requestId, { status: "returned" });
+    });
+
+    const returnedBody = JSON.stringify({
+      idempotencyKey: `overdue:${requestId}:2026-11-05`,
+      loanRequestId: requestId,
+      status: "sent",
+    });
+    const returnedSig = await signPayload(TEST_SECRET, returnedBody);
+    expect(
+      (
+        await t.fetch("/automation/reminder-sent", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-LendLoop-Signature": returnedSig,
+          },
+          body: returnedBody,
+        })
+      ).status,
+    ).toBe(404);
+  });
+
   it("sets requestNotifiedAt when the lender borrow alert succeeds", async () => {
     const t = createConvexTest();
     const { session: lender } = await provisionUser(t, "lender@test.com");
