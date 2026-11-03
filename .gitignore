@@ -37,9 +37,11 @@ yarn-error.log*
 # n8n local persistence
 /n8n-data/
 
-# Cursor (local AI config — keep off public repo)
+# Local AI config (never publish — rules + installed skills)
 .cursor/rules/
 .cursor/mcp.json
+.claude/skills/
+.agents/skills/
 
 # vercel
 .vercel
