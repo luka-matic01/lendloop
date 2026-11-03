@@ -1,93 +1,96 @@
 import { auth } from "@clerk/nextjs/server";
-import { ArrowLeftRight, LogIn, UserPlus, Wrench } from "lucide-react";
+import {
+  ArrowLeftRight,
+  LogIn,
+  UserPlus,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { buttonClassName } from "@/components/ui/Button";
+import { buttonClassName, type ButtonVariant } from "@/components/ui/Button";
 import { ROUTES } from "@/constants";
 import { cn } from "@/lib/utils";
 
 const iconClass = "size-4 shrink-0";
 const actionRowClass = "flex flex-wrap items-center gap-3";
 
-function HomeHeroAuthActionsFallback() {
+type HeroAuthAction = {
+  href: string;
+  variant: ButtonVariant;
+  icon: LucideIcon;
+  label: string;
+};
+
+const signedOutActions: HeroAuthAction[] = [
+  { href: ROUTES.signIn, variant: "primary", icon: LogIn, label: "Sign in" },
+  {
+    href: ROUTES.signUp,
+    variant: "board-secondary",
+    icon: UserPlus,
+    label: "Sign up",
+  },
+];
+
+const signedInActions: HeroAuthAction[] = [
+  { href: ROUTES.tools, variant: "primary", icon: Wrench, label: "Tools" },
+  {
+    href: ROUTES.loans,
+    variant: "board-secondary",
+    icon: ArrowLeftRight,
+    label: "Loans",
+  },
+];
+
+function HeroAuthActionRow({
+  actions,
+  placeholder = false,
+}: {
+  actions: HeroAuthAction[];
+  placeholder?: boolean;
+}) {
   return (
-    <div className={actionRowClass} aria-hidden>
-      <span
-        className={cn(
-          buttonClassName({ variant: "primary" }),
-          "pointer-events-none invisible select-none",
-        )}
-      >
-        <LogIn className={iconClass} aria-hidden />
-        Sign in to lend or borrow
-      </span>
-      <span
-        className={cn(
-          buttonClassName({ variant: "board-secondary" }),
-          "pointer-events-none invisible select-none",
-        )}
-      >
-        <UserPlus className={iconClass} aria-hidden />
-        Sign up
-      </span>
+    <div className={actionRowClass} {...(placeholder ? { "aria-hidden": true } : {})}>
+      {actions.map(({ href, variant, icon: Icon, label }) => {
+        const className = cn(
+          buttonClassName({ variant }),
+          placeholder
+            ? "pointer-events-none invisible select-none"
+            : "focus-visible:ring-offset-board",
+        );
+
+        if (placeholder) {
+          return (
+            <span key={label} className={className}>
+              <Icon className={iconClass} aria-hidden />
+              {label}
+            </span>
+          );
+        }
+
+        return (
+          <Link key={href} href={href} className={className}>
+            <Icon className={iconClass} aria-hidden />
+            {label}
+          </Link>
+        );
+      })}
     </div>
   );
+}
+
+function HomeHeroAuthActionsFallback() {
+  return <HeroAuthActionRow actions={signedOutActions} placeholder />;
 }
 
 async function HomeHeroAuthActionsContent() {
   const { isAuthenticated } = await auth();
 
-  if (isAuthenticated) {
-    return (
-      <div className={actionRowClass}>
-        <Link
-          href={ROUTES.tools}
-          className={cn(
-            buttonClassName({ variant: "primary" }),
-            "focus-visible:ring-offset-board",
-          )}
-        >
-          <Wrench className={iconClass} aria-hidden />
-          Tools
-        </Link>
-        <Link
-          href={ROUTES.loans}
-          className={cn(
-            buttonClassName({ variant: "board-secondary" }),
-            "focus-visible:ring-offset-board",
-          )}
-        >
-          <ArrowLeftRight className={iconClass} aria-hidden />
-          Loans
-        </Link>
-      </div>
-    );
-  }
-
   return (
-    <div className={actionRowClass}>
-      <Link
-        href={ROUTES.signIn}
-        className={cn(
-          buttonClassName({ variant: "primary" }),
-          "focus-visible:ring-offset-board",
-        )}
-      >
-        <LogIn className={iconClass} aria-hidden />
-        Sign in to lend or borrow
-      </Link>
-      <Link
-        href={ROUTES.signUp}
-        className={cn(
-          buttonClassName({ variant: "board-secondary" }),
-          "focus-visible:ring-offset-board",
-        )}
-      >
-        <UserPlus className={iconClass} aria-hidden />
-        Sign up
-      </Link>
-    </div>
+    <HeroAuthActionRow
+      actions={isAuthenticated ? signedInActions : signedOutActions}
+    />
   );
 }
 
