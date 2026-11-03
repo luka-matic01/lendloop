@@ -7,14 +7,15 @@ import { Skeleton } from "./Skeleton";
 /**
  * Shared list row for “Your listings” and loans.
  *
- * Title line (optional `corner` or `headerActions` on the same line), then meta
- * and details. With `actionsPlacement="bodyEnd"`, actions sit under meta on
- * small screens and sit to the right of meta+details on `sm+`, vertically
- * centered with that block. When the title row has `headerActions` or `corner`,
- * body actions never share a row with the title — only with meta+details.
- * Icon-only `headerActions` with meta/details but no body-end actions sit in a
- * trailing column, vertically centered with the title+meta+details block.
- * `"below"` keeps actions under details at all breakpoints. Optional `footer`.
+ * Slots: title, meta, details, footer, optional `corner`, icon `headerActions`,
+ * and `actions` (`actionsPlacement`: `"below"` | `"bodyEnd"`).
+ *
+ * Layout is chosen from props:
+ * - **Loan band** — body-end actions, no icon header: actions trail title+meta+details (`sm+` centered).
+ * - **Listing aside** — icon header, no `corner`: icons trail the text block (all breakpoints).
+ *   If body-end CTAs exist without a `details` row (e.g. reservation only), icons and CTAs
+ *   share that trail on `sm+`; below `sm`, title keeps icons and CTAs sit under meta.
+ * - **Split** — `corner` and/or icons with body-end actions plus a `details` row: CTAs align with meta/details.
  */
 export const LIST_ROW_TITLE_CLASS =
   "min-w-0 [overflow-wrap:anywhere] font-display text-lg font-bold leading-tight text-ink line-clamp-2 sm:text-xl";
@@ -98,18 +99,22 @@ export function ListRow({
 
   const bodyEndActions =
     actions && actionsPlacement === "bodyEnd" && (meta || details);
-  /** Title-only row: meta+details and actions share one horizontal band (loans). */
-  const centerBodyEndActions =
-    bodyEndActions && !corner && !headerActions;
-  /** Icon actions centered with full text block (e.g. listing row without CTAs). */
-  const asideHeaderActions =
-    headerActions &&
-    !corner &&
-    (meta || details) &&
-    !bodyEndActions;
-  /** Title already has corner and/or icon actions — actions pair with meta only. */
+
+  const loanBodyEndBand = bodyEndActions && !corner && !headerActions;
+
+  /** Icons + body CTAs in one trailing column on `sm+` (meta only — no details). */
+  const listingAsideWithCtas = Boolean(
+    headerActions && !corner && bodyEndActions && !details,
+  );
+
+  const listingAside =
+    Boolean(headerActions && !corner && (meta || details)) &&
+    (!bodyEndActions || listingAsideWithCtas);
+
   const splitBodyEndActions =
-    bodyEndActions && (corner !== undefined || headerActions !== undefined);
+    bodyEndActions &&
+    (corner !== undefined || headerActions !== undefined) &&
+    !listingAsideWithCtas;
 
   const metaBlock = meta ? (
     <div
@@ -134,9 +139,9 @@ export function ListRow({
     </div>
   ) : null;
 
-  const actionsWrapClass = cn(
+  const bodyActionsWrapClass = cn(
     "flex flex-wrap items-center gap-2 pt-1.5 sm:pt-0",
-    centerBodyEndActions && "sm:shrink-0 sm:justify-end",
+    loanBodyEndBand && "sm:shrink-0 sm:justify-end",
     splitBodyEndActions &&
       "sm:col-start-2 sm:row-start-1 sm:row-span-2 sm:justify-end sm:self-center sm:shrink-0",
   );
@@ -145,49 +150,90 @@ export function ListRow({
     <div className="flex shrink-0 items-center gap-1">{headerActions}</div>
   ) : null;
 
+  const listingAsideTrailEl = listingAsideWithCtas ? (
+    <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
+      {headerActionsEl}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {actions}
+      </div>
+    </div>
+  ) : (
+    headerActionsEl
+  );
+
+  const textStack = (opts?: { includeDetails?: boolean }) => (
+    <div className={cn("min-w-0 flex-1", stackGap)}>
+      {titleEl}
+      {metaBlock}
+      {opts?.includeDetails !== false && !listingAsideWithCtas
+        ? detailsBlock
+        : null}
+    </div>
+  );
+
+  let body: ReactNode;
+
+  if (loanBodyEndBand) {
+    body = (
+      <div className="flex min-w-0 flex-col gap-y-1.5 sm:flex-row sm:items-center sm:gap-x-3">
+        <div className={cn("min-w-0 flex-1", stackGap)}>
+          {titleRow}
+          {metaBlock}
+          {detailsBlock}
+        </div>
+        <div className={bodyActionsWrapClass}>{actions}</div>
+      </div>
+    );
+  } else if (listingAside) {
+    body = listingAsideWithCtas ? (
+      <>
+        <div className={cn("min-w-0 sm:hidden", stackGap)}>
+          {titleRow}
+          {metaBlock}
+          <div className="flex flex-wrap items-center gap-2 pt-1.5">
+            {actions}
+          </div>
+        </div>
+        <div className="hidden min-w-0 items-center gap-x-3 sm:flex">
+          {textStack({ includeDetails: false })}
+          {listingAsideTrailEl}
+        </div>
+      </>
+    ) : (
+      <div className="flex min-w-0 items-center gap-x-3">
+        {textStack()}
+        {listingAsideTrailEl}
+      </div>
+    );
+  } else {
+    body = (
+      <div className={cn("min-w-0", stackGap)}>
+        {titleRow}
+
+        {splitBodyEndActions ? (
+          <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            {metaBlock}
+            {detailsBlock}
+            <div className={bodyActionsWrapClass}>{actions}</div>
+          </div>
+        ) : (
+          <>
+            {metaBlock}
+            {detailsBlock}
+            {actions && actionsPlacement === "below" ? (
+              <div className="flex flex-wrap items-center gap-2 pt-1.5 sm:pt-2">
+                {actions}
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={cn("w-full min-w-0", padY, className)}>
-      {centerBodyEndActions ? (
-        <div className="flex min-w-0 flex-col gap-y-1.5 sm:flex-row sm:items-center sm:gap-x-3">
-          <div className={cn("min-w-0 flex-1", stackGap)}>
-            {titleRow}
-            {metaBlock}
-            {detailsBlock}
-          </div>
-          <div className={actionsWrapClass}>{actions}</div>
-        </div>
-      ) : asideHeaderActions ? (
-        <div className="flex min-w-0 items-center gap-x-3">
-          <div className={cn("min-w-0 flex-1", stackGap)}>
-            {titleEl}
-            {metaBlock}
-            {detailsBlock}
-          </div>
-          {headerActionsEl}
-        </div>
-      ) : (
-        <div className={cn("min-w-0", stackGap)}>
-          {titleRow}
-
-          {splitBodyEndActions ? (
-            <div className="grid grid-cols-1 gap-x-3 gap-y-1.5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-              {metaBlock}
-              {detailsBlock}
-              <div className={actionsWrapClass}>{actions}</div>
-            </div>
-          ) : (
-            <>
-              {metaBlock}
-              {detailsBlock}
-              {actions && actionsPlacement === "below" ? (
-                <div className="flex flex-wrap items-center gap-2 pt-1.5 sm:pt-2">
-                  {actions}
-                </div>
-              ) : null}
-            </>
-          )}
-        </div>
-      )}
+      {body}
 
       {footer ? (
         <div className={cn(compact ? "mt-2" : "mt-2 sm:mt-2.5")}>{footer}</div>
