@@ -2,8 +2,6 @@
 
 Neighborhood tool-lending board: list tools, request borrows, approve or decline, mark returns. **Convex** holds data and rules; **Clerk** handles sign-in; **n8n** sends notifications and overdue reminders.
 
-Tagline: *Borrow what you need. Lend what you don’t.*
-
 ## Stack
 
 - Next.js (App Router), TypeScript, Tailwind
