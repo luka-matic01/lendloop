@@ -1,6 +1,6 @@
 # n8n
 
-Three exported workflows integrate Convex with notifications and overdue reminders. Secrets live in env only — never in JSON.
+Three exported workflows integrate Convex with notifications and overdue reminders. Secrets live in env only, never in JSON.
 
 | File | n8n name | Role |
 |------|----------|------|
@@ -13,7 +13,7 @@ Three exported workflows integrate Convex with notifications and overdue reminde
 | Variable | Where | Purpose |
 |----------|--------|---------|
 | `WEBHOOK_HMAC_SECRET` | Convex + `.env.local` | Shared HMAC key (must match) |
-| `N8N_REQUEST_WEBHOOK_URL` | Convex (`npx convex env set …`) | **Public HTTPS** URL for workflow **01** — not `localhost` when Convex runs in the cloud |
+| `N8N_REQUEST_WEBHOOK_URL` | Convex (`npx convex env set …`) | **Public HTTPS** URL for workflow **01**, not `localhost` when Convex runs in the cloud |
 | `CONVEX_SITE_URL` | `.env.local` | `https://<deployment>.convex.site` for workflow **02** |
 | `N8N_ENCRYPTION_KEY` | `.env.local` | n8n encryption |
 | `SIMULATE_DELIVERY_FAIL=1` | `.env.local` (optional) | Force deliver step to fail in **01** or **02** |
@@ -26,13 +26,13 @@ docker compose up -d n8n
 
 Open [http://localhost:5678](http://localhost:5678). Import the three JSON files, then activate **03** → **01** → **02**. Workflows **01** and **02** already point at **03** as their error workflow.
 
-Implementation details for agents: [`.cursor/rules/n8n-automation.mdc`](../.cursor/rules/n8n-automation.mdc). HTTP routes: [`convex/http.ts`](../convex/http.ts).
+HTTP routes and HMAC contracts: [`convex/http.ts`](../convex/http.ts).
 
 ## Workflow **01** and ngrok (typical dev setup)
 
 If Convex is deployed (cloud) and n8n runs locally via Docker, **workflow 01 will not work without a tunnel**. Cloud Convex cannot POST to `http://localhost:5678`. The app will still create `automationLogs` rows with `request_notification` / `failed` and detail **`HTTP 404`** (or connection errors) until the webhook URL is reachable.
 
-Workflow **02** does **not** need a tunnel — n8n calls **out** to `CONVEX_SITE_URL`.
+Workflow **02** does **not** need a tunnel; n8n calls **out** to `CONVEX_SITE_URL`.
 
 1. Start n8n and **activate** workflow **01** (inactive webhooks return 404 on the production path).
 2. Expose port **5678** with [ngrok](https://ngrok.com/) or [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/local-management/create-local-tunnel/):
@@ -52,7 +52,7 @@ npx convex env set N8N_REQUEST_WEBHOOK_URL 'https://YOUR_TUNNEL_HOST/webhook/len
 
 5. When the tunnel hostname changes (free ngrok sessions), run step 3 again.
 
-**Sanity check:** from any machine on the internet (not your laptop shell to localhost), a POST without HMAC should hit n8n — you should **not** get 404 if **01** is active and the path is correct. With HMAC, workflow **01** should execute in n8n when you create or update a borrow request in the app.
+**Sanity check:** from any machine on the internet (not your laptop shell to localhost), a POST without HMAC should hit n8n, and you should **not** get 404 if **01** is active and the path is correct. With HMAC, workflow **01** should execute in n8n when you create or update a borrow request in the app.
 
 ### `HTTP 404` on `request_notification`
 
@@ -79,7 +79,7 @@ Header: `X-LendLoop-Signature` = hex(HMAC-SHA256(`WEBHOOK_HMAC_SECRET`, message)
 
 **Overdue list:** Loans with `sent` for that day’s key are omitted. `failed` stays eligible same day; Convex can upgrade `failed` → `sent` on retry.
 
-**Logs:** Request notifications are recorded in Convex after the n8n HTTP result (`request_notification`). Reminders are recorded via the reminder POST (`overdue_reminder`). Loan rows read `automationLogs` — UI copy is in the app, not in n8n `detail`. POST `detail` only when `status: failed`.
+**Logs:** Request notifications are recorded in Convex after the n8n HTTP result (`request_notification`). Reminders are recorded via the reminder POST (`overdue_reminder`). Loan rows read `automationLogs`; UI copy is in the app, not in n8n `detail`. POST `detail` only when `status: failed`.
 
 ## Verify
 

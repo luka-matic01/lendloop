@@ -35,7 +35,7 @@ npx convex env set WEBHOOK_HMAC_SECRET "$(openssl rand -hex 32)"
 
 Copy `WEBHOOK_HMAC_SECRET` and `CONVEX_SITE_URL` into `.env.local` for Docker (see `.env.example`).
 
-**Workflow 01 (request notifications):** set `N8N_REQUEST_WEBHOOK_URL` in Convex to your n8n webhook URL. Cloud Convex + local n8n needs an HTTPS tunnel — see [n8n/README.md](n8n/README.md#cloud-convex-local-n8n).
+**Workflow 01 (request notifications):** set `N8N_REQUEST_WEBHOOK_URL` in Convex to your n8n webhook URL. Cloud Convex + local n8n needs an HTTPS tunnel; see [n8n/README.md](n8n/README.md#cloud-convex-local-n8n).
 
 ### 2. Next.js app
 
@@ -98,7 +98,7 @@ npm test
 - **Public home:** `tools.listPublic` returns only tool name and category (no owner).
 - **App routes:** Clerk `auth.protect()` on `(app)/layout.tsx`; lending rules enforced in Convex (`requireUser`, `requireAdmin`, `assertOwner`, `requireToolAccess`).
 - **Automation HTTP:** No user session; `X-LendLoop-Signature` = hex(HMAC-SHA256(`WEBHOOK_HMAC_SECRET`, raw body)). GET overdue list signs the path `/automation/overdue-loans` only.
-- **n8n payloads:** Recipient email/name and loan fields only—no Clerk tokens or full user records.
+- **n8n payloads:** Recipient email/name and loan fields only, with no Clerk tokens or full user records.
 - **Idempotency:** `automationLogs.idempotencyKey` unique index; reminder keys `overdue:{loanRequestId}:{YYYY-MM-DD}`.
 - **Secrets:** Never committed in workflow JSON; use `$env` and Convex env.
 
@@ -114,5 +114,5 @@ npm test
 
 After seed, if `INITIAL_ADMIN_EMAIL` matches your signed-in user:
 
-- One **overdue approved** loan (you borrow Maria’s circular saw)—for workflow 02.
-- One **pending incoming** request on your demo cordless drill—from Maria.
+- One **overdue approved** loan (you borrow Maria’s circular saw), for workflow 02.
+- One **pending incoming** request on your demo cordless drill, from Maria.
