@@ -7,7 +7,7 @@ type LoanRowSkeletonProps = {
   actionCount?: 0 | 1 | 2;
 };
 
-/** Matches {@link LoanRow} — meta row with trailing action buttons. */
+/** Matches {@link LoanRow}: meta row with trailing action buttons. */
 export function LoanRowSkeleton({ actionCount = 0 }: LoanRowSkeletonProps) {
   return (
     <ListRowSkeleton actionCount={actionCount} actionsPlacement="bodyEnd" />

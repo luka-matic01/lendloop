@@ -1,6 +1,6 @@
 import type { Doc } from "../_generated/dataModel";
 
-/** Who is viewing the list — affects which timestamp represents a pending request. */
+/** Who is viewing the list: affects which timestamp represents a pending request. */
 export type LoanListSortPerspective = "borrower" | "lender" | "admin";
 
 export type LoanActivityTimestamps = Pick<

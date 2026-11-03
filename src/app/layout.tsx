@@ -19,7 +19,7 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} — ${APP_TAGLINE}`,
+  title: `${APP_NAME} · ${APP_TAGLINE}`,
   description:
     "Neighborhood tool-lending board with role-based access control and automated n8n workflows.",
 };

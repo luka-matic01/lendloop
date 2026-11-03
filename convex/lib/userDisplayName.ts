@@ -25,7 +25,7 @@ export function resolveAccountEmail(opts: {
   return "";
 }
 
-/** Persist only a real Clerk display name — never email or the generic fallback. */
+/** Persist only a real Clerk display name: never email or the generic fallback. */
 export function clerkDisplayName(raw: string | undefined): string {
   const trimmed = raw?.trim() ?? "";
   if (!trimmed || trimmed === GENERIC_USER_LABEL) {

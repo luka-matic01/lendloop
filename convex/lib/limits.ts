@@ -4,7 +4,7 @@ export const LIST_PAGE_SIZE = 100;
 /** Default page size for the neighbor tool board (client + server). */
 export const BOARD_PAGE_SIZE = 15;
 
-/** Raw pool for homepage public teaser — client picks six with category spread. */
+/** Raw pool for homepage public teaser: client picks six with category spread. */
 export const HOME_PUBLIC_POOL_SIZE = 36;
 
 /** Default page size for the signed-in owner's listings. */

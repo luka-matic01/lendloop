@@ -6,7 +6,7 @@ import { formatRelativeTimeAgo } from "@/lib/formatRelativeTimeAgo";
 
 const TICK_MS = 30_000;
 
-/** Live-updating label for a past timestamp — uses `formatRelativeTimeAgo`. */
+/** Live-updating label for a past timestamp: uses `formatRelativeTimeAgo`. */
 export function useRelativeTimeAgo(timestampMs: number): string {
   const [nowMs, setNowMs] = useState(() => Date.now());
 

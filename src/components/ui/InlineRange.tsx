@@ -10,7 +10,7 @@ type InlineRangeProps = {
   className?: string;
 };
 
-/** Inline “start … end” — typographic separators only (no icons). */
+/** Inline “start … end”: typographic separators only (no icons). */
 export function InlineRange({
   start,
   end,

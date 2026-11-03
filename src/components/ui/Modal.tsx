@@ -50,7 +50,7 @@ type ModalProps = {
   initialFocusRef?: RefObject<HTMLElement | null>;
 };
 
-/** Native `<dialog>` — bottom sheet below `md`, centered modal from `md` up. */
+/** Native `<dialog>`: bottom sheet below `md`, centered modal from `md` up. */
 export function Modal({
   open,
   onClose,

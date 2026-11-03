@@ -341,7 +341,7 @@ export const markReturned = mutation({
     if (!isBorrowPeriodStarted(request.startDate)) {
       authError(
         AuthErrorCode.VALIDATION_ERROR,
-        "The borrow period has not started yet — cancel the reservation instead",
+        "The borrow period has not started yet. Cancel the reservation instead.",
       );
     }
 
@@ -396,7 +396,7 @@ export const cancelApproved = mutation({
     if (isBorrowPeriodStarted(request.startDate)) {
       authError(
         AuthErrorCode.VALIDATION_ERROR,
-        "The borrow period has started — mark the tool returned instead",
+        "The borrow period has started. Mark the tool returned instead.",
       );
     }
 

@@ -12,7 +12,7 @@ type TooltipProps = {
   className?: string;
 };
 
-/** Hover label for icon-only controls — may differ from the control `aria-label`. */
+/** Hover label for icon-only controls: may differ from the control `aria-label`. */
 export function Tooltip({
   label,
   children,

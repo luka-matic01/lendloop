@@ -9,7 +9,7 @@ type IconButtonSize = "sm" | "md";
 type IconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   "aria-label": string;
-  /** Defaults to `aria-label` — shown on hover. */
+  /** Defaults to `aria-label`: shown on hover. */
   tooltip?: string;
   variant?: ButtonVariant;
   size?: IconButtonSize;

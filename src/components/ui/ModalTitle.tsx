@@ -18,7 +18,7 @@ const clampClass = cn(
   "min-w-0 break-words [overflow-wrap:anywhere] line-clamp-2",
 );
 
-/** Modal heading — up to two lines, then ellipsis (full title, including "?"). */
+/** Modal heading: up to two lines, then ellipsis (full title, including "?"). */
 export function ModalTitle({
   id,
   title,

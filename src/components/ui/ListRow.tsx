@@ -11,11 +11,11 @@ import { Skeleton } from "./Skeleton";
  * and `actions` (`actionsPlacement`: `"below"` | `"bodyEnd"`).
  *
  * Layout is chosen from props:
- * - **Loan band** — body-end actions, no icon header: actions trail title+meta+details (`sm+` centered).
- * - **Listing aside** — icon header, no `corner`: icons trail the text block (all breakpoints).
+ * - **Loan band**: body-end actions, no icon header: actions trail title+meta+details (`sm+` centered).
+ * - **Listing aside**: icon header, no `corner`: icons trail the text block (all breakpoints).
  *   If body-end CTAs exist without a `details` row (e.g. reservation only), icons and CTAs
  *   share that trail on `sm+`; below `sm`, title keeps icons and CTAs sit under meta.
- * - **Split** — `corner` and/or icons with body-end actions plus a `details` row: CTAs align with meta/details.
+ * - **Split**: `corner` and/or icons with body-end actions plus a `details` row: CTAs align with meta/details.
  */
 export const LIST_ROW_TITLE_CLASS =
   "min-w-0 [overflow-wrap:anywhere] font-display text-lg font-bold leading-tight text-ink line-clamp-2 sm:text-xl";
@@ -23,7 +23,7 @@ export const LIST_ROW_TITLE_CLASS =
 export const LIST_ROW_META_TEXT_CLASS =
   "flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-ink-muted";
 
-/** Full-width last row — due phrases, notices. */
+/** Full-width last row: due phrases, notices. */
 export const LIST_ROW_FOOTER_CLASS =
   "flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium leading-snug text-ink-muted";
 
@@ -38,7 +38,7 @@ type ListRowProps = {
   /** Trailing slot on the title row (e.g. relative activity time). */
   corner?: ReactNode;
   actions?: ReactNode;
-  /** `"bodyEnd"` — loan-style: meta+details left, actions right from `sm` up. */
+  /** `"bodyEnd"`: loan-style: meta+details left, actions right from `sm` up. */
   actionsPlacement?: "below" | "bodyEnd";
   density?: "default" | "compact";
   className?: string;
@@ -102,7 +102,7 @@ export function ListRow({
 
   const loanBodyEndBand = bodyEndActions && !corner && !headerActions;
 
-  /** Icons + body CTAs in one trailing column on `sm+` (meta only — no details). */
+  /** Icons + body CTAs in one trailing column on `sm+` (meta only: no details). */
   const listingAsideWithCtas = Boolean(
     headerActions && !corner && bodyEndActions && !details,
   );

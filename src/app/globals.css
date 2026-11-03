@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * LendLoop design tokens — single source of truth.
+ * LendLoop design tokens: single source of truth.
  * A tool-crib board: pine structure, golden hazard marks, cool mineral ground.
  * Components use semantic utilities (bg-canvas, text-ink, bg-board, …).
  */
@@ -33,7 +33,7 @@
   /* Placeholder fill for loading skeletons on surface panels */
   --ll-skeleton: #d0d8d3;
 
-  /* Tool category accents — card stripe + icon well (mineral crib palette) */
+  /* Tool category accents: card stripe + icon well (mineral crib palette) */
   --ll-cat-power: #9a7a00;
   --ll-cat-power-soft: #f2ebc8;
   --ll-cat-garden: #146b3a;
@@ -120,7 +120,7 @@ dialog:not([open]) {
   display: none !important;
 }
 
-/* `showModal()` defaults to fit-content — pin to the viewport, not the page column. */
+/* `showModal()` defaults to fit-content: pin to the viewport, not the page column. */
 dialog:modal {
   box-sizing: border-box;
   inset: 0;

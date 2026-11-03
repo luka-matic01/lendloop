@@ -1,4 +1,4 @@
-/** Compact “time ago” for activity footnotes — e.g. "just now", "15 min ago", "3h ago". */
+/** Compact “time ago” for activity footnotes: e.g. "just now", "15 min ago", "3h ago". */
 export function formatRelativeTimeAgo(
   timestampMs: number,
   nowMs = Date.now(),

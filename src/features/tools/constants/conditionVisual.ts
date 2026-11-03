@@ -15,7 +15,7 @@ export const conditionToneClass: Record<ToolConditionKey, string> = {
   needs_care: "border-warning bg-warning-soft text-warning",
 };
 
-/** Meta row on board cards — text only, no loud wells. */
+/** Meta row on board cards: text only, no loud wells. */
 export const conditionMetaTextClass: Record<ToolConditionKey, string> = {
   excellent: "text-ink",
   good: "text-ink-muted",

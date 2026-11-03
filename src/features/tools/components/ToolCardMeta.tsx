@@ -27,7 +27,7 @@ export type ToolListingState =
 type ToolCardCategoryBadgeProps = {
   category: ToolCategoryKey;
   iconWellClassName?: string;
-  /** List rows — icon well only; label stays for screen readers */
+  /** List rows: icon well only; label stays for screen readers */
   iconOnly?: boolean;
   className?: string;
 };
@@ -70,7 +70,7 @@ export function ToolCardCategoryBadge({
 
 type ToolListingStateBadgeProps = {
   state: ToolListingState;
-  /** List rows — icon only; label stays for screen readers */
+  /** List rows: icon only; label stays for screen readers */
   iconOnly?: boolean;
 };
 
@@ -150,12 +150,12 @@ export function ToolListingStateBadge({
 
 type ToolCardConditionMarkProps = {
   condition: ToolConditionKey;
-  /** List rows — icon well only; label stays for screen readers */
+  /** List rows: icon well only; label stays for screen readers */
   iconOnly?: boolean;
   className?: string;
 };
 
-/** Pairs with category badge — icon well + label, anchored on the meta row. */
+/** Pairs with category badge: icon well + label, anchored on the meta row. */
 export function ToolCardConditionMark({
   condition,
   iconOnly = false,
@@ -193,7 +193,7 @@ export function ToolCardConditionMark({
 type ToolCardStateRowProps = {
   category: ToolCategoryKey;
   condition: ToolConditionKey;
-  /** Only in “Your listings” — Paused / On board on the right */
+  /** Only in “Your listings”: Paused / On board on the right */
   listingState?: ToolListingState;
   className?: string;
 };

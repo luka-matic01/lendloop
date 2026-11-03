@@ -13,10 +13,10 @@ export const LOAN_STATUS_LABELS = {
 
 export type LoanStatusLabelKey = keyof typeof LOAN_STATUS_LABELS;
 
-/** Who is viewing the row — status copy is phrased for that side of the loan. */
+/** Who is viewing the row: status copy is phrased for that side of the loan. */
 export type LoanStatusPerspective = "incoming" | "mine" | "admin";
 
-/** Lender vs borrower — used for mark-returned confirm copy. */
+/** Lender vs borrower: used for mark-returned confirm copy. */
 export type LoanReturnPerspective = "incoming" | "mine";
 
 type LoanStatusBorrowDates = {
@@ -230,7 +230,7 @@ export const LOANS_COPY = {
   },
   /**
    * Loan row activity timeline (domain timestamps + admin-only automation failures).
-   * @param when from `formatLoanActivityWhen` — relative for most lines; calendar for reminders
+   * @param when from `formatLoanActivityWhen`: relative for most lines; calendar for reminders
    */
   loanActivityLine(args: {
     line:

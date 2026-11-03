@@ -1,6 +1,6 @@
 import type { ToolCategoryKey } from "./labels";
 
-/** Per-category card chrome — top stripe + icon well (see globals.css tokens). */
+/** Per-category card chrome: top stripe + icon well (see globals.css tokens). */
 export const TOOL_CATEGORY_ACCENT: Record<
   ToolCategoryKey,
   { stripe: string; iconWell: string }

@@ -15,7 +15,7 @@ type PublicToolCardProps = {
   className?: string;
 };
 
-/** Homepage teaser — name and category only (matches `listPublic` scope). */
+/** Homepage teaser: name and category only (matches `listPublic` scope). */
 export function PublicToolCard({ tool, className }: PublicToolCardProps) {
   const accent = TOOL_CATEGORY_ACCENT[tool.category];
 

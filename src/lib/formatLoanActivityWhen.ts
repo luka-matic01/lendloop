@@ -32,7 +32,7 @@ function formatLocalDayMonth(ms: number): string {
 }
 
 /**
- * When a reminder was delivered — calendar-anchored, not “just now”.
+ * When a reminder was delivered: calendar-anchored, not “just now”.
  * Avoids implying the loan itself just became overdue.
  */
 export function formatReminderSentWhen(
@@ -90,7 +90,7 @@ export function formatLoanActivityWhen(
   return formatRelativeTimeAgo(timestampMs, nowMs);
 }
 
-/** Visible top-right label — reminders get copy; everything else is just “when”. */
+/** Visible top-right label: reminders get copy; everything else is just “when”. */
 export function formatLoanActivityCornerVisible(
   line: LoanActivityWhenLine,
   when: string,

@@ -17,7 +17,7 @@ async function MastheadAccountInner() {
   );
 }
 
-/** Server-resolved account menu — no client auth placeholder; matches hero CTAs. */
+/** Server-resolved account menu: no client auth placeholder; matches hero CTAs. */
 export function MastheadAccount() {
   return (
     <Suspense fallback={null}>

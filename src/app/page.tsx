@@ -47,7 +47,7 @@ export default function HomePage() {
                   <span className="font-medium text-ink">
                     {PUBLIC_ENV_KEYS.convexUrl}
                   </span>
-                  {" — "}
+                  {" · "}
                   {hasConvex ? (
                     <span className="text-positive">Ready</span>
                   ) : (
@@ -58,7 +58,7 @@ export default function HomePage() {
                   <span className="font-medium text-ink">
                     {PUBLIC_ENV_KEYS.clerkPublishableKey}
                   </span>
-                  {" — "}
+                  {" · "}
                   {hasClerk ? (
                     <span className="text-positive">Ready</span>
                   ) : (

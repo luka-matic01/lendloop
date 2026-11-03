@@ -24,7 +24,7 @@ const NEUTRAL_ROW_CLASS = cn(LIST_ROW_BLEED_CLASS, "bg-surface");
 
 const SURFACE_CLASS: Record<ListRowSurface, string> = {
   default: NEUTRAL_ROW_CLASS,
-  /** Pending / requests — badge + actions on the default white row. */
+  /** Pending / requests: badge + actions on the default white row. */
   needs_action: NEUTRAL_ROW_CLASS,
   awaiting: NEUTRAL_ROW_CLASS,
   /** Approved loan / gear out on loan. */

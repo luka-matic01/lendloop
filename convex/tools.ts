@@ -175,7 +175,7 @@ async function rejectIfToolListingLockedForEdit(
   }
 }
 
-/** Homepage teaser pool — name and category only; client picks six with spread. */
+/** Homepage teaser pool: name and category only; client picks six with spread. */
 export const listPublic = query({
   args: {},
   returns: v.array(
