@@ -175,7 +175,7 @@ async function main() {
   ensureEnvLocal();
   if (!clerkReady()) {
     console.error(
-      "Fill Clerk keys and CLERK_JWT_ISSUER_DOMAIN in .env.local first (README step 1).",
+      "Fill Clerk keys and CLERK_JWT_ISSUER_DOMAIN in .env.local first (README local setup).",
     );
     process.exit(1);
   }
