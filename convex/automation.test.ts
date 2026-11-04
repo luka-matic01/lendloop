@@ -4,7 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { internal } from "./_generated/api";
 import { api } from "./_generated/api";
-import { signPayload, verifySignature } from "./lib/hmac";
+import {
+  buildSignedGetMessage,
+  signPayload,
+  TIMESTAMP_HEADER,
+  verifySignature,
+} from "./lib/hmac";
 import {
   createConvexTest,
   provisionUser,
@@ -40,6 +45,38 @@ describe("automation", () => {
     expect(response.status).toBe(401);
   });
 
+  it("rejects overdue GET with path-only signature", async () => {
+    const t = createConvexTest();
+    const today = "2026-10-15";
+    const pathWithQuery = `/automation/overdue-loans?today=${today}`;
+    const signature = await signPayload(TEST_SECRET, "/automation/overdue-loans");
+    const response = await t.fetch(pathWithQuery, {
+      headers: {
+        "X-LendLoop-Signature": signature,
+        [TIMESTAMP_HEADER]: String(Math.floor(Date.now() / 1000)),
+      },
+    });
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects overdue GET when today is out of range", async () => {
+    const t = createConvexTest();
+    const today = "9999-12-31";
+    const pathWithQuery = `/automation/overdue-loans?today=${today}`;
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = await signPayload(
+      TEST_SECRET,
+      buildSignedGetMessage(pathWithQuery, timestamp),
+    );
+    const response = await t.fetch(pathWithQuery, {
+      headers: {
+        "X-LendLoop-Signature": signature,
+        [TIMESTAMP_HEADER]: timestamp,
+      },
+    });
+    expect(response.status).toBe(400);
+  });
+
   it("returns overdue approved loans past end date", async () => {
     const t = createConvexTest();
     const { session: lender } = await provisionUser(t, "lender@test.com");
@@ -54,16 +91,24 @@ describe("automation", () => {
 
     const requestId = await borrower.mutation(api.loanRequests.create, {
       toolId,
-      startDate: "2026-11-01",
-      endDate: "2026-11-03",
+      startDate: "2026-10-15",
+      endDate: "2026-10-15",
     });
     await lender.mutation(api.loanRequests.approve, { requestId });
 
-    const today = "2026-11-05";
+    const today = "2026-10-16";
     const path = "/automation/overdue-loans";
-    const signature = await signPayload(TEST_SECRET, path);
-    const response = await t.fetch(`${path}?today=${today}`, {
-      headers: { "X-LendLoop-Signature": signature },
+    const pathWithQuery = `${path}?today=${today}`;
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const signature = await signPayload(
+      TEST_SECRET,
+      buildSignedGetMessage(pathWithQuery, timestamp),
+    );
+    const response = await t.fetch(pathWithQuery, {
+      headers: {
+        "X-LendLoop-Signature": signature,
+        [TIMESTAMP_HEADER]: timestamp,
+      },
     });
     expect(response.status).toBe(200);
     const data = (await response.json()) as {

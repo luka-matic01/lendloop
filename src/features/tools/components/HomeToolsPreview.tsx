@@ -69,6 +69,7 @@ function HomeToolsPublicPreview({
       ) : (
         <ToolCardGrid
           tools={preview}
+          itemKey={(tool, index) => `${tool.category}:${tool.name}:${index}`}
           renderCard={(tool) => (
             <PublicToolCard tool={tool} className="h-full" />
           )}

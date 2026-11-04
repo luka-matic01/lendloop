@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { api } from "./_generated/api";
 import { AuthErrorCode } from "./lib/errors";
@@ -50,7 +50,7 @@ describe("users RBAC", () => {
     expect(rowCount).toBe(1);
   });
 
-  it("accepts Clerk primary email when the JWT omits email", async () => {
+  it("ignores client primaryEmail when the JWT omits email", async () => {
     const t = createConvexTest();
     const session = t.withIdentity({
       name: "Neighbor",
@@ -62,12 +62,26 @@ describe("users RBAC", () => {
 
     const stored = await t.run(async (ctx) => ctx.db.get(userId));
     expect(stored).toMatchObject({
-      email: "borrower@example.com",
+      email: "",
       name: "",
     });
   });
 
-  it("promotes to admin only when bootstrap email is verified", async () => {
+  it("does not promote admin from client email when JWT is verified but omits email", async () => {
+    const t = createConvexTest();
+    const session = t.withIdentity({
+      emailVerified: true,
+    });
+
+    await session.mutation(api.users.ensureCurrentUser, {
+      primaryEmail: ADMIN_EMAIL,
+    });
+
+    const profile = await session.query(api.users.me, {});
+    expect(profile.role).toBe("user");
+  });
+
+  it("promotes to admin only when bootstrap email is verified on the JWT", async () => {
     const t = createConvexTest();
 
     const unverified = t.withIdentity({
@@ -98,6 +112,7 @@ describe("users RBAC", () => {
 
     await session.mutation(api.users.ensureCurrentUser, {
       primaryEmail: ADMIN_EMAIL,
+      primaryEmailVerified: true,
     });
 
     const profile = await session.query(api.users.me, {});
@@ -121,6 +136,46 @@ describe("users RBAC", () => {
     ).rejects.toSatisfy(
       (err: unknown) => errorCode(err) === AuthErrorCode.FORBIDDEN,
     );
+  });
+
+  it("promotes multiple bootstrap emails from env", async () => {
+    const t = createConvexTest();
+    vi.stubEnv("INITIAL_ADMIN_EMAIL", `${ADMIN_EMAIL},other-admin@lendloop.test`);
+
+    const other = t.withIdentity({
+      email: "other-admin@lendloop.test",
+      emailVerified: true,
+    });
+    await other.mutation(api.users.ensureCurrentUser, {});
+    expect((await other.query(api.users.me, {})).role).toBe("admin");
+  });
+
+  it("demotes admin via setUserRole", async () => {
+    const t = createConvexTest();
+
+    const asAdmin = t.withIdentity({
+      email: ADMIN_EMAIL,
+      emailVerified: true,
+    });
+    await asAdmin.mutation(api.users.ensureCurrentUser, {});
+
+    const asUser = t.withIdentity({
+      email: "member@lendloop.test",
+      emailVerified: true,
+    });
+    const memberId = await asUser.mutation(api.users.ensureCurrentUser, {});
+
+    await asAdmin.mutation(api.users.setUserRole, {
+      userId: memberId,
+      role: "admin",
+    });
+    expect((await asUser.query(api.users.me, {})).role).toBe("admin");
+
+    await asAdmin.mutation(api.users.setUserRole, {
+      userId: memberId,
+      role: "user",
+    });
+    expect((await asUser.query(api.users.me, {})).role).toBe("user");
   });
 
   it("allows admin setTrustedLender", async () => {

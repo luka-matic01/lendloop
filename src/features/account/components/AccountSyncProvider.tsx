@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import {
   createContext,
   useContext,
@@ -44,8 +44,7 @@ function derivePhase(
 
 function useAccountSyncState(): AccountSyncState {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
-  const { sessionId } = useAuth();
-  const { user, isLoaded: userLoaded } = useUser();
+  const { sessionId, isLoaded: authSessionLoaded } = useAuth();
   const ensureCurrentUser = useMutation(api.users.ensureCurrentUser);
   const [syncPhase, setSyncPhase] = useState<SyncPhase>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -61,7 +60,7 @@ function useAccountSyncState(): AccountSyncState {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (authLoading || !isAuthenticated || !userLoaded || !sessionId) {
+    if (authLoading || !isAuthenticated || !authSessionLoaded || !sessionId) {
       return;
     }
     if (syncedSessionRef.current === sessionId) {
@@ -72,11 +71,7 @@ function useAccountSyncState(): AccountSyncState {
     setSyncPhase("idle");
     setErrorMessage(null);
 
-    const primaryEmail = user?.primaryEmailAddress?.emailAddress;
-
-    void ensureCurrentUser({
-      ...(primaryEmail ? { primaryEmail } : {}),
-    })
+    void ensureCurrentUser({})
       .then(() => {
         if (!cancelled) {
           syncedSessionRef.current = sessionId;
@@ -100,9 +95,8 @@ function useAccountSyncState(): AccountSyncState {
   }, [
     authLoading,
     isAuthenticated,
-    userLoaded,
+    authSessionLoaded,
     sessionId,
-    user?.primaryEmailAddress?.emailAddress,
     ensureCurrentUser,
   ]);
 

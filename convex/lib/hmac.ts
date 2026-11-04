@@ -1,4 +1,14 @@
 export const SIGNATURE_HEADER = "X-LendLoop-Signature";
+export const TIMESTAMP_HEADER = "X-LendLoop-Timestamp";
+/** Reject signed GET requests older than this (seconds). */
+export const SIGNED_GET_MAX_SKEW_SEC = 300;
+
+export function buildSignedGetMessage(
+  pathWithQuery: string,
+  timestampSec: string,
+): string {
+  return `GET\n${pathWithQuery}\n${timestampSec}`;
+}
 
 async function hmacSha256Hex(secret: string, message: string): Promise<string> {
   const enc = new TextEncoder();
@@ -45,4 +55,26 @@ export async function verifySignature(
   }
   const expected = await signPayload(secret, body);
   return timingSafeEqualHex(expected, signatureHeader);
+}
+
+export async function verifySignedGet(
+  secret: string,
+  pathWithQuery: string,
+  timestampHeader: string | null,
+  signatureHeader: string | null,
+  nowSec = Math.floor(Date.now() / 1000),
+): Promise<boolean> {
+  const timestampRaw = timestampHeader?.trim();
+  if (!timestampRaw || !/^\d+$/.test(timestampRaw)) {
+    return false;
+  }
+  const timestampSec = Number(timestampRaw);
+  if (!Number.isFinite(timestampSec)) {
+    return false;
+  }
+  if (Math.abs(nowSec - timestampSec) > SIGNED_GET_MAX_SKEW_SEC) {
+    return false;
+  }
+  const message = buildSignedGetMessage(pathWithQuery, timestampRaw);
+  return verifySignature(secret, message, signatureHeader);
 }

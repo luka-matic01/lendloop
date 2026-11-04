@@ -70,7 +70,7 @@ Header: `X-LendLoop-Signature` = hex(HMAC-SHA256(`WEBHOOK_HMAC_SECRET`, message)
 | Direction | Call | HMAC message |
 |-----------|------|----------------|
 | Convex → n8n | POST `N8N_REQUEST_WEBHOOK_URL` | Raw JSON body |
-| n8n → Convex | GET `/automation/overdue-loans?today=YYYY-MM-DD` | Path `/automation/overdue-loans` only (`today` not signed) |
+| n8n → Convex | GET `/automation/overdue-loans?today=YYYY-MM-DD` | HMAC `GET\n/automation/overdue-loans?today=…\n<unix-sec>` + `X-LendLoop-Timestamp` |
 | n8n → Convex | POST `/automation/reminder-sent` | Raw JSON body |
 
 **Payload (Convex → n8n):** `event`, `idempotencyKey`, `loanRequestId`, `status`, `toolName`, `startDate`, `endDate`, `notify: { email, name, role }`.

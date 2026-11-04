@@ -11,6 +11,7 @@
 import type * as automation from "../automation.js";
 import type * as http from "../http.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_bootstrapAdmins from "../lib/bootstrapAdmins.js";
 import type * as lib_borrowDates from "../lib/borrowDates.js";
 import type * as lib_emailVerified from "../lib/emailVerified.js";
 import type * as lib_errors from "../lib/errors.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   automation: typeof automation;
   http: typeof http;
   "lib/auth": typeof lib_auth;
+  "lib/bootstrapAdmins": typeof lib_bootstrapAdmins;
   "lib/borrowDates": typeof lib_borrowDates;
   "lib/emailVerified": typeof lib_emailVerified;
   "lib/errors": typeof lib_errors;

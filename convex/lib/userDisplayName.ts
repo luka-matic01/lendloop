@@ -10,13 +10,12 @@ function normalizeEmail(raw: string | undefined): string {
   return raw?.trim().toLowerCase() ?? "";
 }
 
-/** Clerk/JWT email, then client primary email, then what we already stored. */
+/** JWT email, else what we already stored (never client-supplied). */
 export function resolveAccountEmail(opts: {
   jwtEmail?: string;
-  clientEmail?: string;
   storedEmail?: string;
 }): string {
-  for (const raw of [opts.jwtEmail, opts.clientEmail, opts.storedEmail]) {
+  for (const raw of [opts.jwtEmail, opts.storedEmail]) {
     const email = normalizeEmail(raw);
     if (email && EMAIL_PATTERN.test(email)) {
       return email;

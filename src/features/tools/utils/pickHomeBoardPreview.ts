@@ -8,9 +8,13 @@ const CATEGORY_ORDER = Object.keys(
   TOOL_CATEGORY_LABELS,
 ) as ToolCategoryKey[];
 
+function publicToolKey(tool: { name: string; category: ToolCategoryKey }) {
+  return `${tool.category}\0${tool.name}`;
+}
+
 /** Up to `limit` tools: try one per category first, then fill from the rest. */
 export function pickHomeBoardPreview<
-  T extends { _id: string; category: ToolCategoryKey },
+  T extends { name: string; category: ToolCategoryKey },
 >(tools: T[], limit = HOME_BOARD_PREVIEW_LIMIT): T[] {
   if (tools.length <= limit) {
     return tools;
@@ -27,10 +31,11 @@ export function pickHomeBoardPreview<
   const seen = new Set<string>();
 
   const take = (tool: T) => {
-    if (seen.has(tool._id) || picked.length >= limit) {
+    const key = publicToolKey(tool);
+    if (seen.has(key) || picked.length >= limit) {
       return;
     }
-    seen.add(tool._id);
+    seen.add(key);
     picked.push(tool);
   };
 

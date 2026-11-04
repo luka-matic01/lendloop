@@ -36,6 +36,7 @@ Set Convex deployment secrets (same HMAC secret everywhere):
 
 ```bash
 npx convex env set INITIAL_ADMIN_EMAIL you@example.com
+# Optional: comma-separated bootstrap admins — `you@example.com,partner@example.com`
 npx convex env set WEBHOOK_HMAC_SECRET "$(openssl rand -hex 32)"
 npx convex env set CLERK_JWT_ISSUER_DOMAIN https://your-instance.clerk.accounts.dev
 ```
@@ -98,7 +99,7 @@ npm run lint
 
 **Overdue flow:** n8n daily schedule → signed GET `/automation/overdue-loans` → mock reminder → signed POST `/automation/reminder-sent` → idempotent log + `lastReminderSentAt` (shown on loan rows).
 
-**User sync:** Signed-in clients call `users.ensureCurrentUser` once per session to upsert the Convex `users` row from the Clerk JWT (`tokenIdentifier`, name). Optional `primaryEmail` fills the address when the JWT omits `email`; **role is never taken from the client**—only from JWT verification + `INITIAL_ADMIN_EMAIL`.
+**User sync:** Signed-in clients call `users.ensureCurrentUser` once per session to upsert the Convex `users` row from the Clerk **`convex` JWT template** (`tokenIdentifier`, `email`, `name`). Admin bootstrap uses **JWT email + verification only**.
 
 ## Environment variables
 
@@ -115,10 +116,10 @@ npm run lint
 
 ## Security and data minimization
 
-- **Public home:** `tools.listPublic` returns tool id, name, and category only (no owner).
+- **Public home:** `tools.listPublic` returns **name and category only** (no ids, owner, or borrow metadata).
 - **App routes:** Clerk `auth.protect()` on `(app)/layout.tsx`; lending rules enforced in Convex (`requireUser`, `requireAdmin`, `assertOwner`, `requireToolAccess`).
-- **Admin bootstrap:** `INITIAL_ADMIN_EMAIL` is promoted only when the Clerk JWT includes a verified email (`emailVerified` / `email_verified`). Client-supplied verification flags are not accepted on the mutation.
-- **Automation HTTP:** No user session; `X-LendLoop-Signature` = hex(HMAC-SHA256(`WEBHOOK_HMAC_SECRET`, raw body)). GET overdue list signs the path `/automation/overdue-loans` only.
+- **Admins:** Verified JWT emails listed in `INITIAL_ADMIN_EMAIL` (comma-separated) become admin on sync. Existing admins can promote or demote others with `users.setUserRole` (Convex dashboard / script — no UI yet). You cannot demote yourself.
+- **Automation HTTP:** No user session; `X-LendLoop-Signature` = hex(HMAC-SHA256(`WEBHOOK_HMAC_SECRET`, message)). POST signs the raw body. GET overdue list signs `GET\n/automation/overdue-loans?today=YYYY-MM-DD\n<unix-sec>` and sends `X-LendLoop-Timestamp` (±5 min).
 - **n8n payloads:** Recipient email/name and loan fields only, with no Clerk tokens or full user records.
 - **Idempotency:** `automationLogs.idempotencyKey` unique index; reminder keys `overdue:{loanRequestId}:{YYYY-MM-DD}`.
 - **Secrets:** Never committed in workflow JSON; use `$env` and Convex env.
@@ -127,7 +128,7 @@ npm run lint
 ## Production (what I would change)
 
 - **User sync:** Clerk **webhooks** (`user.created` / `user.updated`) into a Convex HTTP action so profile email and verification never depend on the browser calling `ensureCurrentUser` with optional fields.
-- **JWT:** Enforce the `convex` template in production; drop client `primaryEmail` once `email` is always on the token.
+- **JWT:** Create the Clerk **`convex`** template (Convex preset) before sign-in; the app does not accept the default session token.
 - **n8n:** Host on n8n Cloud or a hardened stack (Postgres, queue mode, SSO), with real email/Slack instead of console mock nodes; wire **03** to PagerDuty/Slack.
 - **Ops:** Stable public URL for workflow 1 (no dev tunnel); rotate `WEBHOOK_HMAC_SECRET` with overlap; rate-limit automation HTTP; optional IP allowlist for n8n egress.
 - **App:** Deploy Next on Vercel (or similar) with production Clerk + Convex deployments; monitoring on `automationLogs` `failed` status.

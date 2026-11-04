@@ -2,6 +2,34 @@ import { AuthErrorCode, authError } from "./errors";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
+function utcDayOffset(fromIso: string, toIso: string): number {
+  const fromMs = Date.parse(`${fromIso}T00:00:00Z`);
+  const toMs = Date.parse(`${toIso}T00:00:00Z`);
+  return Math.round((fromMs - toMs) / 86_400_000);
+}
+
+/** True for real UTC calendar dates within ±1 day of today (for automation `today`). */
+export function isAutomationTodayParam(
+  today: string,
+  nowMs = Date.now(),
+): boolean {
+  const trimmed = today.trim();
+  if (!ISO_DATE_PATTERN.test(trimmed)) {
+    return false;
+  }
+  const [y, m, d] = trimmed.split("-").map(Number);
+  const parsed = new Date(Date.UTC(y, m - 1, d));
+  if (
+    parsed.getUTCFullYear() !== y ||
+    parsed.getUTCMonth() !== m - 1 ||
+    parsed.getUTCDate() !== d
+  ) {
+    return false;
+  }
+  const ref = utcTodayIso(nowMs);
+  return Math.abs(utcDayOffset(trimmed, ref)) <= 1;
+}
+
 /** UTC calendar date for "today" (YYYY-MM-DD). Safe to compare lexicographically. */
 export function utcTodayIso(nowMs = Date.now()): string {
   const d = new Date(nowMs);

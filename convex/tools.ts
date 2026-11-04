@@ -171,7 +171,6 @@ export const listPublic = query({
   args: {},
   returns: v.array(
     v.object({
-      _id: v.id("tools"),
       name: v.string(),
       category: toolCategoryValidator,
     }),
@@ -183,7 +182,7 @@ export const listPublic = query({
       .order("desc")
       .take(HOME_PUBLIC_POOL_SIZE);
 
-    return rows.map(({ _id, name, category }) => ({ _id, name, category }));
+    return rows.map(({ name, category }) => ({ name, category }));
   },
 });
 

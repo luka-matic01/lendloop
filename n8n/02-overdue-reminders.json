@@ -15,7 +15,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const crypto = require('crypto');\nconst secret = $env.WEBHOOK_HMAC_SECRET;\nconst base = $env.CONVEX_SITE_URL?.replace(/\\/$/, '');\nif (!secret || !base) throw new Error('WEBHOOK_HMAC_SECRET and CONVEX_SITE_URL required');\n\nconst path = '/automation/overdue-loans';\nconst now = new Date();\nconst today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;\nconst signature = crypto.createHmac('sha256', secret).update(path).digest('hex');\nconst url = `${base}${path}?today=${today}`;\nreturn [{ json: { url, signature, today } }];"
+        "jsCode": "const crypto = require('crypto');\nconst secret = $env.WEBHOOK_HMAC_SECRET;\nconst base = $env.CONVEX_SITE_URL?.replace(/\\/$/, '');\nif (!secret || !base) throw new Error('WEBHOOK_HMAC_SECRET and CONVEX_SITE_URL required');\n\nconst now = new Date();\nconst today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;\nconst pathWithQuery = `/automation/overdue-loans?today=${today}`;\nconst timestamp = String(Math.floor(Date.now() / 1000));\nconst message = `GET\\n${pathWithQuery}\\n${timestamp}`;\nconst signature = crypto.createHmac('sha256', secret).update(message).digest('hex');\nconst url = `${base}${pathWithQuery}`;\nreturn [{ json: { url, signature, timestamp, today } }];"
       },
       "id": "b1b2c3d4-1111-4000-8000-000000000002",
       "name": "Sign GET",
@@ -43,6 +43,10 @@
             {
               "name": "X-LendLoop-Signature",
               "value": "={{ $json.signature }}"
+            },
+            {
+              "name": "X-LendLoop-Timestamp",
+              "value": "={{ $json.timestamp }}"
             }
           ]
         }

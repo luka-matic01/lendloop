@@ -2,8 +2,13 @@ import { httpRouter } from "convex/server";
 
 import { internal } from "./_generated/api";
 import { env, httpAction } from "./_generated/server";
-import { utcTodayIso } from "./lib/borrowDates";
-import { SIGNATURE_HEADER, verifySignature } from "./lib/hmac";
+import { isAutomationTodayParam, utcTodayIso } from "./lib/borrowDates";
+import {
+  SIGNATURE_HEADER,
+  TIMESTAMP_HEADER,
+  verifySignature,
+  verifySignedGet,
+} from "./lib/hmac";
 
 const http = httpRouter();
 
@@ -31,14 +36,26 @@ http.route({
       return new Response("Automation not configured", { status: 503 });
     }
 
+    const url = new URL(req.url);
+    const todayParam = url.searchParams.get("today")?.trim();
+    const today = todayParam || utcTodayIso();
+    if (!isAutomationTodayParam(today)) {
+      return badRequest("Invalid today parameter");
+    }
+
+    const pathWithQuery = `${OVERDUE_PATH}?today=${today}`;
     const signature = req.headers.get(SIGNATURE_HEADER);
-    const ok = await verifySignature(secret, OVERDUE_PATH, signature);
+    const timestamp = req.headers.get(TIMESTAMP_HEADER);
+    const ok = await verifySignedGet(
+      secret,
+      pathWithQuery,
+      timestamp,
+      signature,
+    );
     if (!ok) {
       return unauthorized();
     }
 
-    const url = new URL(req.url);
-    const today = url.searchParams.get("today")?.trim() || utcTodayIso();
     const data = await ctx.runQuery(internal.automation.listOverdueLoans, {
       today,
     });

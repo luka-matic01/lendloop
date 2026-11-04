@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { env, internalMutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
+import { primaryBootstrapAdminEmail } from "./lib/bootstrapAdmins";
 import { utcTodayIso } from "./lib/borrowDates";
 import {
   personalDemoTools,
@@ -173,8 +174,7 @@ function resolveOwnerEmail(argsOwnerEmail?: string): string | null {
   if (fromArgs) {
     return fromArgs;
   }
-  const fromEnv = env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase();
-  return fromEnv || null;
+  return primaryBootstrapAdminEmail();
 }
 
 export const run = internalMutation({

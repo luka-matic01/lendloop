@@ -8,31 +8,36 @@ import {
   resolveAccountEmail,
   userDisplayName,
 } from "./lib/userDisplayName";
+import { isBootstrapAdmin } from "./lib/bootstrapAdmins";
 import { resolveIdentityEmailVerified } from "./lib/emailVerified";
 import { userRoleValidator } from "./lib/validators";
 
+/**
+ * Bootstrap list grants admin on sync; promoted admins keep role until
+ * another admin calls setUserRole.
+ */
 function resolveRole(
-  email: string,
+  jwtEmail: string,
   emailVerified: boolean,
   existingRole?: "admin" | "user",
 ): "admin" | "user" {
-  if (existingRole === "admin") return "admin";
-  const bootstrapEmail = env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase();
-  if (bootstrapEmail && emailVerified && email === bootstrapEmail) {
+  if (isBootstrapAdmin(jwtEmail, emailVerified)) {
     return "admin";
   }
-  return existingRole ?? "user";
+  if (existingRole === "admin") {
+    return "admin";
+  }
+  return "user";
 }
 
 export const ensureCurrentUser = mutation({
   args: {
-    /** When the Convex JWT omits email, pass Clerk's primary address from the client. */
+    /** Ignored — kept so stale browser bundles do not fail validation. */
     primaryEmail: v.optional(v.string()),
-    /** Ignored (role uses JWT only). Kept so stale browser bundles do not fail validation. */
     primaryEmailVerified: v.optional(v.boolean()),
   },
   returns: v.id("users"),
-  handler: async (ctx, args) => {
+  handler: async (ctx, _args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       authError(AuthErrorCode.UNAUTHENTICATED);
@@ -45,9 +50,9 @@ export const ensureCurrentUser = mutation({
       )
       .unique();
 
+    const jwtEmail = resolveAccountEmail({ jwtEmail: identity.email });
     const email = resolveAccountEmail({
       jwtEmail: identity.email,
-      clientEmail: args.primaryEmail,
       storedEmail: existing?.email,
     });
     let name =
@@ -58,7 +63,7 @@ export const ensureCurrentUser = mutation({
       name = "";
     }
     const role = resolveRole(
-      email,
+      jwtEmail,
       resolveIdentityEmailVerified(identity),
       existing?.role,
     );
@@ -100,6 +105,34 @@ export const me = query({
       role: user.role,
       isTrustedLender: user.isTrustedLender,
     };
+  },
+});
+
+export const setUserRole = mutation({
+  args: {
+    userId: v.id("users"),
+    role: userRoleValidator,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const admin = await requireAdmin(ctx);
+    const target = await ctx.db.get(args.userId);
+
+    if (!target) {
+      authError(AuthErrorCode.NOT_FOUND, "User not found");
+    }
+
+    if (target._id === admin._id && args.role === "user") {
+      authError(
+        AuthErrorCode.FORBIDDEN,
+        "Ask another admin to demote your account",
+      );
+    }
+
+    if (target.role !== args.role) {
+      await ctx.db.patch(args.userId, { role: args.role });
+    }
+    return null;
   },
 });
 

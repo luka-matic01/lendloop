@@ -35,10 +35,10 @@ describe("tools", () => {
     const publicRows = await t.query(api.tools.listPublic, {});
     expect(publicRows).toHaveLength(1);
     expect(publicRows[0]).toEqual({
-      _id: expect.any(String),
       name: "Circular saw",
       category: "power_tools",
     });
+    expect(publicRows[0]).not.toHaveProperty("_id");
 
     await t.run(async (ctx) => {
       const tool = await ctx.db
