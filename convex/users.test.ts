@@ -81,32 +81,22 @@ describe("users RBAC", () => {
     expect(profile.role).toBe("user");
   });
 
-  it("promotes to admin only when bootstrap email is verified on the JWT", async () => {
+  it("promotes to admin when JWT email matches INITIAL_ADMIN_EMAIL", async () => {
     const t = createConvexTest();
 
-    const unverified = t.withIdentity({
+    const session = t.withIdentity({
       email: ADMIN_EMAIL,
       emailVerified: false,
     });
-    await unverified.mutation(api.users.ensureCurrentUser, {
-      primaryEmail: ADMIN_EMAIL,
-    });
-    const unverifiedProfile = await unverified.query(api.users.me, {});
-    expect(unverifiedProfile.role).toBe("user");
-
-    const verified = t.withIdentity({
-      email: ADMIN_EMAIL,
-      emailVerified: true,
-    });
-    await verified.mutation(api.users.ensureCurrentUser, {});
-    const verifiedProfile = await verified.query(api.users.me, {});
-    expect(verifiedProfile.role).toBe("admin");
+    await session.mutation(api.users.ensureCurrentUser, {});
+    const profile = await session.query(api.users.me, {});
+    expect(profile.role).toBe("admin");
   });
 
-  it("does not promote admin from client-reported verification when JWT is unverified", async () => {
+  it("does not promote admin from client-supplied email when JWT email differs", async () => {
     const t = createConvexTest();
     const session = t.withIdentity({
-      email: ADMIN_EMAIL,
+      email: "neighbor@test.com",
       emailVerified: false,
     });
 

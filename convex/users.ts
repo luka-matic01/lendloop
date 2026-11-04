@@ -9,7 +9,6 @@ import {
   userDisplayName,
 } from "./lib/userDisplayName";
 import { isBootstrapAdmin } from "./lib/bootstrapAdmins";
-import { resolveIdentityEmailVerified } from "./lib/emailVerified";
 import { userRoleValidator } from "./lib/validators";
 
 /**
@@ -18,10 +17,9 @@ import { userRoleValidator } from "./lib/validators";
  */
 function resolveRole(
   jwtEmail: string,
-  emailVerified: boolean,
   existingRole?: "admin" | "user",
 ): "admin" | "user" {
-  if (isBootstrapAdmin(jwtEmail, emailVerified)) {
+  if (isBootstrapAdmin(jwtEmail)) {
     return "admin";
   }
   if (existingRole === "admin") {
@@ -62,11 +60,7 @@ export const ensureCurrentUser = mutation({
     if (name && email && name.toLowerCase() === email) {
       name = "";
     }
-    const role = resolveRole(
-      jwtEmail,
-      resolveIdentityEmailVerified(identity),
-      existing?.role,
-    );
+    const role = resolveRole(jwtEmail, existing?.role);
 
     if (existing) {
       if (

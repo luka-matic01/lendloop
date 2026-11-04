@@ -99,7 +99,7 @@ function ensureEnvDocker() {
 function ensureEnvLocal() {
   if (fs.existsSync(envLocal)) return;
   fs.copyFileSync(envExample, envLocal);
-  console.log("Created .env.local — add Clerk keys (README step 1), then run setup again.");
+  console.log("Created .env.local — complete README step 2, then run setup again.");
   process.exit(0);
 }
 
@@ -108,22 +108,35 @@ function clerkReady() {
   const pk = local.get("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY") ?? "";
   const sk = local.get("CLERK_SECRET_KEY") ?? "";
   const issuer = local.get("CLERK_JWT_ISSUER_DOMAIN") ?? "";
+  const adminEmail = local.get("INITIAL_ADMIN_EMAIL") ?? "";
   return (
     pk.startsWith("pk_") &&
     sk.startsWith("sk_") &&
-    issuer.includes("clerk.accounts")
+    issuer.includes("clerk.accounts") &&
+    adminEmail.includes("@")
   );
 }
 
 function patchSelfHostedConvex(adminKey) {
+  const map = readEnv(envLocal);
   for (const [k, v] of Object.entries({
     CONVEX_SELF_HOSTED_URL: "http://127.0.0.1:3210",
     CONVEX_SELF_HOSTED_ADMIN_KEY: adminKey,
     NEXT_PUBLIC_CONVEX_URL: "http://127.0.0.1:3210",
     CONVEX_SITE_URL: "http://127.0.0.1:3211",
   })) {
-    setKey(envLocal, k, v);
+    map.set(k, v);
   }
+  map.delete("CONVEX_DEPLOYMENT");
+  writeEnv(envLocal, map);
+}
+
+/** Convex Cloud linkage in .env.local breaks self-hosted deploy. */
+function stripCloudDeploymentFromEnvLocal() {
+  const map = readEnv(envLocal);
+  if (!map.has("CONVEX_DEPLOYMENT")) return;
+  map.delete("CONVEX_DEPLOYMENT");
+  writeEnv(envLocal, map);
 }
 
 function syncConvexEnv() {
@@ -175,7 +188,7 @@ async function main() {
   ensureEnvLocal();
   if (!clerkReady()) {
     console.error(
-      "Fill Clerk keys and CLERK_JWT_ISSUER_DOMAIN in .env.local first (README local setup).",
+      "Fill Clerk keys, CLERK_JWT_ISSUER_DOMAIN, and INITIAL_ADMIN_EMAIL in .env.local (README step 2).",
     );
     process.exit(1);
   }
@@ -199,9 +212,11 @@ async function main() {
     patchSelfHostedConvex(adminKey);
   }
 
+  stripCloudDeploymentFromEnvLocal();
+  syncConvexEnv();
+
   console.log("Deploying Convex functions");
   run("npx", ["convex", "dev", "--once"]);
-  syncConvexEnv();
 
   await waitOk("http://127.0.0.1:5678/healthz", "n8n");
   try {
@@ -213,13 +228,14 @@ async function main() {
     throw err;
   }
 
+  const bootstrapAdmin = readEnv(envLocal).get("INITIAL_ADMIN_EMAIL") ?? "";
   console.log(`
-Ready.
-  npm run dev   → http://localhost:3000
-  n8n           → http://localhost:5678
-  Convex data   → http://127.0.0.1:3210 (dashboard optional via Convex docs)
+Ready (README step 3 done).
+  Bootstrap admin   ${bootstrapAdmin}
+  Database UI       http://127.0.0.1:6791  (login: CONVEX_SELF_HOSTED_ADMIN_KEY in .env.local)
 
-Sign in, then: npm run seed
+Next — step 4: npm run dev → sign in with INITIAL_ADMIN_EMAIL → npm run seed
+(Enable Clerk Convex integration or the "convex" JWT template so Convex accepts your session token.)
 `);
 }
 

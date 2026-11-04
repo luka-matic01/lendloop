@@ -17,11 +17,17 @@ export function parseBootstrapAdminEmails(raw: string | undefined): string[] {
   return emails;
 }
 
-export function isBootstrapAdmin(jwtEmail: string, emailVerified: boolean): boolean {
-  if (!emailVerified || !jwtEmail) {
+/**
+ * Promote when the Clerk-signed JWT email matches INITIAL_ADMIN_EMAIL.
+ * Clerk session tokens often omit `email_verified` even for verified accounts;
+ * the env list is the server-side trust anchor (see users.test.ts).
+ */
+export function isBootstrapAdmin(jwtEmail: string): boolean {
+  const normalized = jwtEmail.trim().toLowerCase();
+  if (!normalized) {
     return false;
   }
-  return parseBootstrapAdminEmails(env.INITIAL_ADMIN_EMAIL).includes(jwtEmail);
+  return parseBootstrapAdminEmails(env.INITIAL_ADMIN_EMAIL).includes(normalized);
 }
 
 /** First bootstrap email (seed owner default). */

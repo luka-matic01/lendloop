@@ -4,33 +4,35 @@ Neighborhood tool-lending: list tools, request date ranges, approve or decline, 
 
 ## Contents
 
-- [How the brief is met](#how-the-brief-is-met)
+- [What it does](#what-it-does)
+- [Architecture](#architecture)
+- [Where to look in the code](#where-to-look-in-the-code)
 - [Stack](#stack)
 - [Local setup](#local-setup)
-- [Architecture](#architecture)
 - [Environment variables](#environment-variables)
-- [Security & production](#security--production)
+- [Security](#security)
+- [Testing](#testing)
+- [What I would change next](#what-i-would-change-next)
 
-## How the brief is met
+## What it does
 
-### Product surfaces
+| Surface | Behavior |
+| --- | --- |
+| `/` **(public)** | Tagline, read-only tool list (**name + category only**), sign-in CTA. |
+| `/tools` | Paginated neighbor board (category filter, booked-range hints, “out until” when loaned). **My listings:** CRUD, pause/resume visibility, pending counts, mark returned from the row when appropriate. |
+| `/loans` | **Incoming** (approve / decline / return), **My requests** (cancel pending or upcoming reservation, overdue styling), **All loans** (admin). Rows show recent automation activity. |
+| **Admin (in context)** | Trusted-lender toggle and remove any listing from the board or loans admin tab — no separate console. Bootstrap admin via `INITIAL_ADMIN_EMAIL` on first sign-in. |
 
-| Surface          | Behavior                                                                                                                                                                                                                                                                                             |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/` **(public)** | Tagline, read-only pool via `tools.listPublic` (name + category only), sign-in CTA. No owner ids or emails on anonymous queries.                                                                                                                                                                     |
-| `/tools`         | Neighbor board (paginated, category filter): borrow modal with date validation, booked-range hints, “out until” when someone else holds the tool. **My listings**: create/edit/delete, pause/resume board visibility, pending-request counts, mark returned from the row when a loan is in progress. |
-| `/loans`         | **Incoming** (approve / decline / return), **My requests** (cancel pending, cancel upcoming reservation, overdue cues), **All loans** (admin). Loan rows show recent automation activity.                                                                                                            |
+### Loan lifecycle
 
-### Borrow & loan lifecycle
+Convex stores `pending`, `approved`, `declined`, `cancelled`, and `returned` only. **Reserved**, **on loan**, and **overdue** are derived from `startDate` / `endDate` while the row stays `approved`; workflow **02** logs `overdue_reminder` without changing status.
 
-Convex stores `pending`, `approved`, `declined`, `cancelled`, and `returned` only — there is no `overdue` status. While `approved`, the UI derives **reserved**, **on loan**, and **overdue** from `startDate` / `endDate` (badge still backed by `approved` until `markReturned`). Past `endDate`, rows show Overdue styling; n8n workflow **02** can log `overdue_reminder` without changing status. `cancelApproved` vs `markReturned` depend on whether the borrow has started (table below). Notifications run on meaningful transitions.
-
-| Actor | Action | Convex | Notes |
-| ----- | ------ | ------ | ----- |
-| Borrower | Request dates | `loanRequests.create` | Blocks self-borrow, unavailable tools, overlapping approved loans, duplicate active request on same tool. |
-| Borrower | Cancel | `cancelPending` / `cancelApproved` | Pending: borrower only. Approved reservation: lender or borrower **before** start date; after start → must `markReturned`. |
-| Lender | Approve / decline | `approve` / `decline` | Lender-only. Approve auto-**declines** overlapping **pending** requests on that tool; re-checks availability and approved overlap. |
-| Either party | Return | `markReturned` | Only when borrow period has **started**; notifies the other party. |
+| Actor | Action | Notes |
+| --- | --- | --- |
+| Borrower | Request | Blocks self-borrow, hidden tools, overlapping approved loans, duplicate active request on the same tool. |
+| Borrower | Cancel | Pending: borrower only. Approved **before** start: lender or borrower. After start → `markReturned` only. |
+| Lender | Approve / decline | Approve auto-declines overlapping **pending** requests on that tool. |
+| Either party | Return | After borrow period has started; notifies the other party. |
 
 ```mermaid
 stateDiagram-v2
@@ -39,101 +41,143 @@ stateDiagram-v2
   pending --> approved: lender approve
   pending --> declined: lender decline
   pending --> cancelled: borrower cancel
-  approved --> cancelled: cancelApproved (before start)
-  approved --> returned: markReturned (after start)
+  approved --> cancelled: cancel before start
+  approved --> returned: mark returned after start
   declined --> [*]
   cancelled --> [*]
   returned --> [*]
 ```
 
-### Listing, reservation, and board UX
+**Listing locks (enforced in Convex, mirrored in UI):** cannot edit or remove a listing while an approved borrow is open; cannot put a tool back on the board while it is out on loan. Hidden listings are not borrow targets.
 
-Rules live in `convex/tools.ts`, `convex/loanRequests.ts`, and `convex/lib/loans.ts`; the UI mirrors them (disabled controls + tooltips) so users see the same story Convex enforces.
-
-- **On loan (period started):** edit/remove listing blocked server-side (`toolHasOpenApprovedLoan`); owner can mark returned from My listings or Incoming.
-- **Reserved (approved, not started):** edit/remove blocked in UI; either party can cancel the reservation; putting the listing back on the board is blocked while an active loan is in progress.
-- **Neighbor board:** shows trusted-lender badge, your pending/approved state on a card, and when a tool is loaned out to someone else (`loanOutUntil` + booked ranges in the borrow modal).
-- **Availability toggle:** owner can hide a listing from the board without deleting it (`setAvailability`); hidden tools are not borrow targets.
-
-### Admin (in-context, not a separate console)
-
-- `requireAdmin` on `users.setTrustedLender` and `loanRequests.listAllForAdmin`.
-- `requireToolAccess`: admin may remove any listing; owners retain CRUD on their own tools.
-- On the **neighbor board** (and signed-in home preview): admin gets remove-listing on any card plus trusted-lender mark/remove with confirm modal — same flows as `/loans` admin tab, without leaving the board.
-
-### Authorization (Convex, not UI-only)
-
-- `convex/lib/auth.ts`: `requireUser`, `requireAdmin`, `assertOwner`, `requireToolAccess` (owner **or** admin for tool mutations).
-- Party checks on approve/decline/cancel/return; strangers cannot act on someone else’s request.
-- Bootstrap admin via `INITIAL_ADMIN_EMAIL` on first `ensureCurrentUser`.
-- `convex-test` **+ Vitest** (`npm test`): overlap, competing pending decline, cancel paths, listing lock while open approved loan, RBAC on trust and removal.
-
-### n8n & automation
-
-- Workflows **01–03** in `n8n/`; HMAC in `convex/lib/hmac.ts`; idempotent `automationLogs`; loan-row footnotes from app copy. Local dev runs **Convex + n8n in Docker** so webhooks need no tunnel. Delivery is **console.log** in n8n (assignment scope); proof is executions + footnotes.
-
-### Frontend
-
-- `--ll-*` tokens and UI primitives; `src/features/*` with RSC shells and client islands; layout-scoped account sync; stale paginated lists; route skeletons.
-
-## Stack
-
-Next.js 16 · TypeScript · Tailwind 4 · Clerk · Convex · n8n · Vitest
-
-## Local setup
-
-**Prerequisites:** Docker Desktop, Node 20+, free [Clerk](https://dashboard.clerk.com) dev application. No paid services.
-
-| # | What you do |
-|---|-------------|
-| **1** | `npm install`. Copy [`.env.example`](.env.example) → `.env.local`. |
-| **2** | Fill the Clerk rows in `.env.local` (table below). `npm run setup` refuses to run until those are set. |
-| **3** | `npm run setup` — starts Convex + n8n, deploys backend, syncs secrets, imports workflows. |
-| **4** | `npm run dev` → [http://localhost:3000](http://localhost:3000). Sign in with the email you put in `INITIAL_ADMIN_EMAIL`, then `npm run seed`. |
-
-**Clerk → `.env.local`** (Development instance; [API keys](https://dashboard.clerk.com/last-active?path=api-keys) · [JWT templates](https://dashboard.clerk.com/last-active?path=jwt-templates) · [Clerk + Convex guide](https://clerk.com/docs/integrations/databases/convex))
-
-| Put in `.env.local` | Get it from Clerk |
-| ------------------- | ----------------- |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | **API keys** → **Publishable key** (`pk_test_…`) |
-| `CLERK_SECRET_KEY` | **API keys** → **Secret key** (`sk_test_…`) — server only, never commit |
-| `CLERK_JWT_ISSUER_DOMAIN` | **JWT templates** → template named **`convex`** → **Issuer** (see below) |
-| `INITIAL_ADMIN_EMAIL` | Your own sign-in email (bootstrap admin in Convex) |
-
-Leave `NEXT_PUBLIC_CLERK_SIGN_IN_URL` and `NEXT_PUBLIC_CLERK_SIGN_UP_URL` as in `.env.example` unless you changed routes.
-
-**`convex` JWT template (once per Clerk app):** In the dashboard, open **JWT templates** → **New template** → choose **Convex** (or follow the [integration doc](https://clerk.com/docs/integrations/databases/convex)). Name it **`convex`**. Ensure the template exposes **`email`** (and verification) the way that doc describes. Save, then copy **Issuer** into `CLERK_JWT_ISSUER_DOMAIN`.
-
-**If step 3 fails on n8n import:** open [http://localhost:5678](http://localhost:5678), complete the one-time owner signup, then `npm run n8n:import`. Confirm workflows **03 → 01 → 02** are **Active**.
-
-**Try automations:** two browser profiles — list + request → approve → footnote on loan row; for overdue, use seeded data and run workflow **02** in n8n. Details: [`n8n/README.md`](n8n/README.md).
-
-```bash
-npm test && npm run lint
-```
+**Roles:** `admin` \| `user` on the Convex `users` row — never from the client. `requireUser` / `requireAdmin` / ownership and party checks on every mutation; `(app)/layout.tsx` only keeps signed-out users off app routes.
 
 ## Architecture
 
+```mermaid
+flowchart LR
+  subgraph Browser
+    UI[Next.js App Router]
+  end
+  Clerk[(Clerk)]
+  subgraph Convex
+    M[Mutations + RBAC]
+    A[HTTP /automation/*]
+    DB[(users · tools · loanRequests · automationLogs)]
+    N[notifyN8n action]
+  end
+  subgraph n8n
+    W1[01 Request notification]
+    W2[02 Overdue reminders]
+    W3[03 Error handler]
+  end
+
+  UI --> Clerk
+  UI -->|JWT template convex| M
+  M --> DB
+  M --> N
+  N -->|HMAC POST| W1
+  W2 -->|HMAC GET overdue| A
+  W2 -->|HMAC POST reminder-sent| A
+  W1 & W2 -. on failure .-> W3
+  A --> DB
+```
+
+**Request notification:** a lending mutation schedules `automation.notifyN8n`, which builds a minimal payload, signs it, and POSTs to n8n **01** (inline retries on failure). n8n verifies HMAC, delivers (local demo: console log), responds 200; Convex records `automationLogs` and the loan row footnote updates.
+
+**Overdue:** n8n **02** (daily or manual) HMAC-GETs `/automation/overdue-loans` — approved loans past `endDate` not yet reminded today — then delivers reminders and POSTs idempotent `reminder-sent` rows (`overdue:{loanRequestId}:{date}`).
+
+**Why Docker locally:** self-hosted Convex and n8n share the compose network (`http://n8n:5678`, `http://convex:3211`) so webhooks work without a tunnel.
+
 | Layer | Responsibility |
-|--------|----------------|
-| `src/app/` | Routes, layouts — `(app)/layout.tsx` calls `auth.protect()` once |
-| `src/features/*` | Tools, loans, home, account |
+| --- | --- |
+| `src/app/` | Thin routes; `(app)/layout.tsx` calls `auth.protect()` once |
+| `src/features/*` | Tools, loans, home — RSC shells + client islands |
 | `convex/` | Auth helpers, lending rules, HTTP actions, outbound n8n |
 | `n8n/` | Exported workflows; secrets in `.env.docker` / Convex env only |
 
-Clerk guards routes; **authorization lives in Convex**. Notify: mutation → signed POST to n8n → `automationLogs`. Overdue: n8n → signed Convex HTTP → idempotent reminder log.
+## Where to look in the code
+
+| Topic | Start here |
+| --- | --- |
+| RBAC and party checks | `convex/lib/auth.ts`, `convex/loanRequests.test.ts`, `convex/tools.test.ts` |
+| Overlap, reservations, listing locks | `convex/lib/loans.ts`, `convex/loanRequests.ts`, `convex/tools.ts` |
+| HMAC (POST body + signed GET) | `convex/lib/hmac.ts`, `convex/http.ts` |
+| Overdue query + idempotent write-back | `convex/automation.ts`, `convex/automation.test.ts` |
+| Outbound n8n | `convex/lib/scheduleLoanNotification.ts`, `convex/automation.ts` |
+| Workflows | `n8n/0*.json` (import via `npm run n8n:import`), [`n8n/README.md`](n8n/README.md) |
+| Loan row automation copy | `src/features/loans/utils/loanActivityFootnotes.ts`, `LoanAutomationFootnote.tsx` |
+| Design tokens | `src/app/globals.css`, `src/components/ui/` |
+
+## Stack
+
+Next.js 16 · TypeScript · Tailwind 4 · Clerk · Convex (self-hosted in dev) · n8n · Vitest · convex-test
+
+## Local setup
+
+Docker Desktop, Node 20+, [Clerk](https://dashboard.clerk.com) dev app.
+
+### First time
+
+| # | Command / action |
+| --- | --- |
+| **1** | `npm install` · `cp .env.example .env.local` |
+| **2** | Fill `.env.local` (Clerk table below) |
+| **3** | `npm run setup` |
+| **4** | `npm run dev` · sign in as `INITIAL_ADMIN_EMAIL` · `npm run seed` |
+
+### Clerk (step 2)
+
+| `.env.local` | Clerk |
+| --- | --- |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | API keys → Publishable |
+| `CLERK_SECRET_KEY` | API keys → Secret |
+| `CLERK_JWT_ISSUER_DOMAIN` | [Convex integration](https://clerk.com/docs/integrations/databases/convex) or JWT template **`convex`** → Issuer |
+| `INITIAL_ADMIN_EMAIL` | Sign-in email |
+
+### Retest
+
+| # | Command / action |
+| --- | --- |
+| **1** | `npm run reset:local` |
+| **2** | `npm run setup` |
+| **3** | `npm run dev` · sign in as `INITIAL_ADMIN_EMAIL` |
+| **4** | `npm run seed` |
+
+Convex data UI: [http://127.0.0.1:6791](http://127.0.0.1:6791) (`CONVEX_SELF_HOSTED_ADMIN_KEY` in `.env.local`).
 
 ## Environment variables
 
 | Variable | Where |
-|----------|--------|
+| --- | --- |
 | Clerk, `INITIAL_ADMIN_EMAIL`, `CLERK_JWT_ISSUER_DOMAIN` | `.env.local` (before `npm run setup`) |
-| `CONVEX_SELF_HOSTED_*`, `NEXT_PUBLIC_CONVEX_URL` | `.env.local` (written by setup) |
+| `CONVEX_SELF_HOSTED_*`, `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_SITE_URL` | `.env.local` (written by setup) |
 | `WEBHOOK_HMAC_SECRET`, `CONVEX_INSTANCE_SECRET`, n8n `CONVEX_SITE_URL` | `.env.docker` (created by setup) |
-| `N8N_REQUEST_WEBHOOK_URL`, shared HMAC, issuer, admin email | Convex env (synced by setup) |
+| `N8N_REQUEST_WEBHOOK_URL`, HMAC secret, issuer, admin email | Convex deployment env (synced by setup) |
 
-## Security & production
+## Security
 
-Public queries stay minimal; automation HTTP is HMAC-only. Production: hosted Convex, Clerk webhooks for user sync, hosted n8n + SMTP, stable webhook URL.
+- **Authorization in Convex**, not in Next.js path matchers — UI hides actions the server would reject anyway.
+- **Public data minimal** — anonymous queries return tool name and category only; signed-in users see first names, not emails (admins see more on admin surfaces).
+- **Automation HTTP is HMAC-only** — raw-body verification for POST; timestamp + path for overdue GET; shared secret in env, not in workflow exports.
+- **Idempotent automation logs** — reminder and notification keys prevent duplicate rows on retry; overdue list skips loans already reminded today.
+- **Input bounds** — date rules, overlap checks, and text validation on the server (`convex/lib/rules.ts` where shared with forms).
 
-After seed, `INITIAL_ADMIN_EMAIL` gets demo tools plus sample overdue/incoming loans for workflows **01** and **02**.
+Production would move off the single Docker host: hosted Convex, real SMTP (or SES), stable public webhook URL, and Clerk-driven user lifecycle if you outgrow `ensureCurrentUser`.
+
+## Testing
+
+```bash
+npm test    # convex-test (RBAC, overlap, cancel/return paths, automation HMAC + idempotency) + component/lib Vitest
+npm run lint
+```
+
+Critical paths are exercised against Convex directly (acting as lender, borrower, stranger, admin) — not only through React.
+
+## What I would change next
+
+1. **Delivery guarantees** — transactional outbox with backoff and admin retry (today: `notifyN8n` runs after the mutation with a short inline retry loop; local proof is n8n execution + footnotes).
+2. **Real email in dev** — Mailpit or similar instead of console delivery in n8n.
+3. **Atomic send claim** — record “about to send” before SMTP/console so a failed write-back cannot double-send on retry.
+4. **Future-dated bookings** — approving currently treats the tool as reserved/on loan immediately; product may want “reserved until start” on the board only.
+5. **Hosted ops** — managed Convex + n8n with queue mode, secret rotation, and tested backup restore.
