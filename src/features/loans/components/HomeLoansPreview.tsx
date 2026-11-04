@@ -6,7 +6,7 @@ import { useQuery } from "convex/react";
 
 import { Panel, buttonClassName } from "@/components/ui";
 import { ROUTES } from "@/constants";
-import type { AccountSyncState } from "@/features/account";
+import { isBoardQueryReady, type AccountSyncState } from "@/features/account";
 import { HomeFeatureSection } from "@/features/home/components/HomeFeatureSection";
 import { HomePreviewBody } from "@/features/home/components/HomePreviewBody";
 import { api } from "convex/_generated/api";
@@ -25,18 +25,22 @@ type HomeLoansPreviewProps = {
 };
 
 export function HomeLoansPreview({ accountSync }: HomeLoansPreviewProps) {
-  const isReady = accountSync.phase === "ready";
+  const queriesReady = isBoardQueryReady(accountSync.phase);
   const syncFailed = accountSync.phase === "error";
 
   const incoming = useQuery(
     api.loanRequests.listIncomingRequests,
-    isReady ? {} : "skip",
+    queriesReady ? {} : "skip",
   );
-  const mine = useQuery(api.loanRequests.listMyRequests, isReady ? {} : "skip");
+  const mine = useQuery(
+    api.loanRequests.listMyRequests,
+    queriesReady ? {} : "skip",
+  );
   const loanActions = useLoanActions();
 
   const isLoading =
-    !syncFailed && (!isReady || incoming === undefined || mine === undefined);
+    !syncFailed &&
+    (!queriesReady || incoming === undefined || mine === undefined);
 
   const openIncoming = useMemo(
     () => partitionLoansForSection(incoming ?? [], "incoming").open,
@@ -74,7 +78,7 @@ export function HomeLoansPreview({ accountSync }: HomeLoansPreviewProps) {
           <LoanListSkeleton actionCount={2} label="Loading loan activity" />
         }
       >
-        <div className="space-y-6">
+        <div className="space-y-4">
           {!hasRows ? (
             <Panel>
               <p className="text-base text-ink-muted">
@@ -82,7 +86,7 @@ export function HomeLoansPreview({ accountSync }: HomeLoansPreviewProps) {
               </p>
             </Panel>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {previewIncoming.length > 0 ? (
                 <div className="space-y-2.5">
                   <h3 className="font-display text-xl font-bold leading-none text-ink">

@@ -12,7 +12,6 @@ import { pickHomeBoardPreview } from "../utils/pickHomeBoardPreview";
 import { HomeToolsSignedInPreview } from "./HomeToolsSignedInPreview";
 import { PublicToolCard } from "./PublicToolCard";
 import { ToolCardGrid } from "./ToolCardGrid";
-import { ToolCardSkeletonGrid } from "./ToolSkeletons";
 
 type HomeToolsPreviewProps = {
   isAuthenticated: boolean;
@@ -79,19 +78,3 @@ function HomeToolsPublicPreview({
   );
 }
 
-/** Route `Suspense` fallback for the home board teaser. */
-export function HomeToolsPreviewSkeleton() {
-  return (
-    <HomeFeatureSection
-      headingId="public-board-heading"
-      title={TOOLS_COPY.homeBoardTitle}
-      description={TOOLS_COPY.homeBoardPublicDescription}
-      busy
-    >
-      <ToolCardSkeletonGrid
-        variant="public"
-        label="Loading tools on the board"
-      />
-    </HomeFeatureSection>
-  );
-}

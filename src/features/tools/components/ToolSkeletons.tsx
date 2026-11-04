@@ -26,7 +26,7 @@ function skeletonDelay(index: number): SkeletonDelayStyle {
   return { "--skeleton-delay": `${index * 90}ms` };
 }
 
-type ToolCardSkeletonVariant = "public" | "board";
+export type ToolCardSkeletonVariant = "public" | "board" | "pending";
 
 type ToolCardSkeletonProps = {
   index?: number;
@@ -41,6 +41,19 @@ function PublicToolCardSkeleton({ index }: { index: number }) {
       <Skeleton className={cn(TOOL_CARD_TITLE_SKELETON, titleWidth)} />
       <Skeleton className="h-3 w-20" />
     </div>
+  );
+}
+
+function PendingToolCardSkeleton({ index }: { index: number }) {
+  const titleWidth = TITLE_WIDTHS[index % TITLE_WIDTHS.length];
+  const metaWidth = META_WIDTHS[index % META_WIDTHS.length];
+
+  return (
+    <>
+      <Skeleton className={cn(TOOL_CARD_TITLE_SKELETON, titleWidth)} />
+      <Skeleton className={cn("h-3.5", metaWidth)} />
+      <Skeleton className="h-3.5 w-[62%]" />
+    </>
   );
 }
 
@@ -83,6 +96,8 @@ export function ToolCardSkeleton({
     >
       {variant === "public" ? (
         <PublicToolCardSkeleton index={index} />
+      ) : variant === "pending" ? (
+        <PendingToolCardSkeleton index={index} />
       ) : (
         <BoardToolCardSkeleton index={index} />
       )}

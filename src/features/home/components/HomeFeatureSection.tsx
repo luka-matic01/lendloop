@@ -7,12 +7,17 @@ import { cn } from "@/lib/utils";
 type HomeFeatureSectionProps = {
   headingId: string;
   title: string;
-  description: string;
+  /** Static subtitle; omit only when copy depends on auth/data (e.g. public board skeleton). */
+  description?: string;
   children: ReactNode;
   busy?: boolean;
   /** Second block on the home page (e.g. loans below tools). */
   borderTop?: boolean;
 };
+
+/** Matches loaded subtitle typography so the block below does not shift. */
+const descriptionClassName =
+  "mt-1.5 max-w-xl text-sm leading-normal text-ink-muted sm:mt-2 sm:text-base";
 
 export function HomeFeatureSection({
   headingId,
@@ -29,7 +34,7 @@ export function HomeFeatureSection({
       className={cn(borderTop && "border-t border-line")}
     >
       <Container
-        className={cn(SECTION_Y_CLASS, "space-y-4 sm:space-y-6")}
+        className={cn(SECTION_Y_CLASS, "space-y-4")}
       >
         <div>
           <h2
@@ -38,9 +43,16 @@ export function HomeFeatureSection({
           >
             {title}
           </h2>
-          <p className="mt-1.5 max-w-xl text-sm text-ink-muted sm:mt-2 sm:text-base">
-            {description}
-          </p>
+          {description ? (
+            <p className={cn(descriptionClassName, "min-h-[2lh]")}>
+              {description}
+            </p>
+          ) : busy ? (
+            <div
+              className={cn(descriptionClassName, "min-h-[2lh]")}
+              aria-hidden
+            />
+          ) : null}
         </div>
         {children}
       </Container>

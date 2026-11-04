@@ -51,7 +51,10 @@ function HeroAuthActionRow({
   placeholder?: boolean;
 }) {
   return (
-    <div className={actionRowClass} {...(placeholder ? { "aria-hidden": true } : {})}>
+    <div
+      className={actionRowClass}
+      {...(placeholder ? { "aria-hidden": true } : {})}
+    >
       {actions.map(({ href, variant, icon: Icon, label }) => {
         const className = cn(
           buttonClassName({ variant }),
