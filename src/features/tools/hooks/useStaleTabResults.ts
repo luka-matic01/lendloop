@@ -1,4 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
+
+import {
+  getStaleTabResultCache,
+  setStaleTabResultCache,
+} from "@/lib/staleTabResultCache";
 
 /** Convex `usePaginatedQuery` status values we branch on. */
 type PaginatedStatus =
@@ -6,6 +11,8 @@ type PaginatedStatus =
   | "LoadingMore"
   | "CanLoadMore"
   | "Exhausted";
+
+export { clearStaleTabResultCache as clearStaleTabResultsCache } from "@/lib/staleTabResultCache";
 
 /**
  * When query args change (e.g. category tab), Convex refetches from page one.
@@ -19,19 +26,17 @@ export function useStaleTabResults<T>(
   loadMore?: (numItems: number) => void,
   pageSize?: number,
 ) {
-  const byTab = useRef(new Map<string, T[]>());
-
   useEffect(() => {
     if (status === "LoadingFirstPage") {
       return;
     }
 
-    const cached = byTab.current.get(tabKey);
+    const cached = getStaleTabResultCache<T>(tabKey);
     if (cached && items.length < cached.length && status !== "Exhausted") {
       return;
     }
 
-    byTab.current.set(tabKey, items);
+    setStaleTabResultCache(tabKey, items);
   }, [tabKey, status, items]);
 
   useEffect(() => {
@@ -42,7 +47,7 @@ export function useStaleTabResults<T>(
       return;
     }
 
-    const cached = byTab.current.get(tabKey);
+    const cached = getStaleTabResultCache<T>(tabKey);
     if (!cached || items.length >= cached.length) {
       return;
     }
@@ -50,7 +55,7 @@ export function useStaleTabResults<T>(
     loadMore(pageSize);
   }, [tabKey, status, items.length, loadMore, pageSize]);
 
-  const cached = byTab.current.get(tabKey);
+  const cached = getStaleTabResultCache<T>(tabKey);
   const isInitialLoad = status === "LoadingFirstPage" && cached === undefined;
   const isRefreshing = status === "LoadingFirstPage" && cached !== undefined;
 

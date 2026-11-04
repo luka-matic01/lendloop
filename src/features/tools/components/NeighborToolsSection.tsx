@@ -91,9 +91,11 @@ export function NeighborToolsSection({
     boardTools.length === 0 &&
     boardStatus === "Exhausted";
   const neighborTotalOnBoard = tools.length;
-  const isLoading = !isReady || isInitialLoad;
+  const isLoading =
+    tools.length === 0 && (!isReady || isInitialLoad);
   const isRefreshing =
     neighborBoardRefreshing || neighborBoardSyncingPagination;
+
   const canLoadMore =
     !neighborBoardRefreshing &&
     !neighborBoardSyncingPagination &&

@@ -16,9 +16,12 @@ import {
   TOOL_CARD_OWN_LISTING_PANEL,
 } from "../constants/visual";
 import type { useListingActions } from "../hooks/useListingActions";
+import { useStaleTabResults } from "../hooks/useStaleTabResults";
 import type { MyTool } from "../types/tools";
 import { MyListingRow } from "./MyListingRow";
 import { MyListingsSkeletonList } from "./ToolSkeletons";
+
+const MY_LISTINGS_TAB_KEY = "my-listings";
 
 /** Tools with pending requests first, then live, then out on loan, then paused. */
 function listingSortRank(tool: MyTool) {
@@ -57,7 +60,7 @@ export function MyListingsSection({
     listingActions;
 
   const {
-    results: tools,
+    results: liveTools,
     status: myListingsStatus,
     loadMore: loadMoreMyListings,
   } = usePaginatedQuery(
@@ -66,9 +69,22 @@ export function MyListingsSection({
     { initialNumItems: MY_LISTINGS_PAGE_SIZE },
   );
 
+  const {
+    displayItems: tools,
+    isInitialLoad,
+    isRefreshing: myListingsRefreshing,
+  } = useStaleTabResults(
+    MY_LISTINGS_TAB_KEY,
+    myListingsStatus,
+    liveTools,
+    loadMoreMyListings,
+    MY_LISTINGS_PAGE_SIZE,
+  );
+
   const isLoading =
-    !isReady || myListingsStatus === "LoadingFirstPage";
+    tools.length === 0 && (!isReady || isInitialLoad);
   const canLoadMore = myListingsStatus === "CanLoadMore";
+
   const loadingMore = myListingsStatus === "LoadingMore";
   const onLoadMore = useCallback(() => {
     loadMoreMyListings(MY_LISTINGS_PAGE_SIZE);
@@ -79,7 +95,7 @@ export function MyListingsSection({
   return (
     <section
       aria-labelledby="listings-heading"
-      aria-busy={isLoading || undefined}
+      aria-busy={isLoading || myListingsRefreshing || undefined}
       className="space-y-4"
     >
       <h2
