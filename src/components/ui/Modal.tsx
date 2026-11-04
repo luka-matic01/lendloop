@@ -7,7 +7,7 @@ import {
   useEffect,
   useId,
   useRef,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
   type RefObject,
 } from "react";
@@ -62,11 +62,11 @@ export function Modal({
 }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
     if (!open) {

@@ -12,7 +12,8 @@ const eslintConfig = defineConfig([
       "@clerk/next/require-auth-protection": [
         "error",
         {
-          protected: ["src/app/(app)/**"],
+          // Auth once in `(app)/layout.tsx` — not duplicated on thin route pages.
+          protected: ["src/app/(app)/layout.tsx"],
           public: [
             "src/app/sign-in/**",
             "src/app/sign-up/**",

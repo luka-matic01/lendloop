@@ -19,7 +19,6 @@ function ActivityTime({ footnote }: { footnote: LoanActivityFootnote }) {
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
-    setNowMs(Date.now());
     const id = window.setInterval(() => setNowMs(Date.now()), TICK_MS);
     return () => window.clearInterval(id);
   }, [footnote.atMs]);
@@ -64,7 +63,7 @@ export function LoanActivityFootnotes({
       {footnotes.map((footnote, index) => (
         <span key={`${footnote.line}-${footnote.atMs}`}>
           {index > 0 ? <ListRowMetaSeparator /> : null}
-          <ActivityTime footnote={footnote} />
+          <ActivityTime key={footnote.atMs} footnote={footnote} />
         </span>
       ))}
     </p>

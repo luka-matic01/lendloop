@@ -60,6 +60,28 @@ export function Select<T extends string>({
 
   const close = useCallback(() => setOpen(false), []);
 
+  const indexForValue = useCallback(
+    (selectedValue: T) =>
+      Math.max(
+        0,
+        options.findIndex((option) => option.value === selectedValue),
+      ),
+    [options],
+  );
+
+  const openListbox = useCallback(() => {
+    setHighlightIndex(indexForValue(value));
+    setOpen(true);
+  }, [indexForValue, value]);
+
+  const toggleListbox = useCallback(() => {
+    if (open) {
+      close();
+      return;
+    }
+    openListbox();
+  }, [close, open, openListbox]);
+
   const commit = useCallback(
     (next: T) => {
       if (!isControlled) {
@@ -96,22 +118,11 @@ export function Select<T extends string>({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [close, open]);
 
-  useEffect(() => {
-    if (open) {
-      setHighlightIndex(
-        Math.max(
-          0,
-          options.findIndex((option) => option.value === value),
-        ),
-      );
-    }
-  }, [open, options, value]);
-
   function onTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       if (!open) {
-        setOpen(true);
+        openListbox();
         return;
       }
       const delta = event.key === "ArrowDown" ? 1 : -1;
@@ -122,7 +133,7 @@ export function Select<T extends string>({
     }
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      setOpen((wasOpen) => !wasOpen);
+      toggleListbox();
       return;
     }
     if (event.key === "Escape") {
@@ -166,7 +177,7 @@ export function Select<T extends string>({
         aria-expanded={open}
         aria-controls={listboxId}
         aria-labelledby={ariaLabelledBy}
-        onClick={() => setOpen((wasOpen) => !wasOpen)}
+        onClick={toggleListbox}
         onKeyDown={onTriggerKeyDown}
         className={cn(
           "flex w-full items-center justify-between gap-2 rounded-control border-2 border-line bg-canvas px-3 py-2 text-left text-base text-ink transition-colors",

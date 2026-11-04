@@ -1,12 +1,36 @@
+# Local stack: self-hosted Convex + n8n (macOS & Windows, Docker Desktop).
+# Run: npm run setup   (uses --env-file .env.docker)
+name: lendloop
+
 services:
+  convex:
+    image: ghcr.io/convex/convex-backend:latest
+    container_name: lendloop-convex
+    stop_grace_period: 10s
+    stop_signal: SIGINT
+    ports:
+      - "127.0.0.1:3210:3210"
+      - "127.0.0.1:3211:3211"
+    volumes:
+      - convex-data:/convex/data
+    environment:
+      - INSTANCE_SECRET=${CONVEX_INSTANCE_SECRET:?Run npm run setup first}
+      - CONVEX_CLOUD_ORIGIN=http://127.0.0.1:3210
+      - CONVEX_SITE_ORIGIN=http://127.0.0.1:3211
+      - DISABLE_BEACON=true
+    healthcheck:
+      test: curl -f http://localhost:3210/version
+      interval: 5s
+      start_period: 20s
+
   n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n:2.45.7
     container_name: lendloop-n8n
     restart: unless-stopped
     ports:
-      - "${N8N_PORT:-5678}:5678"
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
     env_file:
-      - path: .env.local
+      - path: .env.docker
         required: true
     environment:
       - N8N_HOST=localhost
@@ -15,14 +39,17 @@ services:
       - NODE_ENV=production
       - NODE_FUNCTION_ALLOW_BUILTIN=crypto
       - GENERIC_TIMEZONE=${GENERIC_TIMEZONE:-UTC}
-      # Allow n8n Code / Expression nodes to read strictly scoped environment variables
-      # so secrets are never stored in exported workflow JSON files.
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-      # WEBHOOK_HMAC_SECRET, CONVEX_SITE_URL, N8N_ENCRYPTION_KEY: set in .env.local only.
-      # Do not duplicate them here — compose ${VAR} reads .env (not .env.local) and would override env_file.
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_PERSONALIZATION_ENABLED=false
+      - N8N_SECURE_COOKIE=false
     volumes:
       - n8n_data:/home/node/.n8n
       - ./n8n:/home/node/workflows:ro
+    depends_on:
+      convex:
+        condition: service_healthy
 
 volumes:
+  convex-data:
   n8n_data:

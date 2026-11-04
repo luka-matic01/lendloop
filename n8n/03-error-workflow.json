@@ -1,4 +1,5 @@
 {
+  "id": "LendLoopErrorWf",
   "name": "03 Error workflow",
   "nodes": [
     {

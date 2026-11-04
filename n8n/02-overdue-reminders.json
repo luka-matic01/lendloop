@@ -1,4 +1,5 @@
 {
+  "id": "LendLoopRemindWf",
   "name": "02 Overdue reminders",
   "nodes": [
     {

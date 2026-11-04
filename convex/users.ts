@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 
-import { env, mutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { requireAdmin, requireUser } from "./lib/auth";
 import { AuthErrorCode, authError } from "./lib/errors";
 import {
@@ -37,7 +37,7 @@ export const ensureCurrentUser = mutation({
     primaryEmailVerified: v.optional(v.boolean()),
   },
   returns: v.id("users"),
-  handler: async (ctx, _args) => {
+  handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
       authError(AuthErrorCode.UNAUTHENTICATED);

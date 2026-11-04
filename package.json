@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed": "convex run seed:run"
+    "seed": "convex run seed:run",
+    "setup": "node scripts/setup-local.mjs",
+    "n8n:import": "node scripts/n8n-import.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.23",

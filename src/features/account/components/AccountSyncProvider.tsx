@@ -6,7 +6,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -18,14 +17,19 @@ import { api } from "convex/_generated/api";
 import { ACCOUNT_MESSAGES } from "../constants/messages";
 import type { AccountSyncState, EnsureCurrentUserPhase } from "../types";
 
-type SyncPhase = "idle" | "ready" | "error";
+type SessionSyncError = {
+  sessionId: string;
+  message: string;
+};
 
 const AccountSyncContext = createContext<AccountSyncState | null>(null);
 
 function derivePhase(
   authLoading: boolean,
   isAuthenticated: boolean,
-  syncPhase: SyncPhase,
+  sessionId: string | null | undefined,
+  syncedSessionId: string | null,
+  syncError: SessionSyncError | null,
 ): EnsureCurrentUserPhase {
   if (authLoading) {
     return "auth-loading";
@@ -33,29 +37,25 @@ function derivePhase(
   if (!isAuthenticated) {
     return "anonymous";
   }
-  if (syncPhase === "error") {
+  if (sessionId && syncError?.sessionId === sessionId) {
     return "error";
   }
-  if (syncPhase !== "ready") {
-    return "syncing";
+  if (sessionId && syncedSessionId === sessionId) {
+    return "ready";
   }
-  return "ready";
+  return "syncing";
 }
 
 function useAccountSyncState(): AccountSyncState {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const { sessionId, isLoaded: authSessionLoaded } = useAuth();
   const ensureCurrentUser = useMutation(api.users.ensureCurrentUser);
-  const [syncPhase, setSyncPhase] = useState<SyncPhase>("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const syncedSessionRef = useRef<string | null>(null);
+  const [syncedSessionId, setSyncedSessionId] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<SessionSyncError | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
-      syncedSessionRef.current = null;
       clearStaleTabResultCache();
-      setSyncPhase("idle");
-      setErrorMessage(null);
     }
   }, [isAuthenticated]);
 
@@ -63,29 +63,28 @@ function useAccountSyncState(): AccountSyncState {
     if (authLoading || !isAuthenticated || !authSessionLoaded || !sessionId) {
       return;
     }
-    if (syncedSessionRef.current === sessionId) {
+    if (syncedSessionId === sessionId) {
       return;
     }
 
     let cancelled = false;
-    setSyncPhase("idle");
-    setErrorMessage(null);
 
     void ensureCurrentUser({})
       .then(() => {
         if (!cancelled) {
-          syncedSessionRef.current = sessionId;
-          setSyncPhase("ready");
+          setSyncedSessionId(sessionId);
+          setSyncError(null);
         }
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setSyncPhase("error");
-          setErrorMessage(
-            err instanceof Error
-              ? err.message
-              : ACCOUNT_MESSAGES.syncFailedFallback,
-          );
+          setSyncError({
+            sessionId,
+            message:
+              err instanceof Error
+                ? err.message
+                : ACCOUNT_MESSAGES.syncFailedFallback,
+          });
         }
       });
 
@@ -97,15 +96,27 @@ function useAccountSyncState(): AccountSyncState {
     isAuthenticated,
     authSessionLoaded,
     sessionId,
+    syncedSessionId,
     ensureCurrentUser,
   ]);
 
-  const phase = derivePhase(authLoading, isAuthenticated, syncPhase);
+  const phase = derivePhase(
+    authLoading,
+    isAuthenticated,
+    sessionId,
+    syncedSessionId,
+    syncError,
+  );
+
+  const errorMessage =
+    phase === "error" && sessionId && syncError?.sessionId === sessionId
+      ? syncError.message
+      : null;
 
   return useMemo(
     () => ({
       phase,
-      errorMessage: phase === "error" ? errorMessage : null,
+      errorMessage,
     }),
     [phase, errorMessage],
   );

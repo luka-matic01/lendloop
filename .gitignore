@@ -33,6 +33,7 @@ yarn-error.log*
 # env files (allow .env.example to be committed)
 .env*
 !.env.example
+!.env.docker.example
 
 # n8n local persistence
 /n8n-data/

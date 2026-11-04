@@ -1,4 +1,5 @@
 {
+  "id": "LendLoopRequestWf",
   "name": "01 Request notification",
   "nodes": [
     {

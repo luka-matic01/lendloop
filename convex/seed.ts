@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 
 import type { Id } from "./_generated/dataModel";
-import { env, internalMutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import { primaryBootstrapAdminEmail } from "./lib/bootstrapAdmins";
 import { utcTodayIso } from "./lib/borrowDates";
