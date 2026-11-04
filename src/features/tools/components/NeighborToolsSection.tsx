@@ -1,34 +1,34 @@
+"use client";
+
+import { useCallback, useState } from "react";
+import { usePaginatedQuery } from "convex/react";
+
 import { Button, Panel } from "@/components/ui";
+import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 
 import { TOOLS_COPY } from "../constants/copy";
-import type { RequestTrustedLenderChange } from "../utils/neighborToolTrust";
 import type { ToolCategoryKey } from "../constants/labels";
+import { BOARD_PAGE_SIZE } from "../constants/pagination";
 import {
   NEIGHBOR_BOARD_SKELETON_COUNT,
   TOOL_CARD_GRID_CLASS,
 } from "../constants/visual";
+import type { useListingActions } from "../hooks/useListingActions";
+import { useStaleTabResults } from "../hooks/useStaleTabResults";
 import type { BoardTool } from "../types/tools";
+import type { RequestTrustedLenderChange } from "../utils/neighborToolTrust";
 import { neighborToolTrustCardProps } from "../utils/neighborToolTrust";
 import { ToolCard } from "./ToolCard";
 import { CategoryFilterBar } from "./CategoryFilterBar";
 import { ToolCardSkeletonGrid } from "./ToolSkeletons";
 
 type NeighborToolsSectionProps = {
-  tools: BoardTool[];
-  boardIsEmpty: boolean;
-  neighborTotalOnBoard: number;
-  categoryFilter: ToolCategoryKey | "all";
-  onCategoryChange: (value: ToolCategoryKey | "all") => void;
-  onRemoveTool: (tool: BoardTool) => void;
+  isReady: boolean;
+  listingActions: ReturnType<typeof useListingActions>;
   onBorrowTool: (tool: BoardTool) => void;
   requestTrustedLenderChange?: RequestTrustedLenderChange;
   pendingTrustedUserId?: Id<"users"> | null;
-  canLoadMore?: boolean;
-  loadingMore?: boolean;
-  onLoadMore?: () => void;
-  isLoading?: boolean;
-  isRefreshing?: boolean;
 };
 
 function neighborEmptyMessage(
@@ -49,21 +49,61 @@ function neighborEmptyMessage(
 }
 
 export function NeighborToolsSection({
-  tools,
-  boardIsEmpty,
-  neighborTotalOnBoard,
-  categoryFilter,
-  onCategoryChange,
-  onRemoveTool,
+  isReady,
+  listingActions,
   onBorrowTool,
   requestTrustedLenderChange,
   pendingTrustedUserId = null,
-  canLoadMore = false,
-  loadingMore = false,
-  onLoadMore,
-  isLoading = false,
-  isRefreshing = false,
 }: NeighborToolsSectionProps) {
+  const { requestRemoveListing } = listingActions;
+
+  const [categoryFilter, setCategoryFilter] = useState<
+    ToolCategoryKey | "all"
+  >("all");
+  const boardCategory =
+    categoryFilter === "all" ? undefined : categoryFilter;
+
+  const {
+    results: boardTools,
+    status: boardStatus,
+    loadMore: loadMoreBoard,
+  } = usePaginatedQuery(
+    api.tools.listBoard,
+    isReady ? { category: boardCategory } : "skip",
+    { initialNumItems: BOARD_PAGE_SIZE },
+  );
+
+  const {
+    displayItems: tools,
+    isInitialLoad,
+    isRefreshing: neighborBoardRefreshing,
+    isSyncingPagination: neighborBoardSyncingPagination,
+  } = useStaleTabResults(
+    categoryFilter,
+    boardStatus,
+    boardTools,
+    loadMoreBoard,
+    BOARD_PAGE_SIZE,
+  );
+
+  const boardIsEmpty =
+    boardStatus !== "LoadingFirstPage" &&
+    boardTools.length === 0 &&
+    boardStatus === "Exhausted";
+  const neighborTotalOnBoard = tools.length;
+  const isLoading = !isReady || isInitialLoad;
+  const isRefreshing =
+    neighborBoardRefreshing || neighborBoardSyncingPagination;
+  const canLoadMore =
+    !neighborBoardRefreshing &&
+    !neighborBoardSyncingPagination &&
+    boardStatus === "CanLoadMore";
+  const loadingMore = boardStatus === "LoadingMore";
+
+  const onLoadMore = useCallback(() => {
+    loadMoreBoard(BOARD_PAGE_SIZE);
+  }, [loadMoreBoard]);
+
   const showNeighborEmpty =
     !isLoading && tools.length === 0 && !canLoadMore;
   const emptyMessage = neighborEmptyMessage(
@@ -87,7 +127,7 @@ export function NeighborToolsSection({
 
       <CategoryFilterBar
         value={categoryFilter}
-        onChange={onCategoryChange}
+        onChange={setCategoryFilter}
       />
 
       {isLoading ? (
@@ -108,7 +148,7 @@ export function NeighborToolsSection({
                   <ToolCard
                     tool={tool}
                     onBorrow={() => onBorrowTool(tool)}
-                    onRemove={() => onRemoveTool(tool)}
+                    onRemove={() => requestRemoveListing(tool)}
                     {...(requestTrustedLenderChange
                       ? neighborToolTrustCardProps(
                           tool,
@@ -121,7 +161,7 @@ export function NeighborToolsSection({
               ))}
             </ul>
           ) : null}
-          {canLoadMore && onLoadMore ? (
+          {canLoadMore ? (
             <div className="flex justify-center pt-2">
               <Button
                 type="button"

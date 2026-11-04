@@ -1,11 +1,8 @@
 "use client";
 
-import { useQuery } from "convex/react";
-
 import { Container, Panel } from "@/components/ui";
 import { SECTION_Y_CLASS } from "@/constants";
 import { useEnsureCurrentUser } from "@/features/account";
-import { api } from "convex/_generated/api";
 
 import { LOANS_COPY } from "../constants/copy";
 import { useLoanActions } from "../hooks/useLoanActions";
@@ -23,14 +20,6 @@ export function LoansPage() {
   const { phase, errorMessage } = useEnsureCurrentUser();
   const isReady = phase === "ready";
   const loanActions = useLoanActions();
-
-  const me = useQuery(api.users.me, isReady ? {} : "skip");
-  const adminAccess =
-    !isReady || me === undefined
-      ? "loading"
-      : me.role === "admin"
-        ? "admin"
-        : "hidden";
 
   if (phase === "error") {
     return (
@@ -52,20 +41,14 @@ export function LoansPage() {
           {LOANS_COPY.pageTitle}
         </h1>
         <p className="max-w-xl text-sm text-ink-muted sm:text-base">
-          {adminAccess === "admin"
-            ? LOANS_COPY.pageDescriptionAdmin
-            : LOANS_COPY.pageDescription}
+          {LOANS_COPY.pageDescription}
         </p>
       </header>
 
       <IncomingRequestsSection isReady={isReady} loanActions={loanActions} />
       <MyRequestsSection isReady={isReady} loanActions={loanActions} />
       <LoansPastSection isReady={isReady} />
-      <AllLoansSection
-        isReady={isReady}
-        adminAccess={adminAccess}
-        loanActions={loanActions}
-      />
+      <AllLoansSection isReady={isReady} loanActions={loanActions} />
       <MarkReturnedConfirmModal loanActions={loanActions} />
       <CancelBorrowConfirmModal loanActions={loanActions} />
       <TrustedLenderConfirmModal loanActions={loanActions} />

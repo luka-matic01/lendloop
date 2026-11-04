@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { useMutation, usePaginatedQuery } from "convex/react";
+import { useMemo, useState, type ReactNode } from "react";
+import { usePaginatedQuery } from "convex/react";
 
-import { ConfirmModal, Panel, buttonClassName, useToast } from "@/components/ui";
+import { Panel, buttonClassName } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import type { AccountSyncState } from "@/features/account";
 import {
@@ -12,11 +12,12 @@ import {
   TrustedLenderConfirmModal,
   useLoanActions,
 } from "@/features/loans";
-import { convexErrorMessage } from "@/lib/convexErrorMessage";
 import type { PublicToolListing } from "@/lib/convexServer";
 import { api } from "convex/_generated/api";
 
 import { TOOLS_COPY } from "../constants/copy";
+import { useListingActions } from "../hooks/useListingActions";
+import { ListingConfirmModal } from "./ListingConfirmModal";
 import { HOME_BOARD_PAGE_SIZE } from "../constants/pagination";
 import { TOOL_CARD_GRID_CLASS } from "../constants/visual";
 import type { BoardTool } from "../types/tools";
@@ -105,13 +106,11 @@ function HomeBoardToolGrid<T extends { _id: string }>({
 }
 
 function HomeSignedInPreview({ accountSync }: { accountSync: AccountSyncState }) {
-  const toast = useToast();
   const loanActions = useLoanActions();
   const { pendingTrustedUserId, requestTrustedLenderChange } = loanActions;
+  const listingActions = useListingActions();
+  const { requestRemoveListing } = listingActions;
   const [borrowingTool, setBorrowingTool] = useState<BoardTool | null>(null);
-  const [removingTool, setRemovingTool] = useState<BoardTool | null>(null);
-  const [removingSubmitting, setRemovingSubmitting] = useState(false);
-  const removeTool = useMutation(api.tools.remove);
 
   const isReady = accountSync.phase === "ready";
   const syncFailed = accountSync.phase === "error";
@@ -130,22 +129,6 @@ function HomeSignedInPreview({ accountSync }: { accountSync: AccountSyncState })
     return pickHomeBoardPreview(neighbors);
   }, [boardTools]);
 
-  const confirmRemove = useCallback(async () => {
-    if (!removingTool) {
-      return;
-    }
-    setRemovingSubmitting(true);
-    try {
-      await removeTool({ toolId: removingTool._id });
-      toast(TOOLS_COPY.toastListingRemoved(removingTool.name));
-      setRemovingTool(null);
-    } catch (error) {
-      toast(convexErrorMessage(error, "Could not remove tool"), "error");
-    } finally {
-      setRemovingSubmitting(false);
-    }
-  }, [removeTool, removingTool, toast]);
-
   return (
     <HomeToolsFrame
       busy={isLoading}
@@ -160,24 +143,7 @@ function HomeSignedInPreview({ accountSync }: { accountSync: AccountSyncState })
         onClose={() => setBorrowingTool(null)}
       />
       <TrustedLenderConfirmModal loanActions={loanActions} />
-      <ConfirmModal
-        open={removingTool !== null}
-        title={removingTool ? TOOLS_COPY.confirmRemoveTitle(removingTool.name) : ""}
-        description={
-          removingTool
-            ? TOOLS_COPY.confirmRemoveNeighborDescription(removingTool.ownerName)
-            : ""
-        }
-        confirmLabel={removingTool ? TOOLS_COPY.removeListing : ""}
-        cancelLabel={TOOLS_COPY.cancel}
-        confirming={removingSubmitting}
-        onConfirm={confirmRemove}
-        onCancel={() => {
-          if (!removingSubmitting) {
-            setRemovingTool(null);
-          }
-        }}
-      />
+      <ListingConfirmModal listingActions={listingActions} />
       {syncFailed ? (
         <Panel tone="notice">
           <p className="text-base text-ink-muted">
@@ -195,7 +161,7 @@ function HomeSignedInPreview({ accountSync }: { accountSync: AccountSyncState })
               <ToolCard
                 tool={tool}
                 onBorrow={() => setBorrowingTool(tool)}
-                onRemove={() => setRemovingTool(tool)}
+                onRemove={() => requestRemoveListing(tool)}
                 {...neighborToolTrustCardProps(
                   tool,
                   requestTrustedLenderChange,

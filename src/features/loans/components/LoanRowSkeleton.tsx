@@ -1,4 +1,5 @@
 import { ListRowSkeleton } from "@/components/ui";
+import { listRowSurfaceClass } from "@/lib/listRowSurface";
 
 import { LoanListPanel } from "./LoanListPanel";
 
@@ -30,7 +31,7 @@ export function LoanListSkeleton({
       <p className="sr-only">{label}</p>
       <LoanListPanel>
         {Array.from({ length: count }, (_, index) => (
-          <li key={index}>
+          <li key={index} className={listRowSurfaceClass("default")}>
             <LoanRowSkeleton actionCount={actionCount} />
           </li>
         ))}

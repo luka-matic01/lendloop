@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 
 import { ListRowSkeleton, Panel, Skeleton } from "@/components/ui";
+import { listRowSurfaceClass } from "@/lib/listRowSurface";
 import { cn } from "@/lib/utils";
 
 import {
@@ -130,7 +131,11 @@ export function MyListingsSkeletonList({
       <p className="sr-only">{label}</p>
       <ul aria-hidden="true" className="divide-y divide-board/25 px-3 sm:px-4">
         {Array.from({ length: count }, (_, index) => (
-          <li key={index} style={skeletonDelay(index)}>
+          <li
+            key={index}
+            className={listRowSurfaceClass("default")}
+            style={skeletonDelay(index)}
+          >
             <ListRowSkeleton
               iconActions
               actionCount={1}

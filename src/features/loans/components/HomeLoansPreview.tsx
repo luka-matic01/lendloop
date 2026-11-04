@@ -12,7 +12,6 @@ import { api } from "convex/_generated/api";
 import { LOANS_COPY } from "../constants/copy";
 import { HOME_LOANS_PREVIEW_LIMIT } from "../constants/limits";
 import { useLoanActions } from "../hooks/useLoanActions";
-import { countApprovedLoanPhases } from "../utils/approvedLoanAction";
 import { partitionLoansForSection } from "../utils/sortLoans";
 import { HomeLoansFrame } from "./HomeLoansFrame";
 import { LoanListPanel } from "./LoanListPanel";
@@ -56,28 +55,12 @@ export function HomeLoansPreview({ accountSync }: HomeLoansPreviewProps) {
     [openMine],
   );
 
-  const incomingPendingCount = openIncoming.filter(
-    (loan) => loan.status === "pending",
-  ).length;
-  const incomingApproved = countApprovedLoanPhases(openIncoming);
-  const mineApproved = countApprovedLoanPhases(openMine);
-
   const hasRows = previewIncoming.length > 0 || previewMine.length > 0;
-  const activitySummary = hasRows
-    ? LOANS_COPY.homeLoansSummary(
-        incomingPendingCount,
-        incomingApproved.out,
-        openMine.length,
-        incomingApproved.reserved,
-        mineApproved.reserved,
-      )
-    : null;
 
   return (
     <HomeLoansFrame
       busy={isLoading}
       description={LOANS_COPY.homeLoansSignedInDescription}
-      summary={activitySummary}
     >
       {syncFailed ? (
         <Panel tone="notice">

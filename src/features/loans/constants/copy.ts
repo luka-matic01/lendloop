@@ -57,57 +57,10 @@ export const LOANS_COPY = {
   homeIncomingPreview: "On your tools",
   homeMyRequestsPreview: "Your borrows",
   homeEmptyLoans: "No active loan activity yet.",
-  homeLoansSummary(
-    incomingPending: number,
-    incomingOut: number,
-    myActive: number,
-    incomingReserved = 0,
-    myReserved = 0,
-  ) {
-    const parts: string[] = [];
-    if (incomingPending > 0) {
-      parts.push(
-        incomingPending === 1
-          ? "1 request needs your OK"
-          : `${incomingPending} requests need your OK`,
-      );
-    }
-    if (incomingOut > 0) {
-      parts.push(
-        incomingOut === 1
-          ? "1 of your tools out"
-          : `${incomingOut} of your tools out`,
-      );
-    }
-    if (incomingReserved > 0) {
-      parts.push(
-        incomingReserved === 1
-          ? "1 tool reserved"
-          : `${incomingReserved} tools reserved`,
-      );
-    }
-    if (myActive > 0) {
-      parts.push(
-        myActive === 1
-          ? "1 borrow in flight"
-          : `${myActive} borrows in flight`,
-      );
-    }
-    if (myReserved > 0) {
-      parts.push(
-        myReserved === 1
-          ? "1 upcoming borrow"
-          : `${myReserved} upcoming borrows`,
-      );
-    }
-    return parts.join(" · ");
-  },
   seeAllLoans: "Open loans",
   pageTitle: "Loans",
   pageDescription:
     "Incoming requests on your tools and your borrows.",
-  pageDescriptionAdmin:
-    "Your requests and borrows, plus every active loan on the platform in All loans.",
   incomingHeading: "On your tools",
   myRequestsHeading: "Your borrows",
   allLoansHeading: "All loans",
@@ -128,25 +81,6 @@ export const LOANS_COPY = {
     return count === 1
       ? "Your borrows · 1 past"
       : `Your borrows · ${count} past`;
-  },
-  sectionSummary(
-    pendingCount: number,
-    outCount: number,
-    reservedCount = 0,
-  ) {
-    const parts: string[] = [];
-    if (pendingCount > 0) {
-      parts.push(pendingCount === 1 ? "1 waiting for OK" : `${pendingCount} waiting for OK`);
-    }
-    if (outCount > 0) {
-      parts.push(outCount === 1 ? "1 out on loan" : `${outCount} out on loan`);
-    }
-    if (reservedCount > 0) {
-      parts.push(
-        reservedCount === 1 ? "1 reserved" : `${reservedCount} reserved`,
-      );
-    }
-    return parts.join(" · ");
   },
   loadErrorTitle: "Could not open loans",
   approve: "Approve",

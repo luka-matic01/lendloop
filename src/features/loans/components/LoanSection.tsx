@@ -7,7 +7,6 @@ import { LoanListSkeleton } from "./LoanRowSkeleton";
 type LoanSectionProps = {
   headingId: string;
   heading: string;
-  summary?: string;
   isLoading: boolean;
   itemCount: number;
   emptyMessage: string;
@@ -20,7 +19,6 @@ type LoanSectionProps = {
 export function LoanSection({
   headingId,
   heading,
-  summary,
   isLoading,
   itemCount,
   emptyMessage,
@@ -49,9 +47,6 @@ export function LoanSection({
             </span>
           ) : null}
         </h2>
-        {!isLoading && summary ? (
-          <p className="text-sm text-ink-muted">{summary}</p>
-        ) : null}
       </div>
 
       {isLoading ? (

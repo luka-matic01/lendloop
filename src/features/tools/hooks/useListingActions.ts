@@ -1,22 +1,15 @@
 "use client";
 
-import { useMutation, usePaginatedQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useCallback, useState } from "react";
 
 import { useToast } from "@/components/ui";
 import { convexErrorMessage } from "@/lib/convexErrorMessage";
-import { useEnsureCurrentUser } from "@/features/account";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 
 import { TOOLS_COPY } from "../constants/copy";
-import type { ToolCategoryKey } from "../constants/labels";
-import {
-  BOARD_PAGE_SIZE,
-  MY_LISTINGS_PAGE_SIZE,
-} from "../constants/pagination";
 import type { MyTool } from "../types/tools";
-import { useStaleTabResults } from "./useStaleTabResults";
 
 type ListingConfirmRemove = {
   type: "remove";
@@ -41,14 +34,9 @@ export type ListingRemoveTarget = Pick<MyTool, "_id" | "name"> & {
   upcomingReservationCount?: number;
 };
 
-export function useToolsPage() {
+export function useListingActions() {
   const toast = useToast();
-  const { phase, errorMessage } = useEnsureCurrentUser();
-  const isReady = phase === "ready";
 
-  const [categoryFilter, setCategoryFilter] = useState<
-    ToolCategoryKey | "all"
-  >("all");
   const [listModalOpen, setListModalOpen] = useState(false);
   const [editingTool, setEditingTool] = useState<MyTool | null>(null);
   const [listingConfirm, setListingConfirm] = useState<ListingConfirm | null>(
@@ -56,60 +44,8 @@ export function useToolsPage() {
   );
   const [confirmSubmitting, setConfirmSubmitting] = useState(false);
 
-  const boardCategory =
-    categoryFilter === "all" ? undefined : categoryFilter;
-
-  const {
-    results: boardTools,
-    status: boardStatus,
-    loadMore: loadMoreBoard,
-  } = usePaginatedQuery(
-    api.tools.listBoard,
-    isReady ? { category: boardCategory } : "skip",
-    { initialNumItems: BOARD_PAGE_SIZE },
-  );
-
-  const {
-    results: myTools,
-    status: myListingsStatus,
-    loadMore: loadMoreMyListings,
-  } = usePaginatedQuery(
-    api.tools.listMine,
-    isReady ? {} : "skip",
-    { initialNumItems: MY_LISTINGS_PAGE_SIZE },
-  );
-
-  const {
-    displayItems: neighborBoardTools,
-    isInitialLoad: neighborBoardLoading,
-    isRefreshing: neighborBoardRefreshing,
-    isSyncingPagination: neighborBoardSyncingPagination,
-  } = useStaleTabResults(
-    categoryFilter,
-    boardStatus,
-    boardTools,
-    loadMoreBoard,
-    BOARD_PAGE_SIZE,
-  );
-
   const removeTool = useMutation(api.tools.remove);
   const setAvailability = useMutation(api.tools.setAvailability);
-
-  const boardIsEmpty =
-    boardStatus !== "LoadingFirstPage" &&
-    boardTools.length === 0 &&
-    boardStatus === "Exhausted";
-
-  const isPageBootstrapping =
-    !isReady || myListingsStatus === "LoadingFirstPage";
-
-  const boardCanLoadMore =
-    !neighborBoardRefreshing &&
-    !neighborBoardSyncingPagination &&
-    boardStatus === "CanLoadMore";
-  const boardLoadingMore = boardStatus === "LoadingMore";
-  const myListingsCanLoadMore = myListingsStatus === "CanLoadMore";
-  const myListingsLoadingMore = myListingsStatus === "LoadingMore";
 
   const openListModal = useCallback(() => {
     setEditingTool(null);
@@ -156,8 +92,7 @@ export function useToolsPage() {
         type: "remove",
         toolId: tool._id,
         name: tool.name,
-        ownerName:
-          tool.isOwner === false ? tool.ownerName : undefined,
+        ownerName: tool.isOwner === false ? tool.ownerName : undefined,
       });
     },
     [toast],
@@ -207,39 +142,13 @@ export function useToolsPage() {
     }
   }, [listingConfirm, removeTool, setAvailability, toast]);
 
-  const loadMoreBoardPage = useCallback(() => {
-    loadMoreBoard(BOARD_PAGE_SIZE);
-  }, [loadMoreBoard]);
-
-  const loadMoreMyListingsPage = useCallback(() => {
-    loadMoreMyListings(MY_LISTINGS_PAGE_SIZE);
-  }, [loadMoreMyListings]);
-
   return {
-    phase,
-    errorMessage,
-    isPageBootstrapping,
-    neighborBoardLoading,
-    neighborBoardRefreshing,
-    neighborBoardSyncingPagination,
-    categoryFilter,
-    setCategoryFilter,
     listModalOpen,
     editingTool,
     toolFormModalOpen: listModalOpen || editingTool !== null,
     openListModal,
     openEditModal,
     closeToolFormModal,
-    boardIsEmpty,
-    myTools,
-    neighborBoardTools,
-    neighborTotalOnBoard: neighborBoardTools.length,
-    boardCanLoadMore,
-    boardLoadingMore,
-    loadMoreBoardPage,
-    myListingsCanLoadMore,
-    myListingsLoadingMore,
-    loadMoreMyListingsPage,
     listingConfirm,
     confirmSubmitting,
     requestRemoveListing,

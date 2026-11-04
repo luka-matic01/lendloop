@@ -13,58 +13,6 @@ export const TOOLS_COPY = {
   emptyNeighborsBoard:
     "Nothing from neighbors yet. You can still list your gear below.",
   emptyNeighborsCategory: "No neighbors in this category.",
-  listingsSummary(
-    liveCount: number,
-    pausedCount: number,
-    onLoanCount = 0,
-    pendingRequestCount = 0,
-    reservedCount = 0,
-  ) {
-    const requests =
-      pendingRequestCount === 1
-        ? "1 borrow request waiting"
-        : pendingRequestCount === 0
-          ? ""
-          : `${pendingRequestCount} borrow requests waiting`;
-    const live =
-      liveCount === 1 ? "1 live" : liveCount === 0 ? "" : `${liveCount} live`;
-    const paused =
-      pausedCount === 1 ? "1 paused" : pausedCount === 0 ? "" : `${pausedCount} paused`;
-    const onLoan =
-      onLoanCount === 1
-        ? "1 out on loan"
-        : onLoanCount === 0
-          ? ""
-          : `${onLoanCount} out on loan`;
-    const reserved =
-      reservedCount === 1
-        ? "1 reserved"
-        : reservedCount === 0
-          ? ""
-          : `${reservedCount} reserved`;
-
-    const parts = [requests, live, paused, onLoan, reserved].filter(Boolean);
-    if (parts.length === 0) {
-      return "";
-    }
-    if (
-      pendingRequestCount === 0 &&
-      liveCount > 0 &&
-      pausedCount === 0 &&
-      onLoanCount === 0
-    ) {
-      return liveCount === 1 ? "1 live on the board" : `${liveCount} live on the board`;
-    }
-    if (
-      pendingRequestCount === 0 &&
-      liveCount === 0 &&
-      pausedCount > 0 &&
-      onLoanCount === 0
-    ) {
-      return pausedCount === 1 ? "1 paused" : `${pausedCount} paused`;
-    }
-    return parts.join(" · ");
-  },
   listingOutOnLoan: "Out on loan",
   listingReserved: "Reserved",
   listingReservationsCta(count: number) {

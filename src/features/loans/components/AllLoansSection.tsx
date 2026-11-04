@@ -9,30 +9,28 @@ import { api } from "convex/_generated/api";
 
 import { LOANS_COPY } from "../constants/copy";
 import type { useLoanActions } from "../hooks/useLoanActions";
-import { countApprovedLoanPhases } from "../utils/approvedLoanAction";
 import { partitionLoansForSection } from "../utils/sortLoans";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanSection } from "./LoanSection";
 
-type AdminAccess = "loading" | "hidden" | "admin";
-
 type AllLoansSectionProps = {
   isReady: boolean;
-  adminAccess: AdminAccess;
   loanActions: ReturnType<typeof useLoanActions>;
 };
 
 export function AllLoansSection({
   isReady,
-  adminAccess,
   loanActions,
 }: AllLoansSectionProps) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyPanelId = useId();
 
+  const me = useQuery(api.users.me, isReady ? {} : "skip");
+  const isAdmin = me?.role === "admin";
+
   const loans = useQuery(
     api.loanRequests.listAllForAdmin,
-    isReady && adminAccess === "admin" ? {} : "skip",
+    isAdmin ? {} : "skip",
   );
 
   const { open, history } = useMemo(
@@ -40,26 +38,17 @@ export function AllLoansSection({
     [loans],
   );
 
-  if (adminAccess === "hidden") {
+  if (!isAdmin) {
     return null;
   }
 
-  const isLoading =
-    adminAccess === "loading" || !isReady || loans === undefined;
-  const pendingCount = open.filter((l) => l.status === "pending").length;
-  const { out: outCount, reserved: reservedCount } =
-    countApprovedLoanPhases(open);
+  const isLoading = loans === undefined;
 
   return (
     <div className="space-y-4">
       <LoanSection
         headingId="all-loans-heading"
         heading={LOANS_COPY.allLoansHeading}
-        summary={LOANS_COPY.sectionSummary(
-          pendingCount,
-          outCount,
-          reservedCount,
-        )}
         isLoading={isLoading}
         itemCount={open.length}
         emptyMessage={LOANS_COPY.emptyAllLoansOpen}

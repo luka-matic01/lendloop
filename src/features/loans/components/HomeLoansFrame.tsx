@@ -8,14 +8,12 @@ import { LOANS_COPY } from "../constants/copy";
 
 type HomeLoansFrameProps = {
   description: string;
-  summary?: string | null;
   children: ReactNode;
   busy?: boolean;
 };
 
 export function HomeLoansFrame({
   description,
-  summary,
   children,
   busy = false,
 }: HomeLoansFrameProps) {
@@ -38,9 +36,6 @@ export function HomeLoansFrame({
           <p className="mt-1.5 max-w-xl text-sm text-ink-muted sm:mt-2 sm:text-base">
             {description}
           </p>
-          {summary ? (
-            <p className="mt-1 text-sm font-semibold text-ink">{summary}</p>
-          ) : null}
         </div>
         {children}
       </Container>

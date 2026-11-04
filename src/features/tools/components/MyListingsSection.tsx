@@ -1,15 +1,21 @@
-import { useMemo } from "react";
+"use client";
 
-import { Button, Panel, Skeleton } from "@/components/ui";
+import { useCallback, useMemo } from "react";
+import { usePaginatedQuery } from "convex/react";
+
+import { Button, Panel } from "@/components/ui";
+import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 
 import { listingListRowSurfaceClass } from "@/lib/listRowSurface";
 
 import { TOOLS_COPY } from "../constants/copy";
+import { MY_LISTINGS_PAGE_SIZE } from "../constants/pagination";
 import {
   MY_LISTINGS_PANEL_CLASS,
   TOOL_CARD_OWN_LISTING_PANEL,
 } from "../constants/visual";
+import type { useListingActions } from "../hooks/useListingActions";
 import type { MyTool } from "../types/tools";
 import { MyListingRow } from "./MyListingRow";
 import { MyListingsSkeletonList } from "./ToolSkeletons";
@@ -35,46 +41,40 @@ function sortListings(tools: MyTool[]) {
 }
 
 type MyListingsSectionProps = {
-  tools: MyTool[];
-  onEdit: (tool: MyTool) => void;
-  onToggleAvailability: (tool: MyTool) => void;
-  onRemove: (tool: MyTool) => void;
+  isReady: boolean;
+  listingActions: ReturnType<typeof useListingActions>;
   markReturnedPendingId?: Id<"loanRequests"> | null;
   onMarkReturned?: (requestId: Id<"loanRequests">, toolName: string) => void;
-  canLoadMore?: boolean;
-  loadingMore?: boolean;
-  onLoadMore?: () => void;
-  isLoading?: boolean;
 };
 
 export function MyListingsSection({
-  tools,
-  onEdit,
-  onToggleAvailability,
-  onRemove,
+  isReady,
+  listingActions,
   markReturnedPendingId = null,
   onMarkReturned,
-  canLoadMore = false,
-  loadingMore = false,
-  onLoadMore,
-  isLoading = false,
 }: MyListingsSectionProps) {
-  const sortedTools = useMemo(() => sortListings(tools), [tools]);
+  const { openEditModal, requestToggleListingAvailability, requestRemoveListing } =
+    listingActions;
 
-  const liveCount = tools.filter((tool) => tool.isAvailable).length;
-  const onLoanCount = tools.filter(
-    (tool) => tool.hasActiveLoan && tool.activeLoan?.started,
-  ).length;
-  const reservedCount = tools.filter(
-    (tool) => tool.upcomingReservationCount > 0,
-  ).length;
-  const pausedCount = tools.filter(
-    (tool) => !tool.isAvailable && !tool.hasActiveLoan,
-  ).length;
-  const totalPendingRequests = tools.reduce(
-    (sum, tool) => sum + tool.pendingRequestCount,
-    0,
+  const {
+    results: tools,
+    status: myListingsStatus,
+    loadMore: loadMoreMyListings,
+  } = usePaginatedQuery(
+    api.tools.listMine,
+    isReady ? {} : "skip",
+    { initialNumItems: MY_LISTINGS_PAGE_SIZE },
   );
+
+  const isLoading =
+    !isReady || myListingsStatus === "LoadingFirstPage";
+  const canLoadMore = myListingsStatus === "CanLoadMore";
+  const loadingMore = myListingsStatus === "LoadingMore";
+  const onLoadMore = useCallback(() => {
+    loadMoreMyListings(MY_LISTINGS_PAGE_SIZE);
+  }, [loadMoreMyListings]);
+
+  const sortedTools = useMemo(() => sortListings(tools), [tools]);
 
   return (
     <section
@@ -82,27 +82,12 @@ export function MyListingsSection({
       aria-busy={isLoading || undefined}
       className="space-y-4"
     >
-      <div className="space-y-1.5">
-        <h2
-          id="listings-heading"
-          className="font-display text-2xl font-bold leading-none text-ink"
-        >
-          {TOOLS_COPY.listingsHeading}
-        </h2>
-        {isLoading ? (
-          <Skeleton className="h-4 w-48 max-w-full" />
-        ) : tools.length > 0 ? (
-          <p className="text-sm text-ink-muted">
-            {TOOLS_COPY.listingsSummary(
-              liveCount,
-              pausedCount,
-              onLoanCount,
-              totalPendingRequests,
-              reservedCount,
-            )}
-          </p>
-        ) : null}
-      </div>
+      <h2
+        id="listings-heading"
+        className="font-display text-2xl font-bold leading-none text-ink"
+      >
+        {TOOLS_COPY.listingsHeading}
+      </h2>
 
       {isLoading ? (
         <MyListingsSkeletonList label="Loading your listings" />
@@ -127,9 +112,11 @@ export function MyListingsSection({
                 >
                   <MyListingRow
                     tool={tool}
-                    onEdit={() => onEdit(tool)}
-                    onToggleAvailability={() => onToggleAvailability(tool)}
-                    onRemove={() => onRemove(tool)}
+                    onEdit={() => openEditModal(tool)}
+                    onToggleAvailability={() =>
+                      requestToggleListingAvailability(tool)
+                    }
+                    onRemove={() => requestRemoveListing(tool)}
                     markReturnedPendingId={markReturnedPendingId}
                     onMarkReturned={onMarkReturned}
                   />
@@ -137,7 +124,7 @@ export function MyListingsSection({
               ))}
             </ul>
           </Panel>
-          {canLoadMore && onLoadMore ? (
+          {canLoadMore ? (
             <div className="flex justify-center">
               <Button
                 type="button"
