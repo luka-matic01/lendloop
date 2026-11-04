@@ -3,11 +3,12 @@
 import type { ReactNode } from "react";
 
 import { Container, Panel } from "@/components/ui";
+import { SECTION_Y_CLASS } from "@/constants";
 import { useEnsureCurrentUser } from "@/features/account";
+import { cn } from "@/lib/utils";
 
 import { LOANS_COPY } from "../constants/copy";
 import { useLoanActions } from "../hooks/useLoanActions";
-import { LOANS_PAGE_CLASS } from "./loansPageLayout";
 import { AllLoansSection } from "./AllLoansSection";
 import { IncomingRequestsSection } from "./IncomingRequestsSection";
 import { LoansPastSection } from "./LoansPastSection";
@@ -27,7 +28,7 @@ export function LoansPageClient({ intro }: LoansPageClientProps) {
 
   if (phase === "error") {
     return (
-      <Container className={LOANS_PAGE_CLASS}>
+      <Container className={cn("space-y-8 sm:space-y-10", SECTION_Y_CLASS)}>
         <Panel tone="notice">
           <p className="font-display text-2xl font-bold text-ink">
             {LOANS_COPY.loadErrorTitle}
@@ -39,7 +40,7 @@ export function LoansPageClient({ intro }: LoansPageClientProps) {
   }
 
   return (
-    <Container className={LOANS_PAGE_CLASS}>
+    <Container className={cn("space-y-8 sm:space-y-10", SECTION_Y_CLASS)}>
       <header className="space-y-2 sm:space-y-3">{intro}</header>
 
       <IncomingRequestsSection isReady={isReady} loanActions={loanActions} />
