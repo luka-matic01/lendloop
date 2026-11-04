@@ -8,6 +8,8 @@ export {
   TrustedLenderIndicator,
 } from "./TrustedLenderIndicator";
 export { Container } from "./Container";
+export { HomeFeatureSection } from "./HomeFeatureSection";
+export { HomePreviewBody } from "./HomePreviewBody";
 export {
   LIST_ROW_META_TEXT_CLASS,
   LIST_ROW_TITLE_CLASS,
@@ -17,6 +19,7 @@ export {
   ListRowSkeleton,
 } from "./ListRow";
 export { InlineRange } from "./InlineRange";
+export { PageSection } from "./PageSection";
 export { Panel } from "./Panel";
 export { Skeleton } from "./Skeleton";
 export { Select, type SelectOption } from "./Select";

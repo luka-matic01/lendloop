@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { usePaginatedQuery } from "convex/react";
+import { useState } from "react";
 
-import { Button, Panel } from "@/components/ui";
+import { Panel } from "@/components/ui";
+import {
+  paginatedCanLoadMore,
+  useStalePaginatedQuery,
+} from "@/hooks/useStalePaginatedQuery";
 import { api } from "convex/_generated/api";
 import type { Id } from "convex/_generated/dataModel";
 
@@ -15,12 +18,11 @@ import {
   TOOL_CARD_GRID_CLASS,
 } from "../constants/visual";
 import type { useListingActions } from "../hooks/useListingActions";
-import { useStaleTabResults } from "../hooks/useStaleTabResults";
 import type { BoardTool } from "../types/tools";
 import type { RequestTrustedLenderChange } from "../utils/neighborToolTrust";
-import { neighborToolTrustCardProps } from "../utils/neighborToolTrust";
-import { ToolCard } from "./ToolCard";
 import { CategoryFilterBar } from "./CategoryFilterBar";
+import { NeighborToolCard } from "./NeighborToolCard";
+import { ToolsSection } from "./ToolsSection";
 import { ToolCardSkeletonGrid } from "./ToolSkeletons";
 
 type NeighborToolsSectionProps = {
@@ -63,26 +65,26 @@ export function NeighborToolsSection({
   const boardCategory =
     categoryFilter === "all" ? undefined : categoryFilter;
 
-  const {
-    results: boardTools,
-    status: boardStatus,
-    loadMore: loadMoreBoard,
-  } = usePaginatedQuery(
-    api.tools.listBoard,
-    isReady ? { category: boardCategory } : "skip",
-    { initialNumItems: BOARD_PAGE_SIZE },
+  const categoryToolbar = (
+    <CategoryFilterBar
+      value={categoryFilter}
+      onChange={setCategoryFilter}
+    />
   );
 
   const {
     displayItems: tools,
+    liveItems: boardTools,
+    status: boardStatus,
     isInitialLoad,
     isRefreshing: neighborBoardRefreshing,
     isSyncingPagination: neighborBoardSyncingPagination,
-  } = useStaleTabResults(
+    loadMore,
+    loadingMore,
+  } = useStalePaginatedQuery<BoardTool>(
+    api.tools.listBoard,
+    isReady ? { category: boardCategory } : "skip",
     categoryFilter,
-    boardStatus,
-    boardTools,
-    loadMoreBoard,
     BOARD_PAGE_SIZE,
   );
 
@@ -96,15 +98,11 @@ export function NeighborToolsSection({
   const isRefreshing =
     neighborBoardRefreshing || neighborBoardSyncingPagination;
 
-  const canLoadMore =
-    !neighborBoardRefreshing &&
-    !neighborBoardSyncingPagination &&
-    boardStatus === "CanLoadMore";
-  const loadingMore = boardStatus === "LoadingMore";
-
-  const onLoadMore = useCallback(() => {
-    loadMoreBoard(BOARD_PAGE_SIZE);
-  }, [loadMoreBoard]);
+  const canLoadMore = paginatedCanLoadMore(
+    boardStatus,
+    neighborBoardRefreshing,
+    neighborBoardSyncingPagination,
+  );
 
   const showNeighborEmpty =
     !isLoading && tools.length === 0 && !canLoadMore;
@@ -115,71 +113,47 @@ export function NeighborToolsSection({
   );
 
   return (
-    <section
-      aria-labelledby="browse-neighbors-heading"
-      aria-busy={isLoading || isRefreshing || undefined}
-      className="space-y-4"
-    >
-      <h2
-        id="browse-neighbors-heading"
-        className="font-display text-2xl font-bold leading-none text-ink"
-      >
-        {TOOLS_COPY.browseSectionLabel}
-      </h2>
-
-      <CategoryFilterBar
-        value={categoryFilter}
-        onChange={setCategoryFilter}
-      />
-
-      {isLoading ? (
+    <ToolsSection
+      headingId="browse-neighbors-heading"
+      heading={TOOLS_COPY.browseSectionLabel}
+      toolbar={categoryToolbar}
+      busy={isLoading || isRefreshing}
+      isLoading={isLoading}
+      loading={
         <ToolCardSkeletonGrid
           count={NEIGHBOR_BOARD_SKELETON_COUNT}
           label="Loading tools on the board"
         />
-      ) : showNeighborEmpty ? (
+      }
+      isEmpty={showNeighborEmpty}
+      empty={
         <Panel>
           <p className="text-sm text-ink-muted">{emptyMessage}</p>
         </Panel>
-      ) : (
-        <>
-          {tools.length > 0 ? (
-            <ul className={TOOL_CARD_GRID_CLASS}>
-              {tools.map((tool) => (
-                <li key={tool._id} className="min-h-0">
-                  <ToolCard
-                    tool={tool}
-                    onBorrow={() => onBorrowTool(tool)}
-                    onRemove={() => requestRemoveListing(tool)}
-                    {...(requestTrustedLenderChange
-                      ? neighborToolTrustCardProps(
-                          tool,
-                          requestTrustedLenderChange,
-                          pendingTrustedUserId,
-                        )
-                      : {})}
-                  />
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {canLoadMore ? (
-            <div className="flex justify-center pt-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={loadingMore}
-                onClick={onLoadMore}
-              >
-                {loadingMore
-                  ? TOOLS_COPY.loadingMore
-                  : TOOLS_COPY.loadMoreBoard}
-              </Button>
-            </div>
-          ) : null}
-        </>
-      )}
-    </section>
+      }
+      loadMore={{
+        canLoadMore,
+        loadingMore,
+        onLoadMore: loadMore,
+        label: TOOLS_COPY.loadMoreBoard,
+        loadingLabel: TOOLS_COPY.loadingMore,
+      }}
+    >
+      {tools.length > 0 ? (
+        <ul className={TOOL_CARD_GRID_CLASS}>
+          {tools.map((tool) => (
+            <li key={tool._id} className="min-h-0">
+              <NeighborToolCard
+                tool={tool}
+                onBorrow={() => onBorrowTool(tool)}
+                onRemove={() => requestRemoveListing(tool)}
+                requestTrustedLenderChange={requestTrustedLenderChange}
+                pendingTrustedUserId={pendingTrustedUserId}
+              />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </ToolsSection>
   );
 }

@@ -10,6 +10,8 @@ import type { Id } from "convex/_generated/dataModel";
 
 import { TOOLS_COPY } from "../constants/copy";
 import type { MyTool } from "../types/tools";
+import { getMyListingPresentation } from "../utils/getMyListingPresentation";
+import { listingManagementLock } from "../utils/listingManagementLock";
 
 type ListingConfirmRemove = {
   type: "remove";
@@ -54,11 +56,10 @@ export function useListingActions() {
 
   const openEditModal = useCallback(
     (tool: MyTool) => {
-      if (tool.hasActiveLoan) {
+      const { editDisabled, editTooltip } = getMyListingPresentation(tool);
+      if (editDisabled) {
         toast(
-          tool.activeLoan?.started
-            ? TOOLS_COPY.listingLockedActiveLoan
-            : TOOLS_COPY.listingLockedReservation,
+          editTooltip ?? TOOLS_COPY.listingLockedReservation,
           "error",
         );
         return;
@@ -76,16 +77,9 @@ export function useListingActions() {
 
   const requestRemoveListing = useCallback(
     (tool: ListingRemoveTarget) => {
-      const locked =
-        tool.hasActiveLoan === true ||
-        (tool.upcomingReservationCount ?? 0) > 0;
+      const { locked, tooltip } = listingManagementLock(tool);
       if (locked) {
-        toast(
-          tool.activeLoan?.started
-            ? TOOLS_COPY.listingLockedActiveLoan
-            : TOOLS_COPY.listingLockedReservation,
-          "error",
-        );
+        toast(tooltip ?? TOOLS_COPY.listingLockedReservation, "error");
         return;
       }
       setListingConfirm({

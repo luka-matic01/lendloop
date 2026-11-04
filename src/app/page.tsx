@@ -2,7 +2,7 @@ import { AppShell, Container, Panel } from "@/components/ui";
 import { Masthead } from "@/components/ui/Masthead";
 import { PUBLIC_ENV_KEYS } from "@/constants";
 import { HomeDashboardGate, HomeHero } from "@/features/home";
-import { HomeToolsSectionSkeleton } from "@/features/tools";
+import { HomeToolsPreviewSkeleton } from "@/features/tools";
 import { Suspense } from "react";
 import { isAppConfigured } from "@/lib/appConfig";
 
@@ -19,7 +19,7 @@ export default function HomePage() {
 
       <main className="w-full flex-1">
         {isReady ? (
-          <Suspense fallback={<HomeToolsSectionSkeleton />}>
+          <Suspense fallback={<HomeToolsPreviewSkeleton />}>
             <HomeDashboardGate />
           </Suspense>
         ) : null}

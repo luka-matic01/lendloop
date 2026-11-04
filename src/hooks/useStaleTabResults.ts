@@ -6,7 +6,7 @@ import {
 } from "@/lib/staleTabResultCache";
 
 /** Convex `usePaginatedQuery` status values we branch on. */
-type PaginatedStatus =
+export type PaginatedQueryStatus =
   | "LoadingFirstPage"
   | "LoadingMore"
   | "CanLoadMore"
@@ -21,7 +21,7 @@ export { clearStaleTabResultCache as clearStaleTabResultsCache } from "@/lib/sta
  */
 export function useStaleTabResults<T>(
   tabKey: string,
-  status: PaginatedStatus,
+  status: PaginatedQueryStatus,
   items: T[],
   loadMore?: (numItems: number) => void,
   pageSize?: number,

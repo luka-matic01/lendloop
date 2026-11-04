@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Panel, Skeleton } from "@/components/ui";
+import { PageSection, Panel, Skeleton } from "@/components/ui";
 
 import { LoanListSkeleton } from "./LoanRowSkeleton";
 
@@ -27,28 +27,21 @@ export function LoanSection({
   skeletonRowCount = 2,
   children,
 }: LoanSectionProps) {
-  return (
-    <section
-      aria-labelledby={headingId}
-      aria-busy={isLoading || undefined}
-      className="space-y-4"
-    >
-      <div className="space-y-1.5">
-        <h2
-          id={headingId}
-          className="font-display text-2xl font-bold leading-none text-ink"
-        >
-          {heading}
-          {isLoading ? (
-            <Skeleton className="ml-2 inline-block h-5 w-8 align-middle" />
-          ) : itemCount > 0 ? (
-            <span className="ml-2 text-lg font-semibold text-ink-muted">
-              ({itemCount})
-            </span>
-          ) : null}
-        </h2>
-      </div>
+  const titleSuffix = isLoading ? (
+    <Skeleton className="ml-2 inline-block h-5 w-8 align-middle" />
+  ) : itemCount > 0 ? (
+    <span className="ml-2 text-lg font-semibold text-ink-muted">
+      ({itemCount})
+    </span>
+  ) : null;
 
+  return (
+    <PageSection
+      headingId={headingId}
+      title={heading}
+      titleSuffix={titleSuffix}
+      busy={isLoading}
+    >
       {isLoading ? (
         <LoanListSkeleton
           count={skeletonRowCount}
@@ -62,6 +55,6 @@ export function LoanSection({
       ) : (
         children
       )}
-    </section>
+    </PageSection>
   );
 }

@@ -4,7 +4,13 @@ import { Panel } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
 import { TOOL_CATEGORY_ACCENT } from "../constants/categoryVisual";
-import type { ToolCategoryKey, ToolConditionKey } from "../constants/labels";
+import { conditionMetaTextClass } from "../constants/conditionVisual";
+import {
+  TOOL_CATEGORY_LABELS,
+  TOOL_CONDITION_LABELS,
+  type ToolCategoryKey,
+  type ToolConditionKey,
+} from "../constants/labels";
 import {
   TOOL_CARD_DESCRIPTION_CLASS,
   TOOL_CARD_OWN_LISTING_PANEL,
@@ -13,7 +19,8 @@ import {
   TOOL_CARD_PANEL_CLASS,
   TOOL_CARD_TITLE_CLASS,
 } from "../constants/visual";
-import { ToolCardStateRow, type ToolListingState } from "./ToolCardMeta";
+import type { ToolListingState } from "../types/listingState";
+import { ToolListingStateBadge } from "./ToolListingStateBadge";
 
 type ToolCardLayoutProps = {
   category: ToolCategoryKey;
@@ -82,11 +89,23 @@ export function ToolCardLayout({
         </div>
       </div>
 
-      <ToolCardStateRow
-        category={category}
-        condition={condition}
-        listingState={listingState}
-      />
+      <div
+        className={cn(
+          "flex min-w-0 items-center gap-3",
+          listingState ? "justify-between" : "justify-start",
+        )}
+      >
+        <p className="min-w-0 text-xs font-semibold text-ink-muted">
+          {TOOL_CATEGORY_LABELS[category]}
+          <span aria-hidden> · </span>
+          <span className={conditionMetaTextClass[condition]}>
+            {TOOL_CONDITION_LABELS[condition]}
+          </span>
+        </p>
+        {listingState ? (
+          <ToolListingStateBadge state={listingState} />
+        ) : null}
+      </div>
 
       {description ? (
         <p className={TOOL_CARD_DESCRIPTION_CLASS}>{description}</p>

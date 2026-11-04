@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
 
-import { Panel, buttonClassName } from "@/components/ui";
+import {
+  HomeFeatureSection,
+  HomePreviewBody,
+  Panel,
+  buttonClassName,
+} from "@/components/ui";
 import { ROUTES } from "@/constants";
 import type { AccountSyncState } from "@/features/account";
 import { api } from "convex/_generated/api";
@@ -13,10 +18,9 @@ import { LOANS_COPY } from "../constants/copy";
 import { HOME_LOANS_PREVIEW_LIMIT } from "../constants/limits";
 import { useLoanActions } from "../hooks/useLoanActions";
 import { partitionLoansForSection } from "../utils/sortLoans";
-import { HomeLoansFrame } from "./HomeLoansFrame";
+import { CancelBorrowConfirmModal } from "./CancelBorrowConfirmModal";
 import { LoanListPanel } from "./LoanListPanel";
 import { LoanListSkeleton } from "./LoanRowSkeleton";
-import { CancelBorrowConfirmModal } from "./CancelBorrowConfirmModal";
 import { MarkReturnedConfirmModal } from "./MarkReturnedConfirmModal";
 
 type HomeLoansPreviewProps = {
@@ -58,20 +62,21 @@ export function HomeLoansPreview({ accountSync }: HomeLoansPreviewProps) {
   const hasRows = previewIncoming.length > 0 || previewMine.length > 0;
 
   return (
-    <HomeLoansFrame
-      busy={isLoading}
+    <HomeFeatureSection
+      headingId="home-loans-heading"
+      title={LOANS_COPY.homeLoansTitle}
       description={LOANS_COPY.homeLoansSignedInDescription}
+      busy={isLoading}
+      borderTop
     >
-      {syncFailed ? (
-        <Panel tone="notice">
-          <p className="text-base text-ink-muted">
-            {accountSync.errorMessage ??
-              "Could not sync your account. Refresh and try again."}
-          </p>
-        </Panel>
-      ) : isLoading ? (
-        <LoanListSkeleton actionCount={2} label="Loading loan activity" />
-      ) : (
+      <HomePreviewBody
+        syncFailed={syncFailed}
+        errorMessage={accountSync.errorMessage}
+        isLoading={isLoading}
+        loading={
+          <LoanListSkeleton actionCount={2} label="Loading loan activity" />
+        }
+      >
         <div className="space-y-6">
           {!hasRows ? (
             <Panel>
@@ -122,9 +127,10 @@ export function HomeLoansPreview({ accountSync }: HomeLoansPreviewProps) {
             {LOANS_COPY.seeAllLoans}
           </Link>
         </div>
-      )}
+      </HomePreviewBody>
+
       <MarkReturnedConfirmModal loanActions={loanActions} />
       <CancelBorrowConfirmModal loanActions={loanActions} />
-    </HomeLoansFrame>
+    </HomeFeatureSection>
   );
 }
