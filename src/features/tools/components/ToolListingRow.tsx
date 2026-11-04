@@ -50,10 +50,6 @@ export function ToolListingRow({
     <ListRow
       className={className}
       title={tool.name}
-      titleClassName={cn(
-        "transition-opacity",
-        view.titleMuted && "text-ink-muted opacity-55",
-      )}
       headerActions={
         <ListingRowIconActions
           view={view}

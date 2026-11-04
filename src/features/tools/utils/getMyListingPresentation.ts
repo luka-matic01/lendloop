@@ -21,7 +21,6 @@ export type MyListingPresentation = {
   listingState: ToolListingState;
   categoryLabel: string;
   conditionLabel: string;
-  titleMuted: boolean;
   editDisabled: boolean;
   editTooltip: string | undefined;
   removeDisabled: boolean;
@@ -50,7 +49,6 @@ export function getMyListingPresentation(tool: MyTool): MyListingPresentation {
   const isLive = tool.isAvailable;
   const isOnLoan = loanInProgress;
   const listingState = getToolListingState(tool);
-  const isReserved = listingState === "reserved";
   const hasRequests = tool.pendingRequestCount > 0;
   const reservationCount = tool.upcomingReservationCount;
   const { locked: listingLockedForEdit, tooltip: listingLockedTooltip } =
@@ -67,13 +65,6 @@ export function getMyListingPresentation(tool: MyTool): MyListingPresentation {
       ? getBorrowDueUrgency(activeLoan.endDate)
       : null;
 
-  const titleMuted =
-    !isLive &&
-    !isOnLoan &&
-    !isReserved &&
-    !hasRequests &&
-    reservationCount === 0;
-
   const showDetailsBlock =
     (showMarkReturned && activeLoan !== undefined) || hasRequests;
 
@@ -84,7 +75,6 @@ export function getMyListingPresentation(tool: MyTool): MyListingPresentation {
     listingState,
     categoryLabel: TOOL_CATEGORY_LABELS[tool.category],
     conditionLabel: TOOL_CONDITION_LABELS[tool.condition],
-    titleMuted,
     editDisabled: listingLockedForEdit,
     editTooltip: listingLockedTooltip,
     removeDisabled: listingLockedForEdit,
