@@ -15,3 +15,6 @@ export const MY_LISTINGS_PAGE_SIZE = 50;
 
 /** Max description length returned on board list rows (full text on edit/borrow flows). */
 export const BOARD_LIST_DESCRIPTION_MAX = 160;
+
+/** Inclusive UTC calendar days allowed on one borrow request. */
+export const MAX_BORROW_CALENDAR_DAYS = 90;

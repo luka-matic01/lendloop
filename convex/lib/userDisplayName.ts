@@ -33,6 +33,15 @@ export function clerkDisplayName(raw: string | undefined): string {
   return trimmed;
 }
 
+/** Tool board owner line: name only — never expose another neighbor's email. */
+export function neighborBoardDisplayName(user: UserLike): string {
+  const name = clerkDisplayName(user?.name);
+  if (name) {
+    return name;
+  }
+  return GENERIC_USER_LABEL;
+}
+
 /** Label for signed-in neighbors: Clerk name, else email, else fallback. */
 export function userDisplayName(user: UserLike): string {
   if (!user) {

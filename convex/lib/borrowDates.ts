@@ -1,4 +1,5 @@
 import { AuthErrorCode, authError } from "./errors";
+import { MAX_BORROW_CALENDAR_DAYS } from "./limits";
 
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -8,22 +9,28 @@ function utcDayOffset(fromIso: string, toIso: string): number {
   return Math.round((fromMs - toMs) / 86_400_000);
 }
 
+/** True when `iso` is a real UTC calendar date (YYYY-MM-DD). */
+export function isUtcCalendarDate(iso: string): boolean {
+  const trimmed = iso.trim();
+  if (!ISO_DATE_PATTERN.test(trimmed)) {
+    return false;
+  }
+  const [y, m, d] = trimmed.split("-").map(Number);
+  const parsed = new Date(Date.UTC(y, m - 1, d));
+  return (
+    parsed.getUTCFullYear() === y &&
+    parsed.getUTCMonth() === m - 1 &&
+    parsed.getUTCDate() === d
+  );
+}
+
 /** True for real UTC calendar dates within ±1 day of today (for automation `today`). */
 export function isAutomationTodayParam(
   today: string,
   nowMs = Date.now(),
 ): boolean {
   const trimmed = today.trim();
-  if (!ISO_DATE_PATTERN.test(trimmed)) {
-    return false;
-  }
-  const [y, m, d] = trimmed.split("-").map(Number);
-  const parsed = new Date(Date.UTC(y, m - 1, d));
-  if (
-    parsed.getUTCFullYear() !== y ||
-    parsed.getUTCMonth() !== m - 1 ||
-    parsed.getUTCDate() !== d
-  ) {
+  if (!isUtcCalendarDate(trimmed)) {
     return false;
   }
   const ref = utcTodayIso(nowMs);
@@ -84,18 +91,11 @@ export function parseBorrowDateRange(
   const start = startDate.trim();
   const end = endDate.trim();
 
-  if (!ISO_DATE_PATTERN.test(start) || !ISO_DATE_PATTERN.test(end)) {
+  if (!isUtcCalendarDate(start) || !isUtcCalendarDate(end)) {
     authError(
       AuthErrorCode.VALIDATION_ERROR,
-      "Dates must be in YYYY-MM-DD format",
+      "Dates must be valid calendar days in YYYY-MM-DD format",
     );
-  }
-
-  const startTime = Date.parse(`${start}T00:00:00Z`);
-  const endTime = Date.parse(`${end}T00:00:00Z`);
-
-  if (Number.isNaN(startTime) || Number.isNaN(endTime)) {
-    authError(AuthErrorCode.VALIDATION_ERROR, "Invalid borrow dates");
   }
 
   const today = utcTodayIso(nowMs);
@@ -110,6 +110,14 @@ export function parseBorrowDateRange(
     authError(
       AuthErrorCode.VALIDATION_ERROR,
       "Return date must be on or after start date",
+    );
+  }
+
+  const inclusiveDays = utcDayOffset(end, start) + 1;
+  if (inclusiveDays > MAX_BORROW_CALENDAR_DAYS) {
+    authError(
+      AuthErrorCode.VALIDATION_ERROR,
+      `Borrow period cannot exceed ${MAX_BORROW_CALENDAR_DAYS} days`,
     );
   }
 

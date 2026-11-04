@@ -70,7 +70,8 @@
     },
     {
       "parameters": {
-        "jsCode": "const row = $input.first().json;\ntry {\n  if ($env.SIMULATE_DELIVERY_FAIL === '1') {\n    throw new Error('Simulated delivery failure (SIMULATE_DELIVERY_FAIL)');\n  }\n  const email = (row.borrowerEmail ?? '').trim();\n  if (!email) {\n    throw new Error('Missing borrower email');\n  }\n  const line = `Overdue reminder — return \"${row.toolName}\" (was due ${row.endDate}). To: ${row.borrowerName} <${email}>`;\n  console.log(line);\n  return [{ json: { ...row, reminderStatus: 'sent' } }];\n} catch (error) {\n  const detail = error instanceof Error ? error.message : String(error);\n  console.error('Overdue reminder failed:', detail);\n  return [{ json: { ...row, reminderStatus: 'failed', detail } }];\n}"
+        "mode": "runOnceForEachItem",
+        "jsCode": "const row = $json;\ntry {\n  if ($env.SIMULATE_DELIVERY_FAIL === '1') {\n    throw new Error('Simulated delivery failure (SIMULATE_DELIVERY_FAIL)');\n  }\n  const email = (row.borrowerEmail ?? '').trim();\n  if (!email) {\n    throw new Error('Missing borrower email');\n  }\n  const line = `Overdue reminder — return \"${row.toolName}\" (was due ${row.endDate}). To: ${row.borrowerName} <${email}>`;\n  console.log(line);\n  return { json: { ...row, reminderStatus: 'sent' } };\n} catch (error) {\n  const detail = error instanceof Error ? error.message : String(error);\n  console.error('Overdue reminder failed:', detail);\n  return { json: { ...row, reminderStatus: 'failed', detail } };\n}"
       },
       "id": "b1b2c3d4-1111-4000-8000-000000000005",
       "name": "Deliver reminder",
@@ -80,7 +81,8 @@
     },
     {
       "parameters": {
-        "jsCode": "const crypto = require('crypto');\nconst secret = $env.WEBHOOK_HMAC_SECRET;\nconst base = $env.CONVEX_SITE_URL?.replace(/\\/$/, '');\nconst row = $input.first().json;\nconst status = row.reminderStatus === 'sent' ? 'sent' : 'failed';\nconst payload = {\n  idempotencyKey: row.idempotencyKey,\n  loanRequestId: row.loanRequestId,\n  status,\n};\nif (status === 'failed' && row.detail) {\n  payload.detail = row.detail;\n}\nconst body = JSON.stringify(payload);\nconst signature = crypto.createHmac('sha256', secret).update(body).digest('hex');\nreturn [{ json: { url: `${base}/automation/reminder-sent`, body, signature } }];"
+        "mode": "runOnceForEachItem",
+        "jsCode": "const crypto = require('crypto');\nconst secret = $env.WEBHOOK_HMAC_SECRET;\nconst base = $env.CONVEX_SITE_URL?.replace(/\\/$/, '');\nconst row = $json;\nconst status = row.reminderStatus === 'sent' ? 'sent' : 'failed';\nconst payload = {\n  idempotencyKey: row.idempotencyKey,\n  loanRequestId: row.loanRequestId,\n  status,\n};\nif (status === 'failed' && row.detail) {\n  payload.detail = row.detail;\n}\nconst body = JSON.stringify(payload);\nconst signature = crypto.createHmac('sha256', secret).update(body).digest('hex');\nreturn { json: { url: `${base}/automation/reminder-sent`, body, signature } };"
       },
       "id": "b1b2c3d4-1111-4000-8000-000000000006",
       "name": "Sign write-back",

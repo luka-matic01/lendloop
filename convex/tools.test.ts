@@ -271,6 +271,36 @@ describe("tools", () => {
     expect(boardAfterPause.page).toHaveLength(0);
   });
 
+  it("listBoard shows Neighbor instead of owner email when name is missing", async () => {
+    const t = createConvexTest();
+    const { session: lenderSession, userId: lenderId } = await provisionUser(
+      t,
+      "email-only-lender@lendloop.test",
+      { name: "" },
+    );
+    await t.run(async (ctx) => {
+      await ctx.db.patch(lenderId, { name: "", email: "email-only-lender@lendloop.test" });
+    });
+
+    await lenderSession.mutation(api.tools.create, {
+      name: "Wheelbarrow",
+      category: "garden",
+      condition: "good",
+      description: "",
+    });
+
+    const { session: neighborSession } = await provisionUser(
+      t,
+      "viewer@lendloop.test",
+    );
+    const board = await neighborSession.query(
+      api.tools.listBoard,
+      firstBoardPage(),
+    );
+    expect(board.page[0]?.ownerName).toBe("Neighbor");
+    expect(board.page[0]?.ownerName).not.toContain("@");
+  });
+
   it("listBoard surfaces pending and approved borrows for the viewer", async () => {
     const t = createConvexTest();
     const { session: lenderSession } = await provisionUser(

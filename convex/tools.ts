@@ -30,7 +30,10 @@ import {
   toolCategoryValidator,
   toolConditionValidator,
 } from "./lib/validators";
-import { userDisplayName } from "./lib/userDisplayName";
+import {
+  neighborBoardDisplayName,
+  userDisplayName,
+} from "./lib/userDisplayName";
 
 const TOOL_NAME_MAX_LENGTH = 80;
 const TOOL_DESCRIPTION_MAX_LENGTH = 280;
@@ -143,7 +146,7 @@ async function hydrateBoardPage(
       condition: tool.condition,
       description: boardListDescription(tool.description),
       ownerId: tool.ownerId,
-      ownerName: userDisplayName(owner),
+      ownerName: neighborBoardDisplayName(owner),
       ownerIsTrustedLender: owner?.isTrustedLender ?? false,
       isOwner,
       canRemove: viewer.role === "admin" || isOwner,

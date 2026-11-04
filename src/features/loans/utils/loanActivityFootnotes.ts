@@ -61,5 +61,24 @@ export function getLoanActivityFootnotes(
     });
   }
 
+  if (
+    perspective === "admin" &&
+    loan.latestAutomation?.status === "failed"
+  ) {
+    const { kind, createdAt, detail } = loan.latestAutomation;
+    let line: LoanActivityFootnoteLine = "automation_failed";
+    if (kind === "request_notification") {
+      line = "notification_failed";
+    } else if (kind === "overdue_reminder") {
+      line = "reminder_failed";
+    }
+    lines.push({
+      line,
+      atMs: createdAt,
+      tone: "negative",
+      detail,
+    });
+  }
+
   return lines;
 }

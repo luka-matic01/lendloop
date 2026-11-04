@@ -97,6 +97,17 @@ describe("loanRequests", () => {
       (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
     );
 
+    // Impossible calendar date
+    await expect(
+      borrower.mutation(api.loanRequests.create, {
+        toolId,
+        startDate: "2027-02-30",
+        endDate: "2027-03-01",
+      }),
+    ).rejects.toSatisfy(
+      (err: unknown) => errorCode(err) === AuthErrorCode.VALIDATION_ERROR,
+    );
+
     // Start date in the past
     await expect(
       borrower.mutation(api.loanRequests.create, {
