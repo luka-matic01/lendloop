@@ -6,7 +6,7 @@ import { useQuery } from "convex/react";
 
 import { Panel, buttonClassName } from "@/components/ui";
 import { ROUTES } from "@/constants";
-import { isBoardQueryReady, type AccountSyncState } from "@/features/account";
+import type { AccountSyncState } from "@/features/account";
 import { HomeFeatureSection } from "@/features/home/components/HomeFeatureSection";
 import { HomePreviewBody } from "@/features/home/components/HomePreviewBody";
 import { api } from "convex/_generated/api";
@@ -25,7 +25,7 @@ type HomeLoansPreviewProps = {
 };
 
 export function HomeLoansPreview({ accountSync }: HomeLoansPreviewProps) {
-  const queriesReady = isBoardQueryReady(accountSync.phase);
+  const queriesReady = accountSync.phase === "ready";
   const syncFailed = accountSync.phase === "error";
 
   const incoming = useQuery(

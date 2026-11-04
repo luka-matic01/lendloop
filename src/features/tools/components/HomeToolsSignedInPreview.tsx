@@ -6,7 +6,6 @@ import { useState } from "react";
 import { buttonClassName } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import type { AccountSyncState } from "@/features/account";
-import { isBoardQueryReady } from "@/features/account";
 import { HomeFeatureSection } from "@/features/home/components/HomeFeatureSection";
 import { HomePreviewBody } from "@/features/home/components/HomePreviewBody";
 import {
@@ -35,7 +34,7 @@ export function HomeToolsSignedInPreview({
   const listingActions = useListingActions();
   const [borrowingTool, setBorrowingTool] = useState<BoardTool | null>(null);
 
-  const boardQueryReady = isBoardQueryReady(accountSync.phase);
+  const boardQueryReady = accountSync.phase === "ready";
   const syncFailed = accountSync.phase === "error";
   const { preview, isLoading: boardLoading } = useHomeBoardPreview(boardQueryReady);
   const isLoading = !syncFailed && boardLoading;
