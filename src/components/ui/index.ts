@@ -3,13 +3,7 @@ export { AppShell } from "./AppShell";
 export { Button, buttonClassName } from "./Button";
 export { IconButton } from "./IconButton";
 export { Tooltip } from "./Tooltip";
-export {
-  LenderTrustToggleIconButton,
-  TrustedLenderIndicator,
-} from "./TrustedLenderIndicator";
 export { Container } from "./Container";
-export { HomeFeatureSection } from "./HomeFeatureSection";
-export { HomePreviewBody } from "./HomePreviewBody";
 export {
   LIST_ROW_META_TEXT_CLASS,
   LIST_ROW_TITLE_CLASS,

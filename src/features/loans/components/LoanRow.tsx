@@ -4,11 +4,13 @@ import {
   Button,
   LIST_ROW_META_TEXT_CLASS,
   InlineRange,
-  LenderTrustToggleIconButton,
   ListRow,
   ListRowMetaSeparator,
-  TrustedLenderIndicator,
 } from "@/components/ui";
+import {
+  LenderTrustToggleIconButton,
+  TrustedLenderIndicator,
+} from "@/features/trust";
 import { cn } from "@/lib/utils";
 
 import { LOANS_COPY } from "../constants/copy";

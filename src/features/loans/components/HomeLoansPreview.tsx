@@ -4,14 +4,11 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { useQuery } from "convex/react";
 
-import {
-  HomeFeatureSection,
-  HomePreviewBody,
-  Panel,
-  buttonClassName,
-} from "@/components/ui";
+import { Panel, buttonClassName } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import type { AccountSyncState } from "@/features/account";
+import { HomeFeatureSection } from "@/features/home/components/HomeFeatureSection";
+import { HomePreviewBody } from "@/features/home/components/HomePreviewBody";
 import { api } from "convex/_generated/api";
 
 import { LOANS_COPY } from "../constants/copy";

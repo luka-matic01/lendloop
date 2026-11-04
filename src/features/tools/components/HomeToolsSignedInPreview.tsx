@@ -3,13 +3,11 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import {
-  buttonClassName,
-  HomeFeatureSection,
-  HomePreviewBody,
-} from "@/components/ui";
+import { buttonClassName } from "@/components/ui";
 import { ROUTES } from "@/constants";
 import type { AccountSyncState } from "@/features/account";
+import { HomeFeatureSection } from "@/features/home/components/HomeFeatureSection";
+import { HomePreviewBody } from "@/features/home/components/HomePreviewBody";
 import {
   BorrowRequestModal,
   TrustedLenderConfirmModal,

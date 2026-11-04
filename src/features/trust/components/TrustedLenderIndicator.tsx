@@ -1,9 +1,8 @@
 import { BadgeCheck, ShieldOff } from "lucide-react";
 
+import { IconButton } from "@/components/ui";
+import { Tooltip, type TooltipSide } from "@/components/ui/Tooltip";
 import { cn } from "@/lib/utils";
-
-import { IconButton } from "./IconButton";
-import { Tooltip, type TooltipSide } from "./Tooltip";
 
 const TRUST_ICON_CLASS = "size-4 shrink-0";
 

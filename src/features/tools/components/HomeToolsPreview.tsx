@@ -2,8 +2,9 @@
 
 import { useMemo } from "react";
 
-import { HomeFeatureSection, Panel } from "@/components/ui";
+import { Panel } from "@/components/ui";
 import type { AccountSyncState } from "@/features/account";
+import { HomeFeatureSection } from "@/features/home/components/HomeFeatureSection";
 import type { PublicToolListing } from "@/lib/convexServer";
 
 import { TOOLS_COPY } from "../constants/copy";

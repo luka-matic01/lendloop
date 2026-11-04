@@ -1,11 +1,10 @@
 import { Trash2 } from "lucide-react";
 
+import { Button, IconButton } from "@/components/ui";
 import {
-  Button,
-  IconButton,
   LenderTrustToggleIconButton,
   TrustedLenderIndicator,
-} from "@/components/ui";
+} from "@/features/trust";
 import { LOANS_COPY } from "@/features/loans";
 import { formatBorrowDayMonth } from "@/lib/formatBorrowDue";
 import { cn } from "@/lib/utils";

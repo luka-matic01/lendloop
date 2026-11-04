@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Panel } from "./Panel";
+import { Panel } from "@/components/ui";
 
 type HomePreviewBodyProps = {
   syncFailed: boolean;

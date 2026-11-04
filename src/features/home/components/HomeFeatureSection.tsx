@@ -1,9 +1,8 @@
 import type { ReactNode } from "react";
 
+import { Container } from "@/components/ui";
 import { SECTION_Y_CLASS } from "@/constants";
 import { cn } from "@/lib/utils";
-
-import { Container } from "./Container";
 
 type HomeFeatureSectionProps = {
   headingId: string;
