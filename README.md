@@ -4,17 +4,59 @@ Neighborhood tool-lending: list tools, request date ranges, approve or decline, 
 
 ## How the brief is met
 
-**Product**
+**Product surfaces**
 
-| Surface          | Behavior                                                                                                                                                                                                       |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `**/` (public)** | Tagline, read-only board via `tools.listPublic` (name + category only), sign-in CTA. Signed-in home adds server-driven previews without exposing owner PII on the public query.                                |
-| `**/tools**`     | Paginated neighbor board with category filter, trusted-lender affordance, borrow request modal (validated dates). Owners manage listings (create/edit/delete) with UI lock when a tool is on loan or reserved. |
-| `**/loans**`     | Incoming (lender approve/decline/return), my requests (status, overdue, cancel paths), admin-only all-loans view with trusted-lender toggle.                                                                   |
+| Surface          | Behavior                                                                                                                                                                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/` **(public)** | Tagline, read-only pool via `tools.listPublic` (name + category only), sign-in CTA. No owner ids or emails on anonymous queries.                                                                                                                                                                     |
+| `/tools`         | Neighbor board (paginated, category filter): borrow modal with date validation, booked-range hints, “out until” when someone else holds the tool. **My listings**: create/edit/delete, pause/resume board visibility, pending-request counts, mark returned from the row when a loan is in progress. |
+| `/loans`         | **Incoming** (approve / decline / return), **My requests** (cancel pending, cancel upcoming reservation, overdue cues), **All loans** (admin). Loan rows show recent automation activity.                                                                                                            |
 
-**Authorization & domain rules (Convex, not UI)**
+**Borrow & loan lifecycle**
 
-- Shared guards in `convex/lib/auth.ts` on mutations and sensitive queries; lending overlap, self-borrow, party-only actions, admin listing removal — covered by `convex-test` (`npm test`).
+Statuses: `pending` → `approved`  `declined`  `cancelled` → `returned` (from `approved` only). Every transition that matters to the other party schedules an n8n notification.
+
+| Actor | Action | Convex | Notes |
+| ----- | ------ | ------ | ----- |
+| Borrower | Request dates | `loanRequests.create` | Blocks self-borrow, unavailable tools, overlapping approved loans, duplicate active request on same tool. |
+| Borrower | Cancel | `cancelPending` / `cancelApproved` | Pending: borrower only. Approved reservation: lender or borrower **before** start date; after start → must `markReturned`. |
+| Lender | Approve / decline | `approve` / `decline` | Lender-only. Approve auto-**declines** overlapping **pending** requests on that tool; re-checks availability and approved overlap. |
+| Either party | Return | `markReturned` | Only when borrow period has **started**; notifies the other party. |
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending: create
+  pending --> approved: lender approve
+  pending --> declined: lender decline
+  pending --> cancelled: borrower cancel
+  approved --> cancelled: cancel reservation (before start)
+  approved --> returned: mark returned (after start)
+  declined --> [*]
+  cancelled --> [*]
+  returned --> [*]
+```
+
+**Listing, reservation, and board UX**
+
+Rules live in `convex/tools.ts`, `convex/loanRequests.ts`, and `convex/lib/loans.ts`; the UI mirrors them (disabled controls + tooltips) so users see the same story Convex enforces.
+
+- **On loan (period started):** edit/remove listing blocked server-side (`toolHasOpenApprovedLoan`); owner can mark returned from My listings or Incoming.
+- **Reserved (approved, not started):** edit/remove blocked in UI; either party can cancel the reservation; putting the listing back on the board is blocked while an active loan is in progress.
+- **Neighbor board:** shows trusted-lender badge, your pending/approved state on a card, and when a tool is loaned out to someone else (`loanOutUntil` + booked ranges in the borrow modal).
+- **Availability toggle:** owner can hide a listing from the board without deleting it (`setAvailability`); hidden tools are not borrow targets.
+
+**Admin (in-context, not a separate console)**
+
+- `requireAdmin` on `users.setTrustedLender` and `loanRequests.listAllForAdmin`.
+- `requireToolAccess`**:** admin may remove any listing; owners retain CRUD on their own tools.
+- On the **neighbor board** (and signed-in home preview): admin gets remove-listing on any card plus trusted-lender mark/remove with confirm modal — same flows as `/loans` admin tab, without leaving the board.
+
+**Authorization (Convex, not UI-only)**
+
+- `convex/lib/auth.ts`: `requireUser`, `requireAdmin`, `assertOwner`, `requireToolAccess` (owner **or** admin for tool mutations).
+- Party checks on approve/decline/cancel/return; strangers cannot act on someone else’s request.
+- Bootstrap admin via `INITIAL_ADMIN_EMAIL` on first `ensureCurrentUser`.
+- `convex-test` **+ Vitest** (`npm test`): overlap, competing pending decline, cancel paths, listing lock while open approved loan, RBAC on trust and removal.
 
 **n8n & automation**
 
