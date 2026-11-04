@@ -18,12 +18,22 @@ export type LoanActivityFootnote = {
   detail?: string;
 };
 
+function isFailedRequestNotification(loan: LoanView): boolean {
+  const automation = loan.latestAutomation;
+  return (
+    automation?.status === "failed" &&
+    automation.kind === "request_notification"
+  );
+}
+
 /** Loan row corner: last status change / request time, plus optional overdue reminder. */
 export function getLoanActivityFootnotes(
   loan: LoanView,
   perspective: LoanPerspective,
 ): LoanActivityFootnote[] {
   const lines: LoanActivityFootnote[] = [];
+  const skipPendingReceivedBecauseNotifyFailed =
+    perspective === "admin" && isFailedRequestNotification(loan);
 
   if (loan.status === "pending") {
     if (perspective === "mine") {
@@ -32,7 +42,7 @@ export function getLoanActivityFootnotes(
         atMs: loan._creationTime,
         tone: "muted",
       });
-    } else {
+    } else if (!skipPendingReceivedBecauseNotifyFailed) {
       lines.push({
         line: "request_received",
         atMs: loan.requestNotifiedAt ?? loan._creationTime,

@@ -41,6 +41,110 @@ export const personalDemoTools: SeedNeighbor["tools"] = [
   },
 ];
 
+/** Placeholder for the signed-in reviewer in `seedDemoLoans`. */
+export const SEED_OWNER = "$owner";
+
+/** One open loan row; tool always belongs to the lender. Skipped when `$owner` is missing. */
+export type SeedDemoLoan = {
+  lender: string;
+  borrower: string;
+  toolName: string;
+  startDayOffset: number;
+  endDayOffset: number;
+  status: "pending" | "approved";
+  requestNotifiedHoursAgo?: number;
+  statusDecidedDaysAgo?: number;
+  lastReminderDaysAgo?: number;
+  automation?: {
+    kind: "request_notification" | "overdue_reminder";
+    status: "sent" | "failed";
+    detail?: string;
+  };
+};
+
+export const seedDemoLoans: SeedDemoLoan[] = [
+  {
+    lender: "priya-n",
+    borrower: "james-k",
+    toolName: "Food dehydrator",
+    startDayOffset: 4,
+    endDayOffset: 7,
+    status: "pending",
+    requestNotifiedHoursAgo: 6,
+  },
+  {
+    lender: "priya-n",
+    borrower: "omar-h",
+    toolName: "Tile wet saw",
+    startDayOffset: -4,
+    endDayOffset: 1,
+    status: "approved",
+    statusDecidedDaysAgo: 5,
+  },
+  {
+    lender: SEED_OWNER,
+    borrower: "maria-s",
+    toolName: "Cordless drill",
+    startDayOffset: 5,
+    endDayOffset: 8,
+    status: "pending",
+    automation: {
+      kind: "request_notification",
+      status: "failed",
+      detail: "SMTP connection refused (demo)",
+    },
+  },
+  {
+    lender: SEED_OWNER,
+    borrower: "james-k",
+    toolName: "Socket set",
+    startDayOffset: 7,
+    endDayOffset: 10,
+    status: "approved",
+    statusDecidedDaysAgo: 1,
+  },
+  {
+    lender: SEED_OWNER,
+    borrower: "james-k",
+    toolName: "6 ft step ladder",
+    startDayOffset: -14,
+    endDayOffset: -5,
+    status: "approved",
+    statusDecidedDaysAgo: 15,
+  },
+  {
+    lender: "maria-s",
+    borrower: SEED_OWNER,
+    toolName: "Circular saw",
+    startDayOffset: -12,
+    endDayOffset: -4,
+    status: "approved",
+    statusDecidedDaysAgo: 13,
+    lastReminderDaysAgo: 2,
+    automation: {
+      kind: "overdue_reminder",
+      status: "sent",
+    },
+  },
+  {
+    lender: "priya-n",
+    borrower: SEED_OWNER,
+    toolName: "Hedge trimmer",
+    startDayOffset: 3,
+    endDayOffset: 6,
+    status: "pending",
+  },
+  {
+    lender: "omar-h",
+    borrower: SEED_OWNER,
+    toolName: "Angle grinder",
+    startDayOffset: -3,
+    endDayOffset: 2,
+    status: "approved",
+    statusDecidedDaysAgo: 4,
+  },
+];
+
 export const seedNeighbors: SeedNeighbor[] = [
   {
     slug: "maria-s",

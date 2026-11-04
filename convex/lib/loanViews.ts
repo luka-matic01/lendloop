@@ -6,7 +6,10 @@ import {
   loanRequestStatusValidator,
   toolCategoryValidator,
 } from "./validators";
-import { userDisplayName } from "./userDisplayName";
+import {
+  neighborBoardDisplayName,
+  userDisplayName,
+} from "./userDisplayName";
 
 const latestAutomationValidator = v.optional(
   v.object({
@@ -77,7 +80,8 @@ export async function hydrateLoanRequests(
     ...new Set(requests.flatMap((r) => [r.borrowerId, r.lenderId])),
   ];
 
-  const includeAutomationLogs = options.automationAudience === "admin";
+  const isAdminAudience = options.automationAudience === "admin";
+  const includeAutomationLogs = isAdminAudience;
 
   const [tools, users, latestLogs] = await Promise.all([
     Promise.all(toolIds.map((id) => ctx.db.get(id))),
@@ -115,9 +119,13 @@ export async function hydrateLoanRequests(
       toolName: tool?.name ?? "Removed tool",
       toolCategory: tool?.category ?? "other",
       borrowerId: req.borrowerId,
-      borrowerName: userDisplayName(borrower),
+      borrowerName: isAdminAudience
+        ? userDisplayName(borrower)
+        : neighborBoardDisplayName(borrower),
       lenderId: req.lenderId,
-      lenderName: userDisplayName(lender),
+      lenderName: isAdminAudience
+        ? userDisplayName(lender)
+        : neighborBoardDisplayName(lender),
       lenderIsTrusted: lender?.isTrustedLender ?? false,
       startDate: req.startDate,
       endDate: req.endDate,

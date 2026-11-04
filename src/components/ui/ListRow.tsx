@@ -243,7 +243,7 @@ export function ListRow({
 }
 
 export function ListRowMetaSeparator() {
-  return <span aria-hidden>·</span>;
+  return <span aria-hidden> · </span>;
 }
 
 type ListRowSkeletonProps = {

@@ -678,4 +678,48 @@ describe("loanRequests", () => {
       detail: "SMTP connection refused",
     });
   });
+
+  it("member loan lists use Neighbor without email; admin list uses email when name is missing", async () => {
+    const t = createConvexTest();
+    const { session: lender } = await provisionUser(
+      t,
+      "email-only-lender@lendloop.test",
+      { name: "" },
+    );
+    const { session: borrower } = await provisionUser(
+      t,
+      "email-only-borrower@lendloop.test",
+      { name: "" },
+    );
+    const { session: admin } = await provisionUser(t, ADMIN_EMAIL);
+
+    const toolId = await lender.mutation(api.tools.create, {
+      name: "Post hole digger",
+      category: "garden",
+      condition: "good",
+      description: "",
+    });
+
+    await borrower.mutation(api.loanRequests.create, {
+      toolId,
+      startDate: "2026-11-01",
+      endDate: "2026-11-02",
+    });
+
+    const mine = await borrower.query(api.loanRequests.listMyRequests, {});
+    expect(mine[0]?.lenderName).toBe("Neighbor");
+    expect(mine[0]?.lenderName).not.toContain("@");
+    const incoming = await lender.query(
+      api.loanRequests.listIncomingRequests,
+      {},
+    );
+    expect(incoming[0]?.borrowerName).toBe("Neighbor");
+    expect(incoming[0]?.borrowerName).not.toContain("@");
+
+    const allLoans = await admin.query(api.loanRequests.listAllForAdmin, {});
+    expect(allLoans[0]).toMatchObject({
+      borrowerName: "email-only-borrower@lendloop.test",
+      lenderName: "email-only-lender@lendloop.test",
+    });
+  });
 });

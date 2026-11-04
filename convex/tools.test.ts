@@ -254,6 +254,7 @@ describe("tools", () => {
     expect(boardForAdmin.page[0]).toMatchObject({
       _id: toolId,
       ownerId: lenderId,
+      ownerName: "lender@test.com",
       ownerIsTrustedLender: true,
       isOwner: false,
       canRemove: true,
@@ -299,6 +300,15 @@ describe("tools", () => {
     );
     expect(board.page[0]?.ownerName).toBe("Neighbor");
     expect(board.page[0]?.ownerName).not.toContain("@");
+
+    const { session: adminSession } = await provisionUser(t, ADMIN_EMAIL);
+    const boardForAdmin = await adminSession.query(
+      api.tools.listBoard,
+      firstBoardPage(),
+    );
+    expect(boardForAdmin.page[0]?.ownerName).toBe(
+      "email-only-lender@lendloop.test",
+    );
   });
 
   it("listBoard surfaces pending and approved borrows for the viewer", async () => {

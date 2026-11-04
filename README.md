@@ -124,7 +124,7 @@ Docker Desktop, Node 20+, [Clerk](https://dashboard.clerk.com) dev app.
 | **1** | `npm install` · `cp .env.example .env.local` |
 | **2** | Fill `.env.local` (Clerk table below) |
 | **3** | `npm run setup` |
-| **4** | `npm run dev` · sign in as `INITIAL_ADMIN_EMAIL` · `npm run seed` |
+| **4** | `npm run dev` · sign in as `INITIAL_ADMIN_EMAIL` · `npm run seed` (deploys Convex, then seeds — CLI should report **`demoOpenLoans`: 8**) |
 
 ### Clerk (step 2)
 
@@ -142,7 +142,7 @@ Docker Desktop, Node 20+, [Clerk](https://dashboard.clerk.com) dev app.
 | **1** | `npm run reset:local` |
 | **2** | `npm run setup` |
 | **3** | `npm run dev` · sign in as `INITIAL_ADMIN_EMAIL` |
-| **4** | `npm run seed` |
+| **4** | `npm run seed` (expect **`demoOpenLoans`: 8** after sign-in) |
 
 Convex data UI: [http://127.0.0.1:6791](http://127.0.0.1:6791) (`CONVEX_SELF_HOSTED_ADMIN_KEY` in `.env.local`).
 

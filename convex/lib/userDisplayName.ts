@@ -42,7 +42,10 @@ export function neighborBoardDisplayName(user: UserLike): string {
   return GENERIC_USER_LABEL;
 }
 
-/** Label for signed-in neighbors: Clerk name, else email, else fallback. */
+/**
+ * Signed-in self label, or admin moderation label for another user:
+ * Clerk name, else stored email, else "Neighbor".
+ */
 export function userDisplayName(user: UserLike): string {
   if (!user) {
     return GENERIC_USER_LABEL;

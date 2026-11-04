@@ -146,7 +146,10 @@ async function hydrateBoardPage(
       condition: tool.condition,
       description: boardListDescription(tool.description),
       ownerId: tool.ownerId,
-      ownerName: neighborBoardDisplayName(owner),
+      ownerName:
+        viewer.role === "admin"
+          ? userDisplayName(owner)
+          : neighborBoardDisplayName(owner),
       ownerIsTrustedLender: owner?.isTrustedLender ?? false,
       isOwner,
       canRemove: viewer.role === "admin" || isOwner,
@@ -221,7 +224,7 @@ export const listMine = query({
     const borrowerNameById = new Map(
       borrowerIds.map((id, index) => [
         id,
-        userDisplayName(borrowers[index] ?? null),
+        neighborBoardDisplayName(borrowers[index] ?? null),
       ]),
     );
 

@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed": "convex run seed:run",
+    "seed": "convex dev --once && convex run seed:run",
     "setup": "node scripts/setup-local.mjs",
     "reset:local": "node scripts/reset-local.mjs",
     "n8n:import": "node scripts/n8n-import.mjs"

@@ -90,16 +90,21 @@ export function formatLoanActivityWhen(
   return formatRelativeTimeAgo(timestampMs, nowMs);
 }
 
-/** Visible top-right label: reminders get copy; everything else is just “when”. */
+/** Visible top-right label: reminders and failures include copy; status lines are just “when”. */
 export function formatLoanActivityCornerVisible(
   line: LoanActivityWhenLine,
   when: string,
 ): string {
-  if (line === "reminder_sent") {
-    return `Reminder sent ${when}`;
+  switch (line) {
+    case "reminder_sent":
+      return `Reminder sent ${when}`;
+    case "reminder_failed":
+      return `Reminder failed ${when}`;
+    case "notification_failed":
+      return `Notification failed ${when}`;
+    case "automation_failed":
+      return `Automation failed ${when}`;
+    default:
+      return when;
   }
-  if (line === "reminder_failed") {
-    return `Reminder failed ${when}`;
-  }
-  return when;
 }

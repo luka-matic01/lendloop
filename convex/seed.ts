@@ -7,7 +7,9 @@ import { primaryBootstrapAdminEmail } from "./lib/bootstrapAdmins";
 import { utcTodayIso } from "./lib/borrowDates";
 import {
   personalDemoTools,
+  SEED_OWNER,
   SEED_USER_TOKEN_PREFIX,
+  seedDemoLoans as seedDemoLoanRows,
   seedNeighbors,
 } from "./lib/seedFixtures";
 
@@ -19,6 +21,7 @@ const seedResultValidator = v.object({
   neighborUsers: v.number(),
   neighborTools: v.number(),
   personalTools: v.number(),
+  demoOpenLoans: v.number(),
   personalOwnerEmail: v.union(v.string(), v.null()),
   hint: v.union(v.string(), v.null()),
 });
@@ -62,6 +65,27 @@ async function findUserByEmail(ctx: MutationCtx, email: string) {
   }
   const users = await ctx.db.query("users").collect();
   return users.find((user) => user.email.trim().toLowerCase() === normalized) ?? null;
+}
+
+async function findSeedNeighbor(ctx: MutationCtx, slug: string) {
+  return ctx.db
+    .query("users")
+    .withIndex("by_token", (q) =>
+      q.eq("tokenIdentifier", `${SEED_USER_TOKEN_PREFIX}${slug}`),
+    )
+    .unique();
+}
+
+async function findToolForOwner(
+  ctx: MutationCtx,
+  ownerId: Id<"users">,
+  toolName: string,
+) {
+  const tools = await ctx.db
+    .query("tools")
+    .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
+    .collect();
+  return tools.find((tool) => tool.name === toolName) ?? null;
 }
 
 async function clearSeedNeighbors(ctx: MutationCtx) {
@@ -109,64 +133,88 @@ function isoDaysFromToday(offsetDays: number, nowMs = Date.now()): string {
   return `${y}-${m}-${d}`;
 }
 
-async function seedAutomationDemoLoans(
+async function resolveSeedPartyId(
   ctx: MutationCtx,
-  ownerId: Id<"users">,
+  slug: string,
+  personalOwnerId: Id<"users"> | null,
+): Promise<Id<"users"> | null> {
+  if (slug === SEED_OWNER) {
+    return personalOwnerId;
+  }
+  const user = await findSeedNeighbor(ctx, slug);
+  return user?._id ?? null;
+}
+
+async function insertSeedDemoLoans(
+  ctx: MutationCtx,
+  personalOwnerId: Id<"users"> | null,
+  nowMs: number,
 ) {
-  const users = await ctx.db.query("users").collect();
-  const maria = users.find((user) =>
-    user.tokenIdentifier.endsWith("maria-s"),
-  );
-  if (!maria) {
-    return;
-  }
+  let inserted = 0;
 
-  const mariaTools = await ctx.db
-    .query("tools")
-    .withIndex("by_owner", (q) => q.eq("ownerId", maria._id))
-    .collect();
-  const mariaLendable = mariaTools.find((tool) => tool.name === "Circular saw");
-  if (mariaLendable) {
-    await ctx.db.insert("loanRequests", {
-      toolId: mariaLendable._id,
-      borrowerId: ownerId,
-      lenderId: maria._id,
-      startDate: isoDaysFromToday(-12),
-      endDate: isoDaysFromToday(-4),
-      status: "approved",
+  for (const row of seedDemoLoanRows) {
+    if (
+      (row.lender === SEED_OWNER || row.borrower === SEED_OWNER) &&
+      !personalOwnerId
+    ) {
+      continue;
+    }
+
+    const lenderId = await resolveSeedPartyId(ctx, row.lender, personalOwnerId);
+    const borrowerId = await resolveSeedPartyId(
+      ctx,
+      row.borrower,
+      personalOwnerId,
+    );
+    if (!lenderId || !borrowerId) {
+      continue;
+    }
+
+    const tool = await findToolForOwner(ctx, lenderId, row.toolName);
+    if (!tool) {
+      continue;
+    }
+
+    const loanRequestId = await ctx.db.insert("loanRequests", {
+      toolId: tool._id,
+      borrowerId,
+      lenderId,
+      startDate: isoDaysFromToday(row.startDayOffset, nowMs),
+      endDate: isoDaysFromToday(row.endDayOffset, nowMs),
+      status: row.status,
+      requestNotifiedAt:
+        row.requestNotifiedHoursAgo !== undefined
+          ? nowMs - row.requestNotifiedHoursAgo * 3_600_000
+          : undefined,
+      statusDecidedAt:
+        row.statusDecidedDaysAgo !== undefined
+          ? nowMs - row.statusDecidedDaysAgo * 86_400_000
+          : undefined,
+      lastReminderSentAt:
+        row.lastReminderDaysAgo !== undefined
+          ? nowMs - row.lastReminderDaysAgo * 86_400_000
+          : undefined,
     });
+
+    if (row.automation) {
+      const today = utcTodayIso(nowMs);
+      const idempotencyKey =
+        row.automation.kind === "overdue_reminder"
+          ? `overdue:${loanRequestId}:${today}`
+          : `seed:notify:${loanRequestId}`;
+      await ctx.db.insert("automationLogs", {
+        loanRequestId,
+        kind: row.automation.kind,
+        idempotencyKey,
+        status: row.automation.status,
+        detail: row.automation.detail,
+      });
+    }
+
+    inserted += 1;
   }
 
-  const ownerTools = await ctx.db
-    .query("tools")
-    .withIndex("by_owner", (q) => q.eq("ownerId", ownerId))
-    .collect();
-  const toolByName = (name: string) =>
-    ownerTools.find((tool) => tool.name === name);
-
-  const demoDrill = toolByName("Cordless drill");
-  if (demoDrill) {
-    await ctx.db.insert("loanRequests", {
-      toolId: demoDrill._id,
-      borrowerId: maria._id,
-      lenderId: ownerId,
-      startDate: isoDaysFromToday(0),
-      endDate: isoDaysFromToday(3),
-      status: "pending",
-    });
-  }
-
-  const demoLadder = toolByName("6 ft step ladder");
-  if (demoLadder) {
-    await ctx.db.insert("loanRequests", {
-      toolId: demoLadder._id,
-      borrowerId: maria._id,
-      lenderId: ownerId,
-      startDate: isoDaysFromToday(5),
-      endDate: isoDaysFromToday(8),
-      status: "pending",
-    });
-  }
+  return inserted;
 }
 
 function resolveOwnerEmail(argsOwnerEmail?: string): string | null {
@@ -184,6 +232,7 @@ export const run = internalMutation({
   },
   returns: seedResultValidator,
   handler: async (ctx, args) => {
+    const nowMs = Date.now();
     await clearSeedNeighbors(ctx);
 
     let neighborTools = 0;
@@ -212,6 +261,7 @@ export const run = internalMutation({
     const personalOwnerEmail = resolveOwnerEmail(args.ownerEmail);
     let personalTools = 0;
     let hint: string | null = null;
+    let personalOwnerId: Id<"users"> | null = null;
 
     if (!personalOwnerEmail) {
       hint =
@@ -221,6 +271,7 @@ export const run = internalMutation({
       if (!owner) {
         hint = `No Convex user with email ${personalOwnerEmail} yet. Sign in once in the app, then run npm run seed again.`;
       } else {
+        personalOwnerId = owner._id;
         await clearPersonalDemoListings(ctx, owner._id);
         for (const tool of personalDemoTools) {
           await ctx.db.insert("tools", {
@@ -233,14 +284,20 @@ export const run = internalMutation({
           });
           personalTools += 1;
         }
-        await seedAutomationDemoLoans(ctx, owner._id);
       }
     }
+
+    const demoOpenLoans = await insertSeedDemoLoans(
+      ctx,
+      personalOwnerId,
+      nowMs,
+    );
 
     return {
       neighborUsers: seedNeighbors.length,
       neighborTools,
       personalTools,
+      demoOpenLoans,
       personalOwnerEmail,
       hint,
     };
