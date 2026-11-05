@@ -175,7 +175,7 @@ async function insertSeedDemoLoans(
       continue;
     }
 
-    const loanRequestId = await ctx.db.insert("loanRequests", {
+    await ctx.db.insert("loanRequests", {
       toolId: tool._id,
       borrowerId,
       lenderId,
