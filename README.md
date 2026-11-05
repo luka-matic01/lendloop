@@ -173,3 +173,4 @@ Critical paths are exercised against Convex directly (acting as lender, borrower
 3. **Atomic send claim** — record “about to send” before SMTP/console so a failed write-back cannot double-send on retry.
 4. **Future-dated bookings** — approving currently treats the tool as reserved/on loan immediately; product may want “reserved until start” on the board only.
 5. **Hosted ops** — managed Convex + n8n with queue mode, secret rotation, and tested backup restore.
+6. **Split automation HMAC secrets** — local dev uses one `WEBHOOK_HMAC_SECRET` for both directions; production would use separate secrets (n8n verifies Convex outbound on its webhook; Convex verifies n8n on `/automation/*`) so a leak in one system's env cannot forge signed requests to the other.
