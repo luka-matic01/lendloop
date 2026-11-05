@@ -55,11 +55,6 @@ export type SeedDemoLoan = {
   requestNotifiedHoursAgo?: number;
   statusDecidedDaysAgo?: number;
   lastReminderDaysAgo?: number;
-  automation?: {
-    kind: "request_notification" | "overdue_reminder";
-    status: "sent" | "failed";
-    detail?: string;
-  };
 };
 
 export const seedDemoLoans: SeedDemoLoan[] = [
@@ -88,11 +83,6 @@ export const seedDemoLoans: SeedDemoLoan[] = [
     startDayOffset: 5,
     endDayOffset: 8,
     status: "pending",
-    automation: {
-      kind: "request_notification",
-      status: "failed",
-      detail: "SMTP connection refused (demo)",
-    },
   },
   {
     lender: SEED_OWNER,
@@ -121,10 +111,6 @@ export const seedDemoLoans: SeedDemoLoan[] = [
     status: "approved",
     statusDecidedDaysAgo: 13,
     lastReminderDaysAgo: 2,
-    automation: {
-      kind: "overdue_reminder",
-      status: "sent",
-    },
   },
   {
     lender: "priya-n",

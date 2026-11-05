@@ -196,21 +196,6 @@ async function insertSeedDemoLoans(
           : undefined,
     });
 
-    if (row.automation) {
-      const today = utcTodayIso(nowMs);
-      const idempotencyKey =
-        row.automation.kind === "overdue_reminder"
-          ? `overdue:${loanRequestId}:${today}`
-          : `seed:notify:${loanRequestId}`;
-      await ctx.db.insert("automationLogs", {
-        loanRequestId,
-        kind: row.automation.kind,
-        idempotencyKey,
-        status: row.automation.status,
-        detail: row.automation.detail,
-      });
-    }
-
     inserted += 1;
   }
 

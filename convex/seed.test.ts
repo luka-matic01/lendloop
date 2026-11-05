@@ -126,13 +126,9 @@ describe("seed", () => {
           row.status === "approved",
       ),
     ).toBe(true);
-    expect(
-      allLoans.some(
-        (row) =>
-          row.toolName === "Cordless drill" &&
-          row.latestAutomation?.status === "failed",
-      ),
-    ).toBe(true);
+    expect(allLoans.every((row) => row.latestAutomation === undefined)).toBe(
+      true,
+    );
     expect(allLoans.every((row) => row.status !== "returned")).toBe(true);
     expect(allLoans.every((row) => row.status !== "declined")).toBe(true);
     expect(allLoans.every((row) => row.status !== "cancelled")).toBe(true);
