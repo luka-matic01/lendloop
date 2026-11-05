@@ -50,7 +50,7 @@ stateDiagram-v2
 
 **Listing locks (enforced in Convex, mirrored in UI):** cannot edit or remove a listing while an approved borrow is open; cannot put a tool back on the board while it is out on loan. Hidden listings are not borrow targets.
 
-**Roles:** `admin` \| `user` on the Convex `users` row — never from the client. `requireUser` / `requireAdmin` / ownership and party checks on every mutation; `(app)/layout.tsx` only keeps signed-out users off app routes.
+**Roles:** `admin`  `user` on the Convex `users` row — never from the client. `requireUser` / `requireAdmin` / ownership and party checks on every mutation; `(app)/layout.tsx` only keeps signed-out users off app routes.
 
 ## Architecture
 
@@ -87,8 +87,6 @@ flowchart LR
 
 **Overdue:** n8n **02** (daily or manual) HMAC-GETs `/automation/overdue-loans` — approved loans past `endDate` not yet reminded today — then delivers reminders and POSTs idempotent `reminder-sent` rows (`overdue:{loanRequestId}:{date}`).
 
-**Why Docker locally:** self-hosted Convex and n8n share the compose network (`http://n8n:5678`, `http://convex:3211`) so webhooks work without a tunnel.
-
 | Layer | Responsibility |
 | --- | --- |
 | `src/app/` | Thin routes; `(app)/layout.tsx` calls `auth.protect()` once |
@@ -119,30 +117,38 @@ Docker Desktop, Node 20+, [Clerk](https://dashboard.clerk.com) dev app.
 
 ### First time
 
-| # | Command / action |
-| --- | --- |
-| **1** | `npm install` · `cp .env.example .env.local` |
-| **2** | Fill `.env.local` (Clerk table below) |
-| **3** | `npm run setup` |
-| **4** | `npm run dev` · sign in as `INITIAL_ADMIN_EMAIL` · `npm run seed` (deploys Convex, then seeds — CLI should report **`demoOpenLoans`: 8**) |
+| #     | Command / action                                                                                                                          |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **1** | `npm install` · `cp .env.example .env.local`                                                                                              |
+| **2** | [Clerk (step 2)](#clerk-step-2) — 4 values into `.env.local`                                                                              |
+| **3** | `npm run setup`                                                                                                                           |
+| **4** | `npm run dev` · sign in as `INITIAL_ADMIN_EMAIL` · `npm run seed` (deploys Convex, then seeds — CLI should report `demoOpenLoans`**: 8**) |
 
 ### Clerk (step 2)
 
-| `.env.local` | Clerk |
-| --- | --- |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | API keys → Publishable |
-| `CLERK_SECRET_KEY` | API keys → Secret |
-| `CLERK_JWT_ISSUER_DOMAIN` | [Convex integration](https://clerk.com/docs/integrations/databases/convex) or JWT template **`convex`** → Issuer |
-| `INITIAL_ADMIN_EMAIL` | Sign-in email |
+Use your Clerk **development** instance ([pick or create an app](https://dashboard.clerk.com/apps) if the dashboard is empty). Copy four values into `.env.local` **before** `npm run setup`:
+
+| Step  | Open in Clerk                                                                                                                                                               | Paste into `.env.local`             |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **1** | **[JWT templates](https://dashboard.clerk.com/~/jwt-templates)** → **New template** → name `**convex`** → copy **Issuer** (`https://….clerk.accounts.dev`, no trailing `/`) | `CLERK_JWT_ISSUER_DOMAIN`           |
+| **2** | **[API keys](https://dashboard.clerk.com/~/api-keys)** → **Publishable key**                                                                                                | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` |
+| **3** | Same **[API keys](https://dashboard.clerk.com/~/api-keys)** page → **Secret key**                                                                                           | `CLERK_SECRET_KEY`                  |
+| **4** | Your sign-in email (first login with this address becomes admin)                                                                                                            | `INITIAL_ADMIN_EMAIL`               |
+
+The template name `**convex**` is required — that is what the app asks Clerk for and what Convex validates. Wrong or missing issuer → you can look signed in while tools/loans never load.
+
+**Shortcut:** [Clerk × Convex setup](https://clerk.com/docs/integrations/databases/convex) can create the `convex` template for you; you still paste **Issuer** into `CLERK_JWT_ISSUER_DOMAIN`. Sign-in URLs in `.env.example` are already correct for this repo.
+
+`npm run setup` stops until all four fields look valid (`pk_` / `sk_`, issuer contains `clerk.accounts`, admin email has `@`).
 
 ### Retest
 
-| # | Command / action |
-| --- | --- |
-| **1** | `npm run reset:local` |
-| **2** | `npm run setup` |
+| #     | Command / action                                 |
+| ----- | ------------------------------------------------ |
+| **1** | `npm run reset:local`                            |
+| **2** | `npm run setup`                                  |
 | **3** | `npm run dev` · sign in as `INITIAL_ADMIN_EMAIL` |
-| **4** | `npm run seed` (expect **`demoOpenLoans`: 8** after sign-in) |
+| **4** | `npm run seed`                                   |
 
 Convex data UI: [http://127.0.0.1:6791](http://127.0.0.1:6791) (`CONVEX_SELF_HOSTED_ADMIN_KEY` in `.env.local`).
 
