@@ -6,13 +6,12 @@ Neighborhood tool-lending: list tools, request date ranges, approve or decline, 
 
 - [What it does](#what-it-does)
 - [Architecture](#architecture)
-- [Where to look in the code](#where-to-look-in-the-code)
 - [Stack](#stack)
 - [Local setup](#local-setup)
 - [Environment variables](#environment-variables)
 - [Security](#security)
 - [Testing](#testing)
-- [What I would change next](#what-i-would-change-next)
+- [What I would change for production](#what-i-would-change-for-production)
 
 ## What it does
 
@@ -94,26 +93,13 @@ flowchart LR
 | `convex/` | Auth helpers, lending rules, HTTP actions, outbound n8n |
 | `n8n/` | Exported workflows; secrets in `.env.docker` / Convex env only |
 
-## Where to look in the code
-
-| Topic | Start here |
-| --- | --- |
-| RBAC and party checks | `convex/lib/auth.ts`, `convex/loanRequests.test.ts`, `convex/tools.test.ts` |
-| Overlap, reservations, listing locks | `convex/lib/loans.ts`, `convex/loanRequests.ts`, `convex/tools.ts` |
-| HMAC (POST body + signed GET) | `convex/lib/hmac.ts`, `convex/http.ts` |
-| Overdue query + idempotent write-back | `convex/automation.ts`, `convex/automation.test.ts` |
-| Outbound n8n | `convex/lib/scheduleLoanNotification.ts`, `convex/automation.ts` |
-| Workflows | `n8n/0*.json` (import via `npm run n8n:import`), [`n8n/README.md`](n8n/README.md) |
-| Loan row automation copy | `src/features/loans/utils/loanActivityFootnotes.ts`, `LoanAutomationFootnote.tsx` |
-| Design tokens | `src/app/globals.css`, `src/components/ui/` |
-
 ## Stack
 
 Next.js 16 · TypeScript · Tailwind 4 · Clerk · Convex (self-hosted in dev) · n8n · Vitest · convex-test
 
 ## Local setup
 
-Docker Desktop, Node 20+, [Clerk](https://dashboard.clerk.com) dev app.
+Docker Desktop, Node 20+, [Clerk](https://dashboard.clerk.com) dev app. The local environment (including Convex and n8n) is orchestrated via `docker-compose.yml`.
 
 ### First time
 
@@ -180,7 +166,7 @@ npm run lint
 
 Critical paths are exercised against Convex directly (acting as lender, borrower, stranger, admin) — not only through React.
 
-## What I would change next
+## What I would change for production
 
 1. **Delivery guarantees** — transactional outbox with backoff and admin retry (today: `notifyN8n` runs after the mutation with a short inline retry loop; local proof is n8n execution + footnotes).
 2. **Real email in dev** — Mailpit or similar instead of console delivery in n8n.

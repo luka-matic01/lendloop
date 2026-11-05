@@ -15,7 +15,8 @@ import { loanRequestStatusValidator } from "./lib/validators";
 
 const REQUEST_KIND = "request_notification";
 const OVERDUE_KIND = "overdue_reminder";
-const OVERDUE_LIST_CAP = 100;
+/** Max approved-overdue rows scanned per HTTP call (n8n follows `nextCursor`). */
+const OVERDUE_PAGE_SIZE = 100;
 const NOTIFY_ATTEMPTS = 3;
 
 const notifyRoleValidator = v.union(v.literal("borrower"), v.literal("lender"));
@@ -204,20 +205,27 @@ export const recordAutomation = internalMutation({
 });
 
 export const listOverdueLoans = internalQuery({
-  args: { today: v.string() },
+  args: {
+    today: v.string(),
+    cursor: v.optional(v.string()),
+  },
   returns: v.object({
     today: v.string(),
     loans: v.array(overdueRowValidator),
+    nextCursor: v.union(v.string(), v.null()),
   }),
   handler: async (ctx, args) => {
-    const candidates = await ctx.db
+    const page = await ctx.db
       .query("loanRequests")
       .withIndex("by_status_endDate", (q) => q.eq("status", "approved"))
       .filter((q) => q.lt(q.field("endDate"), args.today))
-      .take(OVERDUE_LIST_CAP);
+      .paginate({
+        numItems: OVERDUE_PAGE_SIZE,
+        cursor: args.cursor ?? null,
+      });
 
     const loans = [];
-    for (const request of candidates) {
+    for (const request of page.page) {
       const idempotencyKey = overdueIdempotencyKey(request._id, args.today);
       const already = await ctx.db
         .query("automationLogs")
@@ -248,7 +256,11 @@ export const listOverdueLoans = internalQuery({
       });
     }
 
-    return { today: args.today, loans };
+    return {
+      today: args.today,
+      loans,
+      nextCursor: page.isDone ? null : page.continueCursor,
+    };
   },
 });
 

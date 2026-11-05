@@ -43,7 +43,12 @@ http.route({
       return badRequest("Invalid today parameter");
     }
 
-    const pathWithQuery = `${OVERDUE_PATH}?today=${today}`;
+    const cursorParam = url.searchParams.get("cursor")?.trim();
+    const query = new URLSearchParams({ today });
+    if (cursorParam) {
+      query.set("cursor", cursorParam);
+    }
+    const pathWithQuery = `${OVERDUE_PATH}?${query.toString()}`;
     const signature = req.headers.get(SIGNATURE_HEADER);
     const timestamp = req.headers.get(TIMESTAMP_HEADER);
     const ok = await verifySignedGet(
@@ -58,6 +63,7 @@ http.route({
 
     const data = await ctx.runQuery(internal.automation.listOverdueLoans, {
       today,
+      cursor: cursorParam || undefined,
     });
 
     return Response.json(data);

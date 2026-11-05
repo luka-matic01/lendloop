@@ -113,8 +113,10 @@ describe("automation", () => {
     expect(response.status).toBe(200);
     const data = (await response.json()) as {
       loans: Array<{ loanRequestId: string }>;
+      nextCursor: string | null;
     };
     expect(data.loans.map((row) => row.loanRequestId)).toContain(requestId);
+    expect(data.nextCursor).toBeNull();
   });
 
   it("records reminder write-backs idempotently", async () => {
@@ -265,6 +267,49 @@ describe("automation", () => {
       today: "2026-11-05",
     });
     expect(result.loans.map((row) => row.loanRequestId)).toEqual([requestId]);
+    expect(result.nextCursor).toBeNull();
+  });
+
+  it("pages overdue loans when more than one batch of candidates exist", async () => {
+    const t = createConvexTest();
+    const { session: lender, userId: lenderId } = await provisionUser(
+      t,
+      "lender@test.com",
+    );
+    const { userId: borrowerId } = await provisionUser(t, "borrower@test.com");
+
+    const toolId = await lender.mutation(api.tools.create, {
+      name: "Bulk drill",
+      category: "garden",
+      condition: "good",
+      description: "",
+    });
+
+    await t.run(async (ctx) => {
+      for (let i = 0; i < 101; i += 1) {
+        await ctx.db.insert("loanRequests", {
+          toolId,
+          borrowerId,
+          lenderId,
+          startDate: "2026-10-01",
+          endDate: "2026-10-10",
+          status: "approved",
+        });
+      }
+    });
+
+    const page1 = await t.query(internal.automation.listOverdueLoans, {
+      today: "2026-10-16",
+    });
+    expect(page1.loans).toHaveLength(100);
+    expect(page1.nextCursor).not.toBeNull();
+
+    const page2 = await t.query(internal.automation.listOverdueLoans, {
+      today: "2026-10-16",
+      cursor: page1.nextCursor ?? undefined,
+    });
+    expect(page2.loans).toHaveLength(1);
+    expect(page2.nextCursor).toBeNull();
   });
 
   it("rejects reminder write-backs for invalid loan or idempotency key", async () => {
