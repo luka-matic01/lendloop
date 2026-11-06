@@ -12,6 +12,7 @@ import { AuthErrorCode, authError } from "./lib/errors";
 import {
   BOARD_LIST_DESCRIPTION_MAX,
   HOME_PUBLIC_POOL_SIZE,
+  LIST_PAGE_SIZE,
 } from "./lib/limits";
 import {
   isBorrowPeriodInProgress,
@@ -37,6 +38,20 @@ import {
 
 const TOOL_NAME_MAX_LENGTH = 80;
 const TOOL_DESCRIPTION_MAX_LENGTH = 280;
+
+function normalizeSearch(raw: string | undefined): string | undefined {
+  if (raw === undefined) {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  if (trimmed.length > TOOL_NAME_MAX_LENGTH) {
+    return trimmed.slice(0, TOOL_NAME_MAX_LENGTH);
+  }
+  return trimmed;
+}
 
 function normalizeToolFields(args: { name: string; description: string }) {
   const name = args.name.trim();
@@ -172,21 +187,52 @@ async function rejectIfToolListingLockedForEdit(
   }
 }
 
-/** Homepage teaser pool: name and category only; client picks six with spread. */
+const listPublicRowValidator = v.object({
+  name: v.string(),
+  category: toolCategoryValidator,
+});
+
+/**
+ * Public listings: name + category only.
+ * Default (no args): bounded teaser pool for SSR + six-card spread.
+ * With search or category: wider cap so signed-out filters search inventory, not just the teaser pool.
+ */
 export const listPublic = query({
-  args: {},
-  returns: v.array(
-    v.object({
-      name: v.string(),
-      category: toolCategoryValidator,
-    }),
-  ),
-  handler: async (ctx) => {
+  args: {
+    category: v.optional(toolCategoryValidator),
+    search: v.optional(v.string()),
+  },
+  returns: v.array(listPublicRowValidator),
+  handler: async (ctx, args) => {
+    const search = normalizeSearch(args.search);
+    const filtered =
+      search !== undefined || args.category !== undefined;
+    const limit = filtered ? LIST_PAGE_SIZE : HOME_PUBLIC_POOL_SIZE;
+
+    if (search !== undefined) {
+      const rows = await ctx.db
+        .query("tools")
+        .withSearchIndex("search_name", (q) => {
+          let filter = q.search("name", search).eq("isAvailable", true);
+          if (args.category !== undefined) {
+            filter = filter.eq("category", args.category);
+          }
+          return filter;
+        })
+        .take(limit);
+
+      return rows.map(({ name, category }) => ({ name, category }));
+    }
+
     const rows = await ctx.db
       .query("tools")
-      .withIndex("by_available_category", (q) => q.eq("isAvailable", true))
+      .withIndex("by_available_category", (q) =>
+        args.category !== undefined
+          ? q.eq("isAvailable", true).eq("category", args.category)
+          : q.eq("isAvailable", true),
+      )
       .order("desc")
-      .take(HOME_PUBLIC_POOL_SIZE);
+      .take(limit);
 
     return rows.map(({ name, category }) => ({ name, category }));
   },
@@ -269,22 +315,37 @@ export const listMine = query({
 export const listBoard = query({
   args: {
     category: v.optional(toolCategoryValidator),
+    search: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
   returns: paginationResultValidator(boardToolRowValidator),
   handler: async (ctx, args) => {
     const viewer = await requireUser(ctx);
+    const search = normalizeSearch(args.search);
 
-    const pageResult = await ctx.db
-      .query("tools")
-      .withIndex("by_available_category", (q) =>
-        args.category
-          ? q.eq("isAvailable", true).eq("category", args.category)
-          : q.eq("isAvailable", true),
-      )
-      .filter((q) => q.neq(q.field("ownerId"), viewer._id))
-      .order("desc")
-      .paginate(args.paginationOpts);
+    const pageResult =
+      search !== undefined
+        ? await ctx.db
+            .query("tools")
+            .withSearchIndex("search_name", (q) => {
+              let filter = q.search("name", search).eq("isAvailable", true);
+              if (args.category !== undefined) {
+                filter = filter.eq("category", args.category);
+              }
+              return filter;
+            })
+            .filter((q) => q.neq(q.field("ownerId"), viewer._id))
+            .paginate(args.paginationOpts)
+        : await ctx.db
+            .query("tools")
+            .withIndex("by_available_category", (q) =>
+              args.category !== undefined
+                ? q.eq("isAvailable", true).eq("category", args.category)
+                : q.eq("isAvailable", true),
+            )
+            .filter((q) => q.neq(q.field("ownerId"), viewer._id))
+            .order("desc")
+            .paginate(args.paginationOpts);
 
     const page = await hydrateBoardPage(ctx, viewer, pageResult.page);
 

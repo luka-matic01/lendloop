@@ -31,10 +31,16 @@ export function ToolsPageSkeleton() {
         >
           {TOOLS_COPY.browseSectionLabel}
         </h2>
-        <div className="flex flex-wrap gap-2" aria-hidden>
-          {Array.from({ length: 5 }).map((_, index) => (
-            <Skeleton key={index} className="h-9 w-20 rounded-sm" />
-          ))}
+        <div
+          className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4"
+          aria-hidden
+        >
+          <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Skeleton key={index} className="h-9 w-20 rounded-sm" />
+            ))}
+          </div>
+          <Skeleton className="h-11 w-full shrink-0 rounded-control lg:w-80" />
         </div>
         <ToolCardSkeletonGrid
           count={NEIGHBOR_BOARD_SKELETON_COUNT}

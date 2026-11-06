@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
-
 import { Panel } from "@/components/ui";
+import { useHoldoverRowsDuringRefetch } from "@/hooks/useHoldoverRowsDuringRefetch";
 import {
   paginatedCanLoadMore,
   useStalePaginatedQuery,
@@ -17,11 +16,12 @@ import {
   NEIGHBOR_BOARD_SKELETON_COUNT,
   TOOL_CARD_GRID_CLASS,
 } from "../constants/visual";
+import { useToolFilters } from "../hooks/useToolFilters";
 import type { useListingActions } from "../hooks/useListingActions";
 import type { BoardTool } from "../types/tools";
 import type { RequestTrustedLenderChange } from "../utils/neighborToolTrust";
-import { CategoryFilterBar } from "./CategoryFilterBar";
 import { NeighborToolCard } from "./NeighborToolCard";
+import { ToolFilterToolbar } from "./ToolFilterToolbar";
 import { ToolsSection } from "./ToolsSection";
 import { ToolCardSkeletonGrid } from "./ToolSkeletons";
 
@@ -37,9 +37,13 @@ function neighborEmptyMessage(
   boardIsEmpty: boolean,
   neighborTotalOnBoard: number,
   categoryFilter: ToolCategoryKey | "all",
+  hasSearch: boolean,
 ): string {
   if (boardIsEmpty) {
     return TOOLS_COPY.emptyBoard;
+  }
+  if (hasSearch) {
+    return TOOLS_COPY.emptySearch;
   }
   if (categoryFilter !== "all") {
     return TOOLS_COPY.emptyNeighborsCategory;
@@ -59,16 +63,25 @@ export function NeighborToolsSection({
 }: NeighborToolsSectionProps) {
   const { requestRemoveListing } = listingActions;
 
-  const [categoryFilter, setCategoryFilter] = useState<
-    ToolCategoryKey | "all"
-  >("all");
-  const boardCategory =
-    categoryFilter === "all" ? undefined : categoryFilter;
+  const {
+    categoryFilter,
+    setCategoryFilter,
+    search,
+    setSearch,
+    debouncedSearchTrimmed,
+    queryArgs,
+    filterKey,
+    reset,
+  } = useToolFilters();
 
-  const categoryToolbar = (
-    <CategoryFilterBar
-      value={categoryFilter}
-      onChange={setCategoryFilter}
+  const filterToolbar = (
+    <ToolFilterToolbar
+      idPrefix="board"
+      search={search}
+      onSearchChange={setSearch}
+      categoryFilter={categoryFilter}
+      onCategoryChange={setCategoryFilter}
+      onReset={reset}
     />
   );
 
@@ -83,18 +96,23 @@ export function NeighborToolsSection({
     loadingMore,
   } = useStalePaginatedQuery<BoardTool>(
     api.tools.listBoard,
-    isReady ? { category: boardCategory } : "skip",
-    categoryFilter,
+    isReady ? queryArgs : "skip",
+    filterKey,
     BOARD_PAGE_SIZE,
   );
+
+  const loadingFirstPageEmpty =
+    boardStatus === "LoadingFirstPage" && tools.length === 0;
+  const { rowsToShow: displayTools, isHoldover: showHoldoverWhileLoading } =
+    useHoldoverRowsDuringRefetch(tools, loadingFirstPageEmpty);
 
   const boardIsEmpty =
     boardStatus !== "LoadingFirstPage" &&
     boardTools.length === 0 &&
     boardStatus === "Exhausted";
-  const neighborTotalOnBoard = tools.length;
+  const neighborTotalOnBoard = displayTools.length;
   const isLoading =
-    tools.length === 0 && (!isReady || isInitialLoad);
+    displayTools.length === 0 && (!isReady || isInitialLoad);
   const isRefreshing =
     neighborBoardRefreshing || neighborBoardSyncingPagination;
 
@@ -105,19 +123,20 @@ export function NeighborToolsSection({
   );
 
   const showNeighborEmpty =
-    !isLoading && tools.length === 0 && !canLoadMore;
+    !isLoading && displayTools.length === 0 && !canLoadMore;
   const emptyMessage = neighborEmptyMessage(
     boardIsEmpty,
     neighborTotalOnBoard,
     categoryFilter,
+    debouncedSearchTrimmed !== "",
   );
 
   return (
     <ToolsSection
       headingId="browse-neighbors-heading"
       heading={TOOLS_COPY.browseSectionLabel}
-      toolbar={categoryToolbar}
-      busy={isLoading || isRefreshing}
+      toolbar={filterToolbar}
+      busy={isLoading || (isRefreshing && !showHoldoverWhileLoading)}
       isLoading={isLoading}
       loading={
         <ToolCardSkeletonGrid
@@ -139,20 +158,29 @@ export function NeighborToolsSection({
         loadingLabel: TOOLS_COPY.loadingMore,
       }}
     >
-      {tools.length > 0 ? (
-        <ul className={TOOL_CARD_GRID_CLASS}>
-          {tools.map((tool) => (
-            <li key={tool._id} className="min-h-0">
-              <NeighborToolCard
-                tool={tool}
-                onBorrow={() => onBorrowTool(tool)}
-                onRemove={() => requestRemoveListing(tool)}
-                requestTrustedLenderChange={requestTrustedLenderChange}
-                pendingTrustedUserId={pendingTrustedUserId}
-              />
-            </li>
-          ))}
-        </ul>
+      {displayTools.length > 0 ? (
+        <div
+          className={
+            showHoldoverWhileLoading
+              ? "opacity-60 transition-opacity duration-150"
+              : undefined
+          }
+          aria-busy={showHoldoverWhileLoading || undefined}
+        >
+          <ul className={TOOL_CARD_GRID_CLASS}>
+            {displayTools.map((tool) => (
+              <li key={tool._id} className="min-h-0">
+                <NeighborToolCard
+                  tool={tool}
+                  onBorrow={() => onBorrowTool(tool)}
+                  onRemove={() => requestRemoveListing(tool)}
+                  requestTrustedLenderChange={requestTrustedLenderChange}
+                  pendingTrustedUserId={pendingTrustedUserId}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
     </ToolsSection>
   );

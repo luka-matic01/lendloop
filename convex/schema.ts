@@ -26,7 +26,11 @@ export default defineSchema({
     isAvailable: v.boolean(),
   })
     .index("by_owner", ["ownerId"])
-    .index("by_available_category", ["isAvailable", "category"]),
+    .index("by_available_category", ["isAvailable", "category"])
+    .searchIndex("search_name", {
+      searchField: "name",
+      filterFields: ["isAvailable", "category"],
+    }),
 
   loanRequests: defineTable({
     toolId: v.id("tools"),

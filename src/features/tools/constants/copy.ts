@@ -6,6 +6,10 @@ export const TOOLS_COPY = {
   homeBoardPublicDescription:
     "Sign in to see condition, lender, and borrow details.",
   homeBoardSignedInDescription: "Latest gear neighbors are sharing.",
+  toolSearchLabel: "Search tools",
+  toolSearchPlaceholder: "Search by name…",
+  emptySearch: "No tools match that search.",
+  clearFilters: "Clear filters",
   pageTitle: "Tool board",
   pageDescription:
     "Browse the board first, then manage what you list below.",

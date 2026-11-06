@@ -1,4 +1,4 @@
-/** Upper bound for loan list queries and related aggregations. */
+/** Upper bound for loan list queries, public filtered tool browse, and related aggregations. */
 export const LIST_PAGE_SIZE = 100;
 
 /** Per-tool loan rows for overlap checks; at cap we fail closed. */

@@ -1,8 +1,11 @@
-# LendLoop
+<div align="left"><img src="./public/cosmetic-logo.svg" width="320" alt="LendLoop" /></div>
 
-Neighborhood tool-lending: list tools, request date ranges, approve or decline, mark returns. **Convex** owns data and rules; **Clerk** signs users in; **n8n** runs notifications and overdue reminders.
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/) [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Node](https://img.shields.io/badge/node-20+-43853D?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/) [![Convex](https://img.shields.io/badge/Convex-backend-F3B01C?style=flat-square&logo=convex&logoColor=white)](https://www.convex.dev/) [![Clerk](https://img.shields.io/badge/Clerk-auth-6C47FF?style=flat-square&logo=clerk&logoColor=white)](https://clerk.com/)
 
-## Contents
+**LendLoop** — neighborhood tool-lending: list tools, request date ranges, approve or decline, mark returns. **Convex** owns data and rules; **Clerk** signs users in; **n8n** runs notifications and overdue reminders.
+
+<details>
+<summary><strong>Table of contents</strong></summary>
 
 - [Screenshots](#screenshots)
 - [What it does](#what-it-does)
@@ -14,6 +17,8 @@ Neighborhood tool-lending: list tools, request date ranges, approve or decline, 
 - [Testing](#testing)
 - [What I would change for production](#what-i-would-change-for-production)
 
+</details>
+
 ## Screenshots
 
 ![LendLoop — signed-in home / board](docs/readme/homepage.png)
@@ -24,7 +29,7 @@ Neighborhood tool-lending: list tools, request date ranges, approve or decline, 
 
 | Surface | Behavior |
 | --- | --- |
-| `/` **(public)** | Tagline, read-only tool list (**name + category only**), sign-in CTA. |
+| `/` **(public)** | Tagline, read-only tool list (**name + category only**), optional category + name search (bounded list), sign-in CTA. |
 | `/tools` | Paginated neighbor board (category filter, booked-range hints, “out until” when loaned). **My listings:** CRUD, pause/resume visibility, pending counts, mark returned from the row when appropriate. |
 | `/loans` | **Incoming** (approve / decline / return), **My requests** (cancel pending or upcoming reservation, overdue styling), **All loans** (admin). Rows show recent automation activity. |
 | **Admin (in context)** | Trusted-lender toggle and remove any listing from the board or loans admin tab — no separate console. Bootstrap admin via `INITIAL_ADMIN_EMAIL` on first sign-in. |

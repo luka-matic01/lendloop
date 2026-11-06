@@ -388,6 +388,120 @@ describe("tools", () => {
     ]);
   });
 
+  it("listPublic filters by search term on tool name", async () => {
+    const t = createConvexTest();
+    const { session } = await provisionUser(t, "lender@test.com");
+
+    await session.mutation(api.tools.create, {
+      name: "Circular saw",
+      category: "power_tools",
+      condition: "good",
+      description: "",
+    });
+    await session.mutation(api.tools.create, {
+      name: "Garden hose",
+      category: "garden",
+      condition: "good",
+      description: "",
+    });
+
+    const rows = await t.query(api.tools.listPublic, { search: "circ" });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toEqual({
+      name: "Circular saw",
+      category: "power_tools",
+    });
+  });
+
+  it("listPublic filters by category and search together", async () => {
+    const t = createConvexTest();
+    const { session } = await provisionUser(t, "lender@test.com");
+
+    await session.mutation(api.tools.create, {
+      name: "Circular saw",
+      category: "power_tools",
+      condition: "good",
+      description: "",
+    });
+    await session.mutation(api.tools.create, {
+      name: "Circus tent",
+      category: "camping",
+      condition: "good",
+      description: "",
+    });
+
+    const rows = await t.query(api.tools.listPublic, {
+      category: "power_tools",
+      search: "circ",
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.name).toBe("Circular saw");
+    expect(rows[0]?.category).toBe("power_tools");
+  });
+
+  it("listPublic treats whitespace-only search as unset", async () => {
+    const t = createConvexTest();
+    const { session } = await provisionUser(t, "lender@test.com");
+
+    await session.mutation(api.tools.create, {
+      name: "Hammer",
+      category: "other",
+      condition: "good",
+      description: "",
+    });
+
+    const trimmed = await t.query(api.tools.listPublic, { search: "   " });
+    const defaultRows = await t.query(api.tools.listPublic, {});
+    expect(trimmed).toEqual(defaultRows);
+  });
+
+  it("listBoard filters by search and excludes viewer listings", async () => {
+    const t = createConvexTest();
+    const { session: viewerSession } = await provisionUser(
+      t,
+      "viewer@test.com",
+    );
+    const { session: neighborSession } = await provisionUser(
+      t,
+      "neighbor@test.com",
+    );
+
+    await viewerSession.mutation(api.tools.create, {
+      name: "My circular saw",
+      category: "power_tools",
+      condition: "good",
+      description: "",
+    });
+    await neighborSession.mutation(api.tools.create, {
+      name: "Neighbor circular grinder",
+      category: "power_tools",
+      condition: "good",
+      description: "",
+    });
+    await neighborSession.mutation(api.tools.create, {
+      name: "Circular pond pump",
+      category: "garden",
+      condition: "good",
+      description: "",
+    });
+
+    const board = await viewerSession.query(api.tools.listBoard, {
+      search: "circ",
+      ...firstBoardPage(),
+    });
+    expect(board.page.map((row) => row.name).sort()).toEqual(
+      ["Circular pond pump", "Neighbor circular grinder"].sort(),
+    );
+
+    const boardPower = await viewerSession.query(api.tools.listBoard, {
+      category: "power_tools",
+      search: "circ",
+      ...firstBoardPage(),
+    });
+    expect(boardPower.page).toHaveLength(1);
+    expect(boardPower.page[0]?.name).toBe("Neighbor circular grinder");
+  });
+
   it("blocks listing edit and remove while an approved borrow is overdue", async () => {
     const t = createConvexTest();
     const { session: lenderSession } = await provisionUser(

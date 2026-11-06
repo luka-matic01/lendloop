@@ -15,7 +15,7 @@ type PublicToolCardProps = {
   className?: string;
 };
 
-/** Homepage teaser: name and category only (matches `listPublic` scope). */
+/** Signed-out board cards: name and category only (matches `listPublic` return shape). */
 export function PublicToolCard({ tool, className }: PublicToolCardProps) {
   const accent = TOOL_CATEGORY_ACCENT[tool.category];
 
