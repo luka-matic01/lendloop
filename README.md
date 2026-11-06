@@ -4,6 +4,7 @@ Neighborhood tool-lending: list tools, request date ranges, approve or decline, 
 
 ## Contents
 
+- [Screenshots](#screenshots)
 - [What it does](#what-it-does)
 - [Architecture](#architecture)
 - [Stack](#stack)
@@ -12,6 +13,12 @@ Neighborhood tool-lending: list tools, request date ranges, approve or decline, 
 - [Security](#security)
 - [Testing](#testing)
 - [What I would change for production](#what-i-would-change-for-production)
+
+## Screenshots
+
+![LendLoop — signed-in home / board](docs/readme/homepage.png)
+
+![Lighthouse — home page](docs/readme/lighthouse-score.png)
 
 ## What it does
 

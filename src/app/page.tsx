@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { AppShell, Container, Panel } from "@/components/ui";
@@ -8,7 +9,12 @@ import {
   HomeDashboardSuspenseFallback,
   HomeHero,
 } from "@/features/home";
+import { APP_NAME } from "@/constants";
 import { isAppConfigured } from "@/lib/appConfig";
+
+export const metadata: Metadata = {
+  title: { absolute: APP_NAME },
+};
 
 export default function HomePage() {
   const { hasConvex, hasClerk, isReady } = isAppConfigured();

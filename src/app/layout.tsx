@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Darker_Grotesque, Public_Sans } from "next/font/google";
 
 import { ConvexClerkProviders } from "@/components/providers/ConvexClerkProviders";
-import { APP_NAME, APP_TAGLINE, ROUTES } from "@/constants";
+import { APP_NAME, ROUTES } from "@/constants";
 import "./globals.css";
 
 const darkerGrotesque = Darker_Grotesque({
@@ -21,7 +21,10 @@ const publicSans = Public_Sans({
 });
 
 export const metadata: Metadata = {
-  title: `${APP_NAME} · ${APP_TAGLINE}`,
+  title: {
+    default: APP_NAME,
+    template: `%s - ${APP_NAME}`,
+  },
   description:
     "Neighborhood tool-lending board with role-based access control and automated n8n workflows.",
 };

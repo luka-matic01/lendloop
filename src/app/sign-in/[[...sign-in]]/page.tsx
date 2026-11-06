@@ -1,8 +1,14 @@
 import { SignIn } from "@clerk/nextjs";
+import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { AppShell, Container } from "@/components/ui";
 import { Masthead } from "@/components/ui/Masthead";
+
+export const metadata: Metadata = {
+  title: "Sign in",
+};
+
 export default function SignInPage() {
   return (
     <AppShell>
