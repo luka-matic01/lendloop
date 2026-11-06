@@ -1,11 +1,13 @@
-<div align="left"><img src="./public/cosmetic-logo.svg" width="320" alt="LendLoop" /></div>
-
-[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/) [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Node](https://img.shields.io/badge/node-20+-43853D?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/) [![Convex](https://img.shields.io/badge/Convex-backend-F3B01C?style=flat-square&logo=convex&logoColor=white)](https://www.convex.dev/) [![Clerk](https://img.shields.io/badge/Clerk-auth-6C47FF?style=flat-square&logo=clerk&logoColor=white)](https://clerk.com/)
+<p align="left">
+  <img src="./public/cosmetic-logo.svg" alt="LendLoop" width="272" height="auto" />
+</p>
+<p align="left">
+  <img src="https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js&logoColor=white" alt="Next.js" />&nbsp;&nbsp;<img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />&nbsp;&nbsp;<img src="https://img.shields.io/badge/node-20+-43853D?style=flat-square&logo=node.js&logoColor=white" alt="Node" />&nbsp;&nbsp;<img src="https://img.shields.io/badge/Convex-backend-F3B01C?style=flat-square&logo=convex&logoColor=white" alt="Convex" />&nbsp;&nbsp;<img src="https://img.shields.io/badge/Clerk-auth-6C47FF?style=flat-square&logo=clerk&logoColor=white" alt="Clerk" />
+</p>
 
 **LendLoop** — neighborhood tool-lending: list tools, request date ranges, approve or decline, mark returns. **Convex** owns data and rules; **Clerk** signs users in; **n8n** runs notifications and overdue reminders.
 
-<details>
-<summary><strong>Table of contents</strong></summary>
+**Table of contents**
 
 - [Screenshots](#screenshots)
 - [What it does](#what-it-does)
@@ -17,7 +19,7 @@
 - [Testing](#testing)
 - [What I would change for production](#what-i-would-change-for-production)
 
-</details>
+
 
 ## Screenshots
 
@@ -185,4 +187,4 @@ Critical paths are exercised against Convex directly (acting as lender, borrower
 3. **Atomic send claim** — record “about to send” before SMTP/console so a failed write-back cannot double-send on retry.
 4. **Future-dated bookings** — approving currently treats the tool as reserved/on loan immediately; product may want “reserved until start” on the board only.
 5. **Hosted ops** — managed Convex + n8n with queue mode, secret rotation, and tested backup restore.
-6. **Split automation HMAC secrets** — local dev uses one `WEBHOOK_HMAC_SECRET` for both directions; production would use separate secrets (n8n verifies Convex outbound on its webhook; Convex verifies n8n on `/automation/*`) so a leak in one system's env cannot forge signed requests to the other.
+6. **Split automation HMAC secrets** — local dev uses one `WEBHOOK_HMAC_SECRET` for both directions; production would use separate secrets (n8n verifies Convex outbound on its webhook; Convex verifies n8n on `/automation/`*) so a leak in one system's env cannot forge signed requests to the other.
